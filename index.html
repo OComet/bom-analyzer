@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOM Analyzer — Codification IPN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<style>
+:root {
+  --bg: #F5F4F0;
+  --surface: #FFFFFF;
+  --surface2: #EFEFEB;
+  --border: #E0DED8;
+  --border2: #D0CEC8;
+  --text: #1A1916;
+  --text2: #6B6960;
+  --text3: #9A9890;
+  --blue: #185FA5;
+  --blue-bg: #E6F1FB;
+  --green: #3B6D11;
+  --green-bg: #EAF3DE;
+  --amber: #854F0B;
+  --amber-bg: #FAEEDA;
+  --red: #A32D2D;
+  --red-bg: #FCEBEB;
+  --pink: #993556;
+  --pink-bg: #FBEAF0;
+  --pink-border: #ED93B1;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+
+* { box-sizing:border-box; margin:0; padding:0; }
+
+body {
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.logo-icon {
+  width: 30px;
+  height: 30px;
+  background: var(--text);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 15px;
+}
+
+.header-chips {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  font-family: var(--sans);
+}
+.chip.ok { border-color: #97C459; color: var(--green); background: var(--green-bg); }
+.chip.err { border-color: #F09595; color: var(--red); background: var(--red-bg); }
+
+.main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+/* SETUP */
+.setup-screen { display: block; }
+.main-screen { display: none; }
+
+.setup-hero {
+  text-align: center;
+  padding: 3rem 0 2rem;
+}
+.setup-hero h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 8px; }
+.setup-hero p { color: var(--text2); font-size: 14px; }
+
+.setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+@media(max-width:700px) { .setup-grid { grid-template-columns: 1fr; } }
+
+.setup-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+.setup-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+.setup-card-title i { color: var(--text2); font-size: 17px; }
+.fixed-tag {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: var(--surface2);
+  color: var(--text3);
+  border: 1px solid var(--border);
+  margin-left: auto;
+}
+
+.setup-actions { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+
+.status-row { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text2); margin-top:10px; min-height:20px; }
+.status-dot { width:7px; height:7px; border-radius:50%; background:var(--border2); flex-shrink:0; }
+.status-dot.ok { background:var(--green); }
+.status-dot.err { background:var(--red); }
+.status-dot.loading { background:var(--amber); animation:pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* TABS */
+.tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:1.5rem; }
+.tab {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--text2);
+  border-bottom: 2px solid transparent;
+  font-family: var(--sans);
+  transition: color 0.15s;
+}
+.tab.active { color: var(--text); border-bottom-color: var(--text); }
+.tab:hover:not(.active) { color: var(--text); }
+.panel { display:none; } .panel.active { display:block; }
+
+/* FORMS */
+label { display:block; font-size:11px; font-weight:600; color:var(--text2); margin-bottom:5px; letter-spacing:0.3px; text-transform:uppercase; }
+input[type=text], textarea, select {
+  width: 100%;
+  padding: 8px 11px;
+  font-size: 13px;
+  font-family: var(--sans);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+input[type=text]:focus, textarea:focus, select:focus {
+  border-color: var(--text);
+  box-shadow: 0 0 0 3px rgba(26,25,22,0.06);
+}
+textarea {
+  resize: vertical;
+  min-height: 90px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.hint { font-size: 11px; color: var(--text3); margin-top: 5px; }
+.hint code { font-family: var(--mono); background: var(--surface2); padding: 1px 5px; border-radius: 4px; }
+
+/* BUTTONS */
+.btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--sans);
+  cursor: pointer;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  transition: background 0.15s, border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn:hover { background: var(--surface2); }
+.btn:active { transform: scale(0.98); }
+.btn.primary { background: var(--text); color: white; border-color: transparent; }
+.btn.primary:hover { opacity: 0.85; }
+.btn.sm { padding: 6px 12px; font-size: 12px; }
+.btn:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+
+.actions-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
+
+/* CARDS / SECTIONS */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-bottom: 12px;
+}
+
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.row2 { display:flex; gap:12px; margin-bottom:12px; }
+.row2 .col { flex:1; }
+
+/* BOM LOAD BAR */
+.bom-load-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.bom-load-bar .url-group { flex:1; min-width:260px; }
+.bom-status { font-size: 12px; color: var(--text2); display:flex; align-items:center; gap:6px; }
+
+/* CLIENT BAR */
+.client-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.client-bar .lbl { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.client-bar select { width: auto; min-width: 180px; flex:1; max-width: 280px; }
+
+/* BADGES */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.b-ok { background:var(--green-bg); color:var(--green); }
+.b-warn { background:var(--amber-bg); color:var(--amber); }
+.b-err { background:var(--red-bg); color:var(--red); }
+.b-strict { background:var(--pink-bg); color:var(--pink); border:1px solid var(--pink-border); }
+.b-info { background:var(--blue-bg); color:var(--blue); }
+
+/* TABLE */
+.bom-table-wrap {
+  overflow-x: auto;
+  margin-top: 1rem;
+  max-height: 440px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th {
+  background: var(--surface2);
+  padding: 9px 11px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--text2);
+  position: sticky;
+  top: 0;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  z-index: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+td {
+  padding: 8px 11px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  word-break: break-word;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+.row-warn td { background: #FAEEDA18; }
+.row-err td { background: #FCEBEB18; }
+.row-mpnwarn td { background: #FBEAF018; }
+
+.editable-ipn {
+  font-family: var(--mono);
+  font-size: 11px;
+  width: 100%;
+  padding: 3px 7px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--blue);
+}
+.editable-ipn:focus { outline:none; border-color:var(--blue); background:var(--blue-bg); }
+
+/* COUNTERS */
+.counter-row { display:flex; gap:10px; margin:1rem 0; flex-wrap:wrap; }
+.counter {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  min-width: 80px;
+}
+.counter-val { font-size: 22px; font-weight: 600; font-family: var(--mono); }
+.counter-lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+/* WARN SUMMARY */
+.warn-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  margin-bottom: 12px;
+}
+.warn-item { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
+.warn-item:last-child { border-bottom:none; }
+.warn-item i { font-size:17px; color:var(--amber); flex-shrink:0; margin-top:1px; }
+
+/* STOCK CELL */
+.stock-cell { display:flex; flex-direction:column; gap:2px; }
+.stock-line { display:flex; align-items:center; gap:5px; font-size:11px; white-space:nowrap; }
+.slbl { font-size:10px; color:var(--text3); min-width:28px; font-family:var(--mono); }
+.s-ok { color:var(--green); font-weight:600; font-family:var(--mono); }
+.s-zero { color:var(--red); font-weight:600; font-family:var(--mono); }
+.s-na { color:var(--text3); }
+.s-mpnwarn { color:var(--pink); font-weight:600; font-family:var(--mono); }
+
+/* CODIF */
+.ipn-result-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-top: 1rem;
+}
+.ipn-code {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--blue);
+  background: var(--blue-bg);
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  display: inline-block;
+  margin: 8px 0;
+  letter-spacing: 0.5px;
+}
+.copy-btn {
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 14px;
+  padding: 0 4px;
+  vertical-align: middle;
+}
+.copy-btn:hover { color: var(--text); }
+
+/* LOADING */
+.loading { display:flex; align-items:center; gap:10px; color:var(--text2); font-size:13px; padding:14px 0; }
+.spinner { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--text2); border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0; }
+@keyframes spin { to{transform:rotate(360deg);} }
+
+/* TOPBAR */
+.topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:10px; }
+.topbar-left { display:flex; gap:8px; flex-wrap:wrap; }
+
+/* RULE BOX */
+.rule-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 2;
+  color: var(--text2);
+}
+.rule-box b { color: var(--text); font-weight: 600; }
+
+/* CLIENTS PREVIEW TABLE */
+.clients-table-wrap { border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; margin-top:10px; }
+
+/* FOOTER NOTE */
+.footer-note { font-size:11px; color:var(--text3); margin-top:8px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon"><i class="ti ti-circuit-board" aria-hidden="true"></i></div>
+    BOM Analyzer
+  </div>
+  <div class="header-chips" id="header-chips"></div>
+  <button class="btn sm" onclick="showSetup()" id="btn-reconfig" style="display:none"><i class="ti ti-settings" aria-hidden="true"></i> Reconfigurer</button>
+</header>
+
+<div class="main">
+
+  <!-- ===== SETUP ===== -->
+  <div class="setup-screen" id="setup-screen">
+    <div class="setup-hero">
+      <h1>Configuration des sources</h1>
+      <p>Renseigne les URLs de tes Google Sheets publiés en CSV.<br>Clients et stock sont chargés une fois ; la BOM est rechargée à chaque analyse.</p>
+    </div>
+
+    <div class="setup-grid">
+      <div class="setup-card">
+        <div class="setup-card-title"><i class="ti ti-users" aria-hidden="true"></i> Google Sheet clients <span class="fixed-tag">fixe</span></div>
+        <label>URL publiée en CSV</label>
+        <input type="text" id="setup-clients-url" placeholder="https://docs.google.com/spreadsheets/d/…/export?format=csv&sheet=Clients" />
+        <p class="hint">Colonnes : <code>Nom</code> | <code>MPN_strict</code> (oui/non) | <code>Notes</code></p>
+        <div class="status-row" id="clients-status-row">
+          <span class="status-dot" id="clients-dot"></span>
+          <span id="clients-status-msg">En attente</span>
+        </div>
+      </div>
+
+      <div class="setup-card">
+        <div class="setup-card-title"><i class="ti ti-package" aria-hidden="true"></i> Google Sheet stock <span class="fixed-tag">fixe</span></div>
+        <label>URL publiée en CSV</label>
+        <input type="text" id="setup-stock-url" placeholder="https://docs.google.com/spreadsheets/d/…/export?format=csv" />
+        <p class="hint">Colonnes : <code>IPN</code> | <code>MPN</code> | <code>Stock</code></p>
+        <div class="row2" style="margin-top:10px; margin-bottom:0">
+          <div class="col"><label>Col. IPN</label><input type="text" id="scol-ipn" value="IPN" /></div>
+          <div class="col"><label>Col. MPN</label><input type="text" id="scol-mpn" value="MPN" /></div>
+          <div class="col"><label>Col. Qté</label><input type="text" id="scol-qty" value="Stock" /></div>
+        </div>
+        <div class="status-row" id="stock-status-row">
+          <span class="status-dot" id="stock-dot"></span>
+          <span id="stock-status-msg">En attente</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="setup-actions">
+      <button class="btn primary" id="btn-load-all" onclick="loadAll()"><i class="ti ti-plug" aria-hidden="true"></i> Charger les sources fixes</button>
+      <button class="btn" onclick="skipSetup()">Continuer sans (mode manuel)</button>
+    </div>
+    <div id="setup-error" style="margin-top:12px; font-size:12px; color:var(--red); text-align:center; display:none;"></div>
+  </div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-screen" id="main-screen">
+
+    <div class="topbar">
+      <div class="topbar-left" id="topbar-status"></div>
+      <button class="btn sm" onclick="showSetup()"><i class="ti ti-settings" aria-hidden="true"></i> Reconfigurer les sources</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('bom')">Analyse BOM</button>
+      <button class="tab" onclick="switchTab('codif')">Codification IPN</button>
+      <button class="tab" onclick="switchTab('config')">Règles &amp; Config</button>
+    </div>
+
+    <!-- BOM TAB -->
+    <div class="panel active" id="tab-bom">
+      <div class="bom-load-bar">
+        <i class="ti ti-file-spreadsheet" aria-hidden="true" style="font-size:18px; color:var(--text2); flex-shrink:0; margin-bottom:2px;"></i>
+        <div class="url-group">
+          <label style="text-transform:none; font-size:12px; font-weight:600; letter-spacing:0">URL Google Sheet BOM <span style="font-weight:400; color:var(--text3)">(variable)</span></label>
+          <input type="text" id="bom-url" placeholder="https://docs.google.com/spreadsheets/d/…/export?format=csv" />
+        </div>
+        <button class="btn sm" onclick="loadBOM()"><i class="ti ti-refresh" aria-hidden="true"></i> Charger</button>
+        <div class="bom-status" id="bom-url-status"></div>
+      </div>
+
+      <div class="card" style="margin-bottom:12px;">
+        <label>Ou coller les données directement (CSV / TSV)</label>
+        <textarea id="csv-input" rows="4" placeholder="Qty,Reference,MPN,IPN,Description,Notes&#10;2,C1 C2,GXT188R61C106KE13D,,10uF 16V X5R 0603,&#10;1,U1,LM317MBSTT3G,,Linear Reg 1.5A,#TRPBF&#10;…"></textarea>
+      </div>
+
+      <div class="client-bar">
+        <span class="lbl"><i class="ti ti-building" aria-hidden="true" style="font-size:15px; vertical-align:-2px; margin-right:3px;"></i> Client</span>
+        <select id="client-select" onchange="onClientChange()">
+          <option value="__standard__">Standard (pas de contrainte MPN)</option>
+        </select>
+        <div id="client-badge"></div>
+        <span id="client-note-text" style="font-size:12px; color:var(--text2); font-style:italic;"></span>
+      </div>
+
+      <div class="actions-bar">
+        <button class="btn primary" onclick="analyzeBOM()"><i class="ti ti-cpu" aria-hidden="true"></i> Analyser BOM (IA)</button>
+        <button class="btn" onclick="exportCSV()"><i class="ti ti-download" aria-hidden="true"></i> Exporter CSV</button>
+        <button class="btn" onclick="clearBOM()"><i class="ti ti-trash" aria-hidden="true"></i> Effacer</button>
+      </div>
+
+      <div id="bom-loading" class="loading" style="display:none">
+        <div class="spinner"></div><span id="bom-loading-msg">Analyse IA en cours…</span>
+      </div>
+
+      <div id="bom-result" style="display:none">
+        <div id="bom-counters" class="counter-row"></div>
+        <div id="bom-warnings-section"></div>
+        <div class="bom-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:40px">Qty</th>
+                <th style="width:90px">Réf.</th>
+                <th style="width:130px">MPN</th>
+                <th style="width:155px">IPN (éditable)</th>
+                <th>Notes / Description</th>
+                <th style="width:92px">Alertes</th>
+                <th style="width:105px">Stock</th>
+              </tr>
+            </thead>
+            <tbody id="bom-tbody"></tbody>
+          </table>
+        </div>
+        <p class="footer-note" style="margin-top:8px">IPN éditables directement. Exportez en CSV pour mise à jour du Google Sheet.</p>
+      </div>
+    </div>
+
+    <!-- CODIF TAB -->
+    <div class="panel" id="tab-codif">
+      <div class="card">
+        <div class="row2">
+          <div class="col">
+            <label>MPN (référence fabricant)</label>
+            <input type="text" id="mpn-input" placeholder="ex: GXT188R61C106KE13D, CRCW060340K2FKEAHP…" />
+          </div>
+        </div>
+        <div class="row2">
+          <div class="col">
+            <label>Type de composant</label>
+            <select id="comp-type">
+              <option value="auto">Détection automatique</option>
+              <option value="C">Condensateur céramique / film</option>
+              <option value="CT">Condensateur tantale</option>
+              <option value="R">Résistance</option>
+              <option value="OTHER">Autre composant</option>
+            </select>
+          </div>
+          <div class="col">
+            <label>Notes / Description (optionnel)</label>
+            <input type="text" id="notes-input" placeholder="ex: 10uF 16V X5R 0603…" />
+          </div>
+        </div>
+        <div class="actions-bar" style="margin-bottom:0">
+          <button class="btn primary" onclick="generateIPN()"><i class="ti ti-wand" aria-hidden="true"></i> Générer IPN via IA</button>
+          <button class="btn" onclick="clearCodif()">Réinitialiser</button>
+        </div>
+      </div>
+
+      <div id="codif-loading" class="loading" style="display:none"><div class="spinner"></div> Analyse en cours…</div>
+
+      <div id="codif-result" style="display:none">
+        <div class="ipn-result-card">
+          <div class="section-label">IPN généré</div>
+          <div>
+            <span id="ipn-output" class="ipn-code">—</span>
+            <button class="copy-btn" onclick="copyIPN()" title="Copier"><i class="ti ti-copy"></i></button>
+          </div>
+          <div id="ipn-explain" style="font-size:12px; color:var(--text2); margin-top:6px; line-height:1.7;"></div>
+          <div id="ipn-warnings" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIG TAB -->
+    <div class="panel" id="tab-config">
+      <div class="section-label" style="margin-top:0">Règles de codification IPN</div>
+      <div class="rule-box">
+        <b>Condensateur céramique/film :</b> C(val)-(boitier)-(V)-(tolP)-(diélec)<br>
+        <span style="color:var(--text3)">Ex: C10U-0603-16V-10P-X5R &nbsp;|&nbsp; C1N5-0603-50V-20P-X7R</span><br><br>
+        <b>Condensateur tantale :</b> CT(val)-(boitier A/B/C/D/E)-(V)-(tolP)-(ESR)<br>
+        <span style="color:var(--text3)">Ex: CT10U-A-20V-20P-5R &nbsp;|&nbsp; CT100U-B-6V3-10P-0R4</span><br><br>
+        <b>Résistance :</b> R(val)-(boitier)[-(PPM si &lt;100)][-(W si non standard)]<br>
+        <span style="color:var(--text3)">Ex: R10K-0603 &nbsp;|&nbsp; R40K2-0603-0W33 &nbsp;|&nbsp; R30K-0603-10PPM</span><br>
+        <span style="color:var(--text3)">Puissance std : 0201=50mW · 0402=62mW · 0603=100mW · 0805=125mW · 1206=250mW · 2512=1W</span><br><br>
+        <b>Autre composant :</b> MPN sans suffixes conditionnement<br>
+        <span style="color:var(--text3)">Supprimer : #PBF · #TRPBF · TR · -T · /TR · REEL · TAPE</span>
+      </div>
+
+      <div class="section-label" style="margin-top:1.5rem">Composants sensibles (warnings)</div>
+      <div class="rule-box" style="font-family:var(--sans); line-height:2;">
+        <span class="badge b-warn" style="margin-right:8px"><i class="ti ti-radar" aria-hidden="true"></i> Capteurs</span> Pression, humidité, température…<br>
+        <span class="badge b-warn" style="margin-right:8px"><i class="ti ti-battery" aria-hidden="true"></i> Énergie</span> Piles, batteries, accumulateurs<br>
+        <span class="badge b-warn" style="margin-right:8px"><i class="ti ti-droplet-off" aria-hidden="true"></i> Étanchéité</span> Relais non étanches, composants non sealed<br>
+        <span class="badge b-warn" style="margin-right:8px"><i class="ti ti-moisture" aria-hidden="true"></i> MSL≥4</span> Sensibilité humidité niveau 4 et supérieur
+      </div>
+
+      <div class="section-label" style="margin-top:1.5rem">Logique stock selon client</div>
+      <div class="rule-box" style="font-family:var(--sans); line-height:2;">
+        <b>Client standard</b> — recherche IPN en priorité, puis MPN si IPN absent<br>
+        <b style="color:var(--pink)">Client MPN strict</b> — recherche MPN en priorité. Si MPN absent mais IPN dispo : ⚠️ warning orange<br>
+        Dans tous les cas : le stock est cherché sur <b>IPN et MPN simultanément</b>
+      </div>
+
+      <div class="section-label" style="margin-top:1.5rem">Clients chargés</div>
+      <div id="config-clients-preview">
+        <p style="font-size:13px; color:var(--text2)">Aucun client chargé — configurez le Google Sheet clients dans l'écran de setup.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let bomData = [];
+let stockByIPN = {}, stockByMPN = {};
+let clientsList = [];
+let activeClient = { nom:'Standard', mpn_strict:false, notes:'' };
+let sourceStatus = { clients:'none', stock:'none' };
+
+function switchTab(name) {
+  const names = ['bom','codif','config'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', names[i]===name));
+  document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', names[i]===name));
+}
+
+function showSetup() {
+  document.getElementById('setup-screen').style.display = 'block';
+  document.getElementById('main-screen').style.display = 'none';
+  document.getElementById('btn-reconfig').style.display = 'none';
+}
+
+function showMain() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('main-screen').style.display = 'block';
+  document.getElementById('btn-reconfig').style.display = 'flex';
+  renderTopbar();
+}
+
+function skipSetup() { showMain(); }
+
+function setDot(id, state, msg) {
+  document.getElementById(id+'-dot').className = 'status-dot ' + state;
+  document.getElementById(id+'-status-msg').textContent = msg;
+}
+
+function renderTopbar() {
+  const bar = document.getElementById('topbar-status');
+  const items = [
+    { key:'clients', icon:'ti-users', label:'Clients' },
+    { key:'stock', icon:'ti-package', label:'Stock' }
+  ];
+  bar.innerHTML = items.map(c => {
+    const s = sourceStatus[c.key];
+    const cls = s==='ok'?'ok':s==='err'?'err':'';
+    const icon2 = s==='ok'?'ti-check':s==='err'?'ti-x':'ti-clock';
+    return `<span class="chip ${cls}"><i class="ti ${c.icon}" aria-hidden="true"></i><i class="ti ${icon2}" aria-hidden="true"></i> ${c.label}</span>`;
+  }).join('');
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const sep = lines[0].includes('\t') ? '\t' : ',';
+  const headers = lines[0].split(sep).map(h => h.trim().replace(/"/g,''));
+  return lines.slice(1).map(line => {
+    const cells = line.split(sep).map(c => c.trim().replace(/"/g,''));
+    const obj = {};
+    headers.forEach((h,j) => obj[h] = cells[j]||'');
+    return obj;
+  }).filter(r => Object.values(r).some(v=>v));
+}
+
+function findCol(row, candidates) {
+  for (const k of candidates) {
+    const found = Object.keys(row).find(rk => rk.toLowerCase().includes(k.toLowerCase()));
+    if (found !== undefined) return row[found];
+  }
+  return '';
+}
+
+async function fetchCSV(url) {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  return resp.text();
+}
+
+async function loadAll() {
+  const btn = document.getElementById('btn-load-all');
+  btn.disabled = true;
+  document.getElementById('setup-error').style.display = 'none';
+  const clientsUrl = document.getElementById('setup-clients-url').value.trim();
+  const stockUrl = document.getElementById('setup-stock-url').value.trim();
+  if (!clientsUrl && !stockUrl) {
+    document.getElementById('setup-error').textContent = 'Renseigne au moins une URL.';
+    document.getElementById('setup-error').style.display = 'block';
+    btn.disabled = false;
+    return;
+  }
+  if (clientsUrl) {
+    setDot('clients','loading','Chargement…');
+    try {
+      const text = await fetchCSV(clientsUrl);
+      const rows = parseCSV(text);
+      clientsList = rows.map(r => ({
+        nom: findCol(r,['nom','name','client'])||'',
+        mpn_strict: (findCol(r,['mpn_strict','mpn strict','strict'])||'').toLowerCase().trim()==='oui',
+        notes: findCol(r,['notes','note','commentaire'])||''
+      })).filter(c=>c.nom);
+      if (!clientsList.length) throw new Error('Aucun client trouvé — vérifiez les colonnes');
+      setDot('clients','ok',`${clientsList.length} client(s) chargé(s)`);
+      sourceStatus.clients = 'ok';
+      populateClientSelect();
+      renderClientsPreview();
+    } catch(e) {
+      setDot('clients','err',e.message);
+      sourceStatus.clients = 'err';
+    }
+  }
+  if (stockUrl) {
+    setDot('stock','loading','Chargement…');
+    try {
+      const text = await fetchCSV(stockUrl);
+      loadStockData(text);
+      const nI = Object.keys(stockByIPN).length, nM = Object.keys(stockByMPN).length;
+      setDot('stock','ok',`${nI} IPN · ${nM} MPN chargés`);
+      sourceStatus.stock = 'ok';
+    } catch(e) {
+      setDot('stock','err',e.message);
+      sourceStatus.stock = 'err';
+    }
+  }
+  btn.disabled = false;
+  showMain();
+}
+
+function loadStockData(csvText) {
+  const cI = document.getElementById('scol-ipn').value||'IPN';
+  const cM = document.getElementById('scol-mpn').value||'MPN';
+  const cQ = document.getElementById('scol-qty').value||'Stock';
+  const rows = parseCSV(csvText);
+  stockByIPN = {}; stockByMPN = {};
+  rows.forEach(row => {
+    const ipn = (findCol(row,[cI])||'').trim().toUpperCase();
+    const mpn = (findCol(row,[cM])||'').trim().toUpperCase();
+    const qty = parseInt(findCol(row,[cQ]))||0;
+    if (ipn) stockByIPN[ipn] = qty;
+    if (mpn) stockByMPN[mpn] = qty;
+  });
+}
+
+function populateClientSelect() {
+  const sel = document.getElementById('client-select');
+  sel.innerHTML = '<option value="__standard__">Standard (pas de contrainte MPN)</option>';
+  clientsList.forEach(c => {
+    if (c.nom.toLowerCase()==='standard') return;
+    const opt = document.createElement('option');
+    opt.value = c.nom;
+    opt.textContent = c.nom + (c.mpn_strict?' 🔒':'');
+    sel.appendChild(opt);
+  });
+  onClientChange();
+}
+
+function renderClientsPreview() {
+  const el = document.getElementById('config-clients-preview');
+  if (!clientsList.length) { el.innerHTML='<p style="font-size:13px;color:var(--text2)">Aucun client chargé.</p>'; return; }
+  el.innerHTML = `<div class="clients-table-wrap"><table>
+    <thead><tr><th>Nom</th><th>MPN strict</th><th>Notes</th></tr></thead>
+    <tbody>${clientsList.map(c=>`<tr>
+      <td style="font-weight:600">${c.nom}</td>
+      <td>${c.mpn_strict?'<span class="badge b-strict"><i class="ti ti-lock" aria-hidden="true"></i> oui</span>':'<span class="badge b-ok">non</span>'}</td>
+      <td style="color:var(--text2);font-size:12px">${c.notes}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+function onClientChange() {
+  const val = document.getElementById('client-select').value;
+  activeClient = val==='__standard__'
+    ? {nom:'Standard',mpn_strict:false,notes:''}
+    : (clientsList.find(c=>c.nom===val)||{nom:'Standard',mpn_strict:false,notes:''});
+  document.getElementById('client-badge').innerHTML = activeClient.mpn_strict
+    ? `<span class="badge b-strict"><i class="ti ti-lock" aria-hidden="true"></i> MPN strict</span>`
+    : `<span class="badge b-ok"><i class="ti ti-check" aria-hidden="true"></i> Standard</span>`;
+  document.getElementById('client-note-text').textContent = activeClient.notes||'';
+}
+
+async function loadBOM() {
+  const url = document.getElementById('bom-url').value.trim();
+  const statusEl = document.getElementById('bom-url-status');
+  if (!url) { statusEl.innerHTML='<span style="color:var(--red)">URL manquante</span>'; return; }
+  statusEl.innerHTML='<div class="spinner" style="width:13px;height:13px;border-width:2px"></div> Chargement…';
+  try {
+    const text = await fetchCSV(url);
+    document.getElementById('csv-input').value = text;
+    const rows = parseCSV(text);
+    statusEl.innerHTML=`<span style="color:var(--green)"><i class="ti ti-check"></i> ${rows.length} ligne(s)</span>`;
+  } catch(e) {
+    statusEl.innerHTML=`<span style="color:var(--red)"><i class="ti ti-x"></i> ${e.message}</span>`;
+  }
+}
+
+async function callClaude(prompt, sys) {
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1000, system:sys, messages:[{role:"user",content:prompt}] })
+  });
+  const data = await resp.json();
+  return data.content.map(c=>c.text||'').join('');
+}
+
+const IPN_SYS = `Tu es un ingénieur hardware expert en codification de composants électroniques.
+RÈGLES IPN:
+1. CONDENSATEUR CÉRAMIQUE/FILM: C(valeur)-(boitier)-(tensionV)-(tolP)-(diélectrique)
+   Valeur: 10U=10µF,1N5=1.5nF,10P=10pF,100N=100nF. Tension:16V,6V3. Tolérance:10P=10%.
+   Ex: C10U-0603-16V-10P-X5R, C1N5-0603-50V-20P-X7R
+2. CONDENSATEUR TANTALE: CT(valeur)-(boitier A/B/C/D/E)-(tensionV)-(tolP)-(ESR)
+   ESR:5R=5Ω,0R4=0.4Ω. Ex:CT10U-A-20V-20P-5R
+3. RÉSISTANCE: R(valeur)-(boitier)[-(PPM si <100)][-(W si non standard)]
+   Puissance std:0201=50mW,0402=62mW,0603=100mW,0805=125mW,1206=250mW,2512=1W.
+   Ex:R10K-0603,R40K2-0603-0W33,R30K-0603-10PPM
+4. AUTRE: MPN sans suffixes conditionnement (#PBF,#TRPBF,TR,-T,/TR,REEL,TAPE).
+RÉPONSE JSON uniquement:
+{"ipn":"...","type":"C|CT|R|OTHER","explanation":"...","confidence":"high|medium|low","warnings":["..."]}`;
+
+const BOM_SYS = `Tu es un ingénieur hardware expert. Pour chaque ligne BOM:
+1. Génère ou vérifie l'IPN selon les règles de codification
+2. Détecte: sensor (capteurs pression/humidité/temp), battery (piles/batteries), not-sealed (relais non étanche), msl4+ (MSL≥4)
+3. Vérifie cohérence MPN/IPN/Notes
+RÈGLES: condensateur C(), tantale CT(), résistance R(), autre=MPN sans suffixes conditionnement.
+RÉPONSE JSON tableau uniquement:
+[{"idx":0,"ipn":"...","status":"ok|warn|error","warnings":["sensor|battery|not-sealed|msl4+"],"note":"remarque courte"}]`;
+
+async function generateIPN() {
+  const mpn = document.getElementById('mpn-input').value.trim();
+  const notes = document.getElementById('notes-input').value.trim();
+  const type = document.getElementById('comp-type').value;
+  if (!mpn) { alert("Saisir un MPN."); return; }
+  document.getElementById('codif-loading').style.display='flex';
+  document.getElementById('codif-result').style.display='none';
+  try {
+    const raw = await callClaude(`MPN: ${mpn}${notes?'\nNotes: '+notes:''}${type!=='auto'?'\nType: '+type:''}`, IPN_SYS);
+    const r = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    document.getElementById('ipn-output').textContent = r.ipn||'—';
+    document.getElementById('ipn-explain').textContent = r.explanation||'';
+    const wDiv = document.getElementById('ipn-warnings');
+    wDiv.innerHTML = (r.warnings&&r.warnings.length)
+      ? r.warnings.map(w=>`<div class="warn-item"><i class="ti ti-alert-triangle" aria-hidden="true"></i><span>${w}</span></div>`).join('')
+      : `<span class="badge b-ok"><i class="ti ti-check" aria-hidden="true"></i> Codification validée</span>`;
+    document.getElementById('codif-result').style.display='block';
+  } catch(e) { alert("Erreur IA. Vérifiez votre connexion."); }
+  document.getElementById('codif-loading').style.display='none';
+}
+
+function clearCodif() {
+  ['mpn-input','notes-input'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('comp-type').value='auto';
+  document.getElementById('codif-result').style.display='none';
+}
+function copyIPN() { navigator.clipboard.writeText(document.getElementById('ipn-output').textContent); }
+
+function getStockInfo(ipn, mpn) {
+  const strict = activeClient.mpn_strict;
+  const clientLabel = activeClient.nom;
+  const byMPN = mpn ? stockByMPN[mpn.toUpperCase()] : undefined;
+  const byIPN = (ipn&&ipn!=='—') ? stockByIPN[ipn.toUpperCase()] : undefined;
+  if (strict) {
+    if (byMPN!==undefined) return {qty:byMPN,source:'MPN',status:byMPN>0?'ok':'zero',mpnWarn:false};
+    if (byIPN!==undefined) return {qty:byIPN,source:'IPN',status:'mpnwarn',mpnWarn:true,clientLabel};
+    return {qty:null,source:null,status:'na',mpnWarn:false};
+  } else {
+    if (byIPN!==undefined) return {qty:byIPN,source:'IPN',status:byIPN>0?'ok':'zero',mpnWarn:false};
+    if (byMPN!==undefined) return {qty:byMPN,source:'MPN',status:byMPN>0?'ok':'zero',mpnWarn:false};
+    return {qty:null,source:null,status:'na',mpnWarn:false};
+  }
+}
+
+function renderStockCell(si) {
+  if (si.status==='na') return `<div class="stock-cell"><span class="s-na">—</span></div>`;
+  if (si.status==='mpnwarn') return `<div class="stock-cell">
+    <span class="stock-line"><span class="slbl">IPN</span><span class="s-mpnwarn">${si.qty}</span></span>
+    <span class="stock-line" style="color:var(--pink);font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true"></i> MPN non dispo (${si.clientLabel})</span>
+  </div>`;
+  return `<div class="stock-cell"><span class="stock-line"><span class="slbl">${si.source}</span><span class="${si.status==='ok'?'s-ok':'s-zero'}">${si.qty}</span></span></div>`;
+}
+
+async function analyzeBOM() {
+  const csvText = document.getElementById('csv-input').value.trim();
+  if (!csvText) { alert("Chargez une BOM ou collez des données CSV."); return; }
+  const rows = parseCSV(csvText);
+  if (!rows.length) { alert("Format non reconnu."); return; }
+  bomData = rows;
+  document.getElementById('bom-loading').style.display='flex';
+  document.getElementById('bom-result').style.display='none';
+  const batchSize=10; let allResults=[];
+  for (let i=0; i<rows.length; i+=batchSize) {
+    document.getElementById('bom-loading-msg').textContent=`Analyse IA : ${Math.min(i+batchSize,rows.length)}/${rows.length} composants…`;
+    const batch=rows.slice(i,i+batchSize).map((row,j)=>({
+      idx:i+j,
+      qty:findCol(row,['qty','quantity','qté']),
+      ref:findCol(row,['reference','ref','designator']),
+      mpn:findCol(row,['mpn','manufacturer part','part number']),
+      ipn:findCol(row,['ipn','internal part','approved internal']),
+      description:findCol(row,['description','desc','value']),
+      notes:findCol(row,['notes','note','comment'])
+    }));
+    try {
+      const raw=await callClaude(`Analyse:\n${JSON.stringify(batch,null,2)}`,BOM_SYS);
+      allResults=allResults.concat(JSON.parse(raw.replace(/```json|```/g,'').trim()));
+    } catch(e) {
+      allResults=allResults.concat(batch.map((_,j)=>({idx:i+j,ipn:'—',status:'error',warnings:[],note:'Erreur analyse'})));
+    }
+  }
+  renderBOMTable(rows,allResults);
+  document.getElementById('bom-loading').style.display='none';
+  document.getElementById('bom-result').style.display='block';
+}
+
+function renderBOMTable(rows,results) {
+  const tbody=document.getElementById('bom-tbody');
+  tbody.innerHTML='';
+  let cntOk=0,cntWarn=0,cntErr=0,cntMpnWarn=0;
+  const warnSummary={sensor:[],battery:[],'not-sealed':[],'msl4+':[]};
+  const icons={sensor:'ti-radar',battery:'ti-battery','not-sealed':'ti-droplet-off','msl4+':'ti-moisture'};
+  const labels={sensor:'Capteur',battery:'Batterie','not-sealed':'Non étanche','msl4+':'MSL≥4'};
+  const wlabels={sensor:'Capteurs',battery:'Piles / batteries','not-sealed':'Composants non étanches','msl4+':'MSL niveau ≥ 4'};
+
+  results.forEach((res,i)=>{
+    const row=rows[res.idx]??rows[i]??{};
+    const qty=findCol(row,['qty','quantity','qté']);
+    const ref=findCol(row,['reference','ref','designator']);
+    const mpn=findCol(row,['mpn','manufacturer part','part number']);
+    const notes=findCol(row,['notes','note','description','desc','value']);
+    const ipn=res.ipn||'—';
+    const status=res.status||'ok';
+    const warns=res.warnings||[];
+    const si=getStockInfo(ipn,mpn);
+    if(si.mpnWarn) cntMpnWarn++;
+    if(status==='ok'&&!warns.length&&!si.mpnWarn) cntOk++;
+    else if(status==='error') cntErr++;
+    else cntWarn++;
+    warns.forEach(w=>{if(warnSummary[w]) warnSummary[w].push(ref||mpn);});
+    const warnBadges=warns.map(w=>`<span class="badge b-warn" style="margin-bottom:2px"><i class="ti ${icons[w]||'ti-alert-triangle'}" aria-hidden="true"></i> ${labels[w]||w}</span>`).join(' ');
+    const mpnBadge=si.mpnWarn?`<span class="badge b-strict" style="margin-bottom:2px"><i class="ti ti-lock" aria-hidden="true"></i> MPN strict</span>`:'';
+    const statusBadge=status==='ok'&&!warns.length&&!si.mpnWarn
+      ?`<span class="badge b-ok"><i class="ti ti-check" aria-hidden="true"></i></span>`
+      :status==='error'?`<span class="badge b-err"><i class="ti ti-x" aria-hidden="true"></i></span>`:'';
+    const rowClass=status==='error'?'row-err':si.mpnWarn?'row-mpnwarn':warns.length?'row-warn':'';
+    const tr=document.createElement('tr');
+    tr.className=rowClass;
+    tr.innerHTML=`
+      <td>${qty}</td>
+      <td style="font-size:11px">${ref}</td>
+      <td style="font-size:11px;font-family:var(--mono)">${mpn}</td>
+      <td><input class="editable-ipn" value="${ipn}" data-idx="${i}" onchange="updateIPN(this)"/></td>
+      <td style="font-size:12px">${notes}${res.note?`<br><span style="color:var(--amber);font-size:11px">${res.note}</span>`:''}</td>
+      <td style="vertical-align:top">${statusBadge}${mpnBadge}${warnBadges}</td>
+      <td>${renderStockCell(si)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const cl=activeClient.nom!=='Standard'?` — ${activeClient.nom}`:'';
+  document.getElementById('bom-counters').innerHTML=`
+    <div class="counter"><div class="counter-val">${rows.length}</div><div class="counter-lbl">Composants</div></div>
+    <div class="counter"><div class="counter-val" style="color:var(--green)">${cntOk}</div><div class="counter-lbl">OK</div></div>
+    <div class="counter"><div class="counter-val" style="color:var(--amber)">${cntWarn}</div><div class="counter-lbl">Warnings</div></div>
+    ${activeClient.mpn_strict?`<div class="counter"><div class="counter-val" style="color:var(--pink)">${cntMpnWarn}</div><div class="counter-lbl">MPN non conf.${cl}</div></div>`:''}
+    <div class="counter"><div class="counter-val" style="color:var(--red)">${cntErr}</div><div class="counter-lbl">Erreurs</div></div>`;
+
+  const warnItems=Object.entries(warnSummary).filter(([,v])=>v.length);
+  document.getElementById('bom-warnings-section').innerHTML=warnItems.length?`<div class="warn-box">
+    <div class="section-label" style="margin-top:0">Composants sensibles détectés</div>
+    ${warnItems.map(([k,v])=>`<div class="warn-item"><i class="ti ${icons[k]}" aria-hidden="true"></i><div><strong>${wlabels[k]}</strong><br><span style="font-size:12px;color:var(--text2)">${v.join(', ')}</span></div></div>`).join('')}
+  </div>`:'';
+}
+
+function updateIPN(input) {
+  const idx=parseInt(input.dataset.idx);
+  if(bomData[idx]){
+    const key=Object.keys(bomData[idx]).find(k=>k.toLowerCase().includes('ipn')||k.toLowerCase().includes('internal'))||'IPN';
+    bomData[idx][key]=input.value;
+  }
+}
+
+function exportCSV() {
+  if(!bomData.length){alert("Aucune donnée.");return;}
+  document.querySelectorAll('.editable-ipn').forEach((inp,i)=>{
+    if(bomData[i]){
+      const key=Object.keys(bomData[i]).find(k=>k.toLowerCase().includes('ipn')||k.toLowerCase().includes('internal'))||'IPN';
+      bomData[i][key]=inp.value;
+    }
+  });
+  const headers=Object.keys(bomData[0]);
+  const lines=[headers.join(','),...bomData.map(r=>headers.map(h=>`"${(r[h]||'').replace(/"/g,'""')}"`).join(','))];
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
+  a.download='BOM_codifiee.csv'; a.click();
+}
+
+function clearBOM() {
+  document.getElementById('csv-input').value='';
+  document.getElementById('bom-url').value='';
+  document.getElementById('bom-url-status').innerHTML='';
+  document.getElementById('bom-result').style.display='none';
+  bomData=[];
+}
+</script>
+</body>
+</html>
