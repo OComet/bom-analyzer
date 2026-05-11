@@ -705,11 +705,13 @@ function renderTopbar() {
 function parseCSV(text) {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
-  const isTSV = lines[0].includes('\t');
-  const sep = isTSV ? '\t' : ',';
+
+  // Detect separator: tab > comma (semicolons inside cells are MPN separators, not column separators)
+  const firstLine = lines[0];
+  const sep = firstLine.includes('\t') ? '\t' : ',';
 
   function splitLine(line) {
-    if (isTSV) return line.split('\t').map(c => c.trim().replace(/^"|"$/g,''));
+    if (sep === '\t') return line.split('\t').map(c => c.replace(/^"|"$/g,'').trim());
     const result = [];
     let cur = '', inQ = false;
     for (let i = 0; i < line.length; i++) {
@@ -725,7 +727,7 @@ function parseCSV(text) {
     return result;
   }
 
-  const headers = splitLine(lines[0]).map(h => h.replace(/^"|"$/g,'').trim());
+  const headers = splitLine(firstLine).map(h => h.replace(/^"|"$/g,'').trim());
   return lines.slice(1).map(line => {
     const cells = splitLine(line);
     const obj = {};
@@ -896,12 +898,29 @@ RÉPONSE JSON uniquement:
 {"ipn":"...","type":"C|CT|R|OTHER","explanation":"...","confidence":"high|medium|low","warnings":["..."]}`;
 
 const BOM_SYS = `Tu es un ingénieur hardware expert. Pour chaque ligne BOM:
-1. Génère ou vérifie l'IPN selon les règles de codification
-2. Détecte: sensor (capteurs pression/humidité/temp), battery (piles/batteries), not-sealed (relais non étanche), msl4+ (MSL≥4)
-3. Vérifie cohérence MPN/IPN/Notes
-RÈGLES: condensateur C(), tantale CT(), résistance R(), autre=MPN sans suffixes conditionnement.
-RÉPONSE JSON tableau uniquement:
-[{"idx":0,"ipn":"...","status":"ok|warn|error","warnings":["sensor|battery|not-sealed|msl4+"],"note":"remarque courte"}]`;
+
+RÈGLES IPN:
+- Condensateur céramique/film: C(val)-(boitier)-(V)-(tolP)-(diélec). Ex: C10U-0603-16V-10P-X5R
+- Condensateur tantale: CT(val)-(boitier A/B/C/D/E)-(V)-(tolP)-(ESR). Ex: CT10U-A-20V-20P-5R
+- Résistance: R(val)-(boitier)[-(PPM si <100)][-(W si non standard)]. Ex: R10K-0603, R40K2-0603-0W33
+- Autre: MPN sans suffixes conditionnement (#PBF, #TRPBF, TR, -T, /TR, REEL, TAPE)
+
+TRAITEMENT:
+1. Si le champ IPN (ipn) est déjà renseigné (non vide, non "—"):
+   - CONSERVER cet IPN tel quel
+   - Vérifier sa cohérence avec le MPN et les notes
+   - Si incohérence détectée: status="warn" et expliquer dans note
+   - Si cohérent: status="ok"
+
+2. Si le champ IPN est vide ou "—":
+   - Le champ MPN peut contenir PLUSIEURS références séparées par ";" — utiliser le premier MPN comme référence principale
+   - Générer l'IPN selon les règles ci-dessus
+   - Vérifier cohérence avec les notes si présentes
+
+3. Détecter composants sensibles: sensor (capteurs pression/humidité/temp), battery (piles/batteries), not-sealed (relais non étanche), msl4+ (MSL≥4)
+
+RÉPONSE JSON tableau uniquement, un objet par ligne:
+[{"idx":0,"ipn":"...","status":"ok|warn|error","warnings":["sensor|battery|not-sealed|msl4+"],"note":"remarque courte si problème"}]`;
 
 async function generateIPN() {
   const mpn = document.getElementById('mpn-input').value.trim();
