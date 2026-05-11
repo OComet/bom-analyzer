@@ -935,11 +935,11 @@ async function analyzeBOM() {
     document.getElementById('bom-loading-msg').textContent=`Analyse IA : ${Math.min(i+batchSize,rows.length)}/${rows.length} composants…`;
     const batch=rows.slice(i,i+batchSize).map((row,j)=>({
       idx:i+j,
-      qty:findCol(row,['qty','quantity','qté']),
-      ref:findCol(row,['reference','ref','designator']),
+      qty:findCol(row,['aggregated qty','qty','quantity','qté']),
+      ref:findCol(row,['designator','reference','ref']),
       mpn:findCol(row,['mpn','manufacturer part','part number']),
-      ipn:findCol(row,['ipn','internal part','approved internal']),
-      description:findCol(row,['description','desc','value']),
+      ipn:findCol(row,['approved internal part number','approved internal','ipn','internal part']),
+      description:findCol(row,['approved parts','description','desc','value']),
       notes:findCol(row,['notes','note','comment'])
     }));
     try {
@@ -965,10 +965,10 @@ function renderBOMTable(rows,results) {
 
   results.forEach((res,i)=>{
     const row=rows[res.idx]??rows[i]??{};
-    const qty=findCol(row,['qty','quantity','qté']);
-    const ref=findCol(row,['reference','ref','designator']);
+    const qty=findCol(row,['aggregated qty','qty','quantity','qté']);
+    const ref=findCol(row,['designator','reference','ref']);
     const mpn=findCol(row,['mpn','manufacturer part','part number']);
-    const notes=findCol(row,['notes','note','description','desc','value']);
+    const notes=findCol(row,['notes','note','approved parts','description','desc','value']);
     const ipn=res.ipn||'—';
     const status=res.status||'ok';
     const warns=res.warnings||[];
