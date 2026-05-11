@@ -705,12 +705,31 @@ function renderTopbar() {
 function parseCSV(text) {
   const lines = text.trim().split(/\r?\n/);
   if (lines.length < 2) return [];
-  const sep = lines[0].includes('\t') ? '\t' : ',';
-  const headers = lines[0].split(sep).map(h => h.trim().replace(/"/g,''));
+  const isTSV = lines[0].includes('\t');
+  const sep = isTSV ? '\t' : ',';
+
+  function splitLine(line) {
+    if (isTSV) return line.split('\t').map(c => c.trim().replace(/^"|"$/g,''));
+    const result = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) {
+        result.push(cur.trim()); cur = '';
+      } else cur += ch;
+    }
+    result.push(cur.trim());
+    return result;
+  }
+
+  const headers = splitLine(lines[0]).map(h => h.replace(/^"|"$/g,'').trim());
   return lines.slice(1).map(line => {
-    const cells = line.split(sep).map(c => c.trim().replace(/"/g,''));
+    const cells = splitLine(line);
     const obj = {};
-    headers.forEach((h,j) => obj[h] = cells[j]||'');
+    headers.forEach((h,j) => obj[h] = (cells[j]||'').replace(/^"|"$/g,'').trim());
     return obj;
   }).filter(r => Object.values(r).some(v=>v));
 }
