@@ -1113,17 +1113,35 @@ function updateIPN(input) {
 
 function exportCSV() {
   if(!bomData.length){alert("Aucune donnée.");return;}
+
+  // 1. Mettre à jour les IPN éditables
   document.querySelectorAll('.editable-ipn').forEach((inp,i)=>{
     if(bomData[i]){
       const key=Object.keys(bomData[i]).find(k=>k.toLowerCase().includes('ipn')||k.toLowerCase().includes('internal'))||'IPN';
       bomData[i][key]=inp.value;
     }
   });
-  const headers=Object.keys(bomData[0]);
-  const lines=[headers.join(','),...bomData.map(r=>headers.map(h=>`"${(r[h]||'').replace(/"/g,'""')}"`).join(','))];
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));
-  a.download='BOM_codifiee.csv'; a.click();
+
+  // 2. Mettre à jour la colonne "Reçus" avec le stock du fichier stock
+  const recusKey = Object.keys(bomData[0]).find(k => k.toLowerCase().includes('reçus') || k.toLowerCase().includes('recus') || k.toLowerCase() === 'stock');
+  if (recusKey) {
+    bomData.forEach(row => {
+      const ipn = (row['Approved internal part number']||row['IPN']||row['ipn']||'').trim().toUpperCase();
+      const mpn = (row['MPN']||row['mpn']||'').trim().toUpperCase();
+      const si = getStockInfo(ipn, mpn);
+      if (si.qty !== null) row[recusKey] = String(si.qty);
+    });
+  }
+
+  // 3. Export TSV (même format que l'import — évite les problèmes de virgules)
+  const headers = Object.keys(bomData[0]);
+  const lines = [
+    headers.join('\t'),
+    ...bomData.map(r => headers.map(h => String(r[h]||'').replace(/\t/g,' ')).join('\t'))
+  ];
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([lines.join('\n')], {type:'text/tab-separated-values'}));
+  a.download = 'BOM_codifiee.tsv'; a.click();
 }
 
 function clearBOM() {
