@@ -703,15 +703,47 @@ function renderTopbar() {
 }
 
 function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  if (lines.length < 2) return [];
+  const raw = text.trim();
+  const firstLine = raw.split(/\r?\n/)[0];
+  const isTSV = firstLine.includes('\t');
 
-  // Detect separator: tab > comma (semicolons inside cells are MPN separators, not column separators)
-  const firstLine = lines[0];
-  const sep = firstLine.includes('\t') ? '\t' : ',';
+  if (isTSV) {
+    // TSV: simple split, no quoting issues, each physical line = one row
+    const lines = raw.split(/\r?\n/);
+    const headers = lines[0].split('\t').map(h => h.trim());
+    return lines.slice(1).map(line => {
+      const cells = line.split('\t').map(c => c.trim());
+      const obj = {};
+      headers.forEach((h,j) => obj[h] = cells[j]||'');
+      return obj;
+    }).filter(r => {
+      const mpn = (r['MPN']||r['mpn']||'').trim();
+      const desig = (r['Designator']||r['designator']||r['Reference']||r['reference']||'').trim();
+      const ipn = (r['Approved internal part number']||r['IPN']||r['ipn']||'').trim();
+      return desig !== '' && (mpn !== '' || ipn !== '');
+    });
+  }
 
-  function splitLine(line) {
-    if (sep === '\t') return line.split('\t').map(c => c.replace(/^"|"$/g,'').trim());
+  // CSV: handle quoted multiline fields
+  function parseLogicalRows(raw) {
+    const rows = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < raw.length; i++) {
+      const ch = raw[i];
+      if (ch === '"') {
+        if (inQ && raw[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+        cur += ch;
+      } else if ((ch === '\n' || (ch === '\r' && raw[i+1] === '\n')) && !inQ) {
+        if (ch === '\r') i++;
+        rows.push(cur); cur = '';
+      } else cur += ch;
+    }
+    if (cur.trim()) rows.push(cur);
+    return rows;
+  }
+
+  function splitCSVLine(line) {
     const result = [];
     let cur = '', inQ = false;
     for (let i = 0; i < line.length; i++) {
@@ -720,20 +752,27 @@ function parseCSV(text) {
         if (inQ && line[i+1] === '"') { cur += '"'; i++; }
         else inQ = !inQ;
       } else if (ch === ',' && !inQ) {
-        result.push(cur.trim()); cur = '';
+        result.push(cur); cur = '';
       } else cur += ch;
     }
-    result.push(cur.trim());
-    return result;
+    result.push(cur);
+    return result.map(c => c.replace(/^"|"$/g,'').trim());
   }
 
-  const headers = splitLine(firstLine).map(h => h.replace(/^"|"$/g,'').trim());
-  return lines.slice(1).map(line => {
-    const cells = splitLine(line);
+  const logicalRows = parseLogicalRows(raw);
+  if (logicalRows.length < 2) return [];
+  const headers = splitCSVLine(logicalRows[0]);
+  return logicalRows.slice(1).map(line => {
+    const cells = splitCSVLine(line);
     const obj = {};
-    headers.forEach((h,j) => obj[h] = (cells[j]||'').replace(/^"|"$/g,'').trim());
+    headers.forEach((h,j) => obj[h] = (cells[j]||'').trim());
     return obj;
-  }).filter(r => Object.values(r).some(v=>v));
+  }).filter(r => {
+    const mpn = (r['MPN']||r['mpn']||'').trim();
+    const desig = (r['Designator']||r['designator']||r['Reference']||r['reference']||'').trim();
+    const ipn = (r['Approved internal part number']||r['IPN']||r['ipn']||'').trim();
+    return desig !== '' && (mpn !== '' || ipn !== '');
+  });
 }
 
 function findCol(row, candidates) {
