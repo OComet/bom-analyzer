@@ -453,6 +453,13 @@ tr:hover td { background: var(--surface2); }
       <p>Renseigne les URLs de tes Google Sheets publiés en CSV.<br>Clients et stock sont chargés une fois ; la BOM est rechargée à chaque analyse.</p>
     </div>
 
+    <div class="card" style="margin-bottom:16px; border:1.5px solid var(--blue); background:var(--blue-bg);">
+      <div class="setup-card-title" style="margin-bottom:10px"><i class="ti ti-key" aria-hidden="true" style="color:var(--blue)"></i> <span style="color:var(--blue)">Clé API Anthropic</span> <span class="fixed-tag">obligatoire</span></div>
+      <label>Clé API (commence par sk-ant-…)</label>
+      <input type="text" id="setup-api-key" placeholder="sk-ant-api03-…" autocomplete="off" />
+      <p class="hint">Obtenir sur <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--blue)">console.anthropic.com</a> → API Keys. Stockée uniquement dans cette page.</p>
+    </div>
+
     <div class="setup-grid">
       <div class="setup-card">
         <div class="setup-card-title"><i class="ti ti-users" aria-hidden="true"></i> Google Sheet clients <span class="fixed-tag">fixe</span></div>
@@ -653,6 +660,7 @@ let stockByIPN = {}, stockByMPN = {};
 let clientsList = [];
 let activeClient = { nom:'Standard', mpn_strict:false, notes:'' };
 let sourceStatus = { clients:'none', stock:'none' };
+let apiKey = "";
 
 function switchTab(name) {
   const names = ['bom','codif','config'];
@@ -725,6 +733,13 @@ async function loadAll() {
   const btn = document.getElementById('btn-load-all');
   btn.disabled = true;
   document.getElementById('setup-error').style.display = 'none';
+  apiKey = document.getElementById("setup-api-key").value.trim();
+  if (!apiKey) {
+    document.getElementById("setup-error").textContent = "Clé API Anthropic obligatoire.";
+    document.getElementById("setup-error").style.display = "block";
+    btn.disabled = false;
+    return;
+  }
   const clientsUrl = document.getElementById('setup-clients-url').value.trim();
   const stockUrl = document.getElementById('setup-stock-url').value.trim();
   if (!clientsUrl && !stockUrl) {
@@ -840,7 +855,7 @@ async function loadBOM() {
 async function callClaude(prompt, sys) {
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method:"POST",
-    headers:{"Content-Type":"application/json"},
+    headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
     body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:1000, system:sys, messages:[{role:"user",content:prompt}] })
   });
   const data = await resp.json();
