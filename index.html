@@ -716,11 +716,6 @@ function parseCSV(text) {
       const obj = {};
       headers.forEach((h,j) => obj[h] = cells[j]||'');
       return obj;
-    }).filter(r => {
-      const mpn = (r['MPN']||r['mpn']||'').trim();
-      const desig = (r['Designator']||r['designator']||r['Reference']||r['reference']||'').trim();
-      const ipn = (r['Approved internal part number']||r['IPN']||r['ipn']||'').trim();
-      return desig !== '' && (mpn !== '' || ipn !== '');
     });
   }
 
@@ -767,7 +762,11 @@ function parseCSV(text) {
     const obj = {};
     headers.forEach((h,j) => obj[h] = (cells[j]||'').trim());
     return obj;
-  }).filter(r => {
+  }).filter(r => Object.values(r).some(v => v));
+}
+
+function filterBOMRows(rows) {
+  return rows.filter(r => {
     const mpn = (r['MPN']||r['mpn']||'').trim();
     const desig = (r['Designator']||r['designator']||r['Reference']||r['reference']||'').trim();
     const ipn = (r['Approved internal part number']||r['IPN']||r['ipn']||'').trim();
@@ -1017,8 +1016,8 @@ function renderStockCell(si) {
 async function analyzeBOM() {
   const csvText = document.getElementById('csv-input').value.trim();
   if (!csvText) { alert("Chargez une BOM ou collez des données CSV."); return; }
-  const rows = parseCSV(csvText);
-  if (!rows.length) { alert("Format non reconnu."); return; }
+  const rows = filterBOMRows(parseCSV(csvText));
+  if (!rows.length) { alert("Format non reconnu ou aucun composant valide trouvé."); return; }
   bomData = rows;
   document.getElementById('bom-loading').style.display='flex';
   document.getElementById('bom-result').style.display='none';
