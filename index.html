@@ -291,6 +291,52 @@ textarea {
 .b-info { background:var(--blue-bg); color:var(--blue); }
 
 /* TABLE */
+.filter-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.filter-btn:hover { background: var(--surface2); color: var(--text); }
+.filter-btn.active { background: var(--text); color: white; border-color: transparent; }
+.filter-btn.active.f-warn { background: var(--amber); }
+.filter-btn.active.f-err { background: var(--red); }
+.filter-btn.active.f-mpn { background: var(--pink); }
+.filter-btn.active.f-sensor { background: #5B6FBE; }
+.filter-btn.active.f-battery { background: #5B6FBE; }
+.filter-btn.active.f-sealed { background: #5B6FBE; }
+.filter-btn.active.f-msl { background: #5B6FBE; }
+.filter-count {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.25);
+  font-weight: 600;
+}
+.filter-btn:not(.active) .filter-count {
+  background: var(--surface2);
+  color: var(--text2);
+}
+.filter-sep { width: 1px; height: 20px; background: var(--border); margin: 0 2px; }
+.no-results-row td { text-align: center; color: var(--text3); padding: 24px; font-size: 13px; }
+
 .bom-table-wrap {
   overflow-x: auto;
   margin-top: 1rem;
@@ -549,6 +595,18 @@ tr:hover td { background: var(--surface2); }
       <div id="bom-result" style="display:none">
         <div id="bom-counters" class="counter-row"></div>
         <div id="bom-warnings-section"></div>
+        <div class="filter-bar" id="filter-bar" style="display:none">
+          <button class="filter-btn f-all active" onclick="setFilter('all',this)"><i class="ti ti-list" aria-hidden="true"></i> Tous <span class="filter-count" id="fc-all">0</span></button>
+          <div class="filter-sep"></div>
+          <button class="filter-btn f-err" onclick="setFilter('error',this)"><i class="ti ti-x" aria-hidden="true"></i> Erreurs <span class="filter-count" id="fc-err">0</span></button>
+          <button class="filter-btn f-warn" onclick="setFilter('warn',this)"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Warnings <span class="filter-count" id="fc-warn">0</span></button>
+          <button class="filter-btn f-mpn" onclick="setFilter('mpn',this)"><i class="ti ti-lock" aria-hidden="true"></i> MPN strict <span class="filter-count" id="fc-mpn">0</span></button>
+          <div class="filter-sep"></div>
+          <button class="filter-btn f-sensor" onclick="setFilter('sensor',this)"><i class="ti ti-radar" aria-hidden="true"></i> Capteurs <span class="filter-count" id="fc-sensor">0</span></button>
+          <button class="filter-btn f-battery" onclick="setFilter('battery',this)"><i class="ti ti-battery" aria-hidden="true"></i> Batteries <span class="filter-count" id="fc-battery">0</span></button>
+          <button class="filter-btn f-sealed" onclick="setFilter('not-sealed',this)"><i class="ti ti-droplet-off" aria-hidden="true"></i> Non étanches <span class="filter-count" id="fc-sealed">0</span></button>
+          <button class="filter-btn f-msl" onclick="setFilter('msl4+',this)"><i class="ti ti-moisture" aria-hidden="true"></i> MSL≥4 <span class="filter-count" id="fc-msl">0</span></button>
+        </div>
         <div class="bom-table-wrap">
           <table>
             <thead>
@@ -1054,6 +1112,7 @@ function renderBOMTable(rows,results) {
   const labels={sensor:'Capteur',battery:'Batterie','not-sealed':'Non étanche','msl4+':'MSL≥4'};
   const wlabels={sensor:'Capteurs',battery:'Piles / batteries','not-sealed':'Composants non étanches','msl4+':'MSL niveau ≥ 4'};
 
+  rowMeta = [];
   results.forEach((res,i)=>{
     const row=rows[res.idx]??rows[i]??{};
     const qty=findCol(row,['aggregated qty','qty','quantity','qté']);
@@ -1086,6 +1145,7 @@ function renderBOMTable(rows,results) {
       <td style="vertical-align:top">${statusBadge}${mpnBadge}${warnBadges}</td>
       <td>${renderStockCell(si)}</td>`;
     tbody.appendChild(tr);
+    rowMeta.push({ status, warnings: warns, mpnWarn: si.mpnWarn });
   });
 
   const cl=activeClient.nom!=='Standard'?` — ${activeClient.nom}`:'';
@@ -1096,12 +1156,90 @@ function renderBOMTable(rows,results) {
     ${activeClient.mpn_strict?`<div class="counter"><div class="counter-val" style="color:var(--pink)">${cntMpnWarn}</div><div class="counter-lbl">MPN non conf.${cl}</div></div>`:''}
     <div class="counter"><div class="counter-val" style="color:var(--red)">${cntErr}</div><div class="counter-lbl">Erreurs</div></div>`;
 
+  updateFilterCounts();
+  currentFilter = 'all';
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.classList.contains('f-all')));
+
   const warnItems=Object.entries(warnSummary).filter(([,v])=>v.length);
   document.getElementById('bom-warnings-section').innerHTML=warnItems.length?`<div class="warn-box">
     <div class="section-label" style="margin-top:0">Composants sensibles détectés</div>
     ${warnItems.map(([k,v])=>`<div class="warn-item"><i class="ti ${icons[k]}" aria-hidden="true"></i><div><strong>${wlabels[k]}</strong><br><span style="font-size:12px;color:var(--text2)">${v.join(', ')}</span></div></div>`).join('')}
   </div>`:'';
 }
+
+// ---- FILTER SYSTEM ----
+let currentFilter = 'all';
+let rowMeta = []; // stores {status, warnings, mpnWarn} per row
+
+function setFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilter();
+}
+
+function applyFilter() {
+  const rows = document.querySelectorAll('#bom-tbody tr:not(.no-results-row)');
+  let visible = 0;
+  rows.forEach((tr, i) => {
+    const meta = rowMeta[i];
+    if (!meta) { tr.style.display = ''; return; }
+    let show = false;
+    if (currentFilter === 'all') show = true;
+    else if (currentFilter === 'error') show = meta.status === 'error';
+    else if (currentFilter === 'warn') show = meta.status === 'warn' || (meta.warnings && meta.warnings.length > 0);
+    else if (currentFilter === 'mpn') show = meta.mpnWarn;
+    else show = meta.warnings && meta.warnings.includes(currentFilter);
+    tr.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+
+  // Show/hide no-results row
+  let noRes = document.querySelector('.no-results-row');
+  if (visible === 0) {
+    if (!noRes) {
+      const tr = document.createElement('tr');
+      tr.className = 'no-results-row';
+      tr.innerHTML = '<td colspan="7">Aucun composant pour ce filtre</td>';
+      document.getElementById('bom-tbody').appendChild(tr);
+    }
+  } else if (noRes) {
+    noRes.remove();
+  }
+}
+
+function updateFilterCounts() {
+  const counts = { all:0, error:0, warn:0, mpn:0, sensor:0, battery:0, 'not-sealed':0, 'msl4+':0 };
+  rowMeta.forEach(m => {
+    counts.all++;
+    if (m.status === 'error') counts.error++;
+    if (m.status === 'warn' || (m.warnings && m.warnings.length)) counts.warn++;
+    if (m.mpnWarn) counts.mpn++;
+    if (m.warnings) m.warnings.forEach(w => { if (counts[w] !== undefined) counts[w]++; });
+  });
+  document.getElementById('fc-all').textContent = counts.all;
+  document.getElementById('fc-err').textContent = counts.error;
+  document.getElementById('fc-warn').textContent = counts.warn;
+  document.getElementById('fc-mpn').textContent = counts.mpn;
+  document.getElementById('fc-sensor').textContent = counts.sensor;
+  document.getElementById('fc-battery').textContent = counts.battery;
+  document.getElementById('fc-sealed').textContent = counts['not-sealed'];
+  document.getElementById('fc-msl').textContent = counts['msl4+'];
+
+  // Hide filter buttons with 0 results (except "Tous" and active filters)
+  const map = {error:'fc-err',warn:'fc-warn',mpn:'fc-mpn',sensor:'fc-sensor',battery:'fc-battery','not-sealed':'fc-sealed','msl4+':'fc-msl'};
+  const filterMap = {'error':'.f-err','warn':'.f-warn','mpn':'.f-mpn','sensor':'.f-sensor','battery':'.f-battery','not-sealed':'.f-sealed','msl4+':'.f-msl'};
+  Object.entries(counts).forEach(([k,v]) => {
+    if (k === 'all') return;
+    const btn = document.querySelector('.filter-btn' + (filterMap[k]||''));
+    if (btn) btn.style.display = v > 0 ? '' : 'none';
+  });
+
+  // Show filter bar only if there's something to filter
+  const hasIssues = counts.error > 0 || counts.warn > 0 || counts.mpn > 0;
+  document.getElementById('filter-bar').style.display = hasIssues ? 'flex' : 'none';
+}
+// ---- END FILTER SYSTEM ----
 
 function updateIPN(input) {
   const idx=parseInt(input.dataset.idx);
@@ -1152,5 +1290,447 @@ function clearBOM() {
   bomData=[];
 }
 </script>
+
+<!-- CHAT WIDGET -->
+<style>
+.chat-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--text);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  z-index: 1000;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.chat-fab:hover { transform: scale(1.08); }
+.chat-fab .badge-notif {
+  position: absolute;
+  top: -2px; right: -2px;
+  width: 14px; height: 14px;
+  background: #993556;
+  border-radius: 50%;
+  border: 2px solid white;
+  display: none;
+}
+.chat-fab .badge-notif.visible { display: block; }
+
+.chat-panel {
+  position: fixed;
+  bottom: 90px;
+  right: 28px;
+  width: 380px;
+  max-width: calc(100vw - 40px);
+  height: 520px;
+  max-height: calc(100vh - 120px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+  z-index: 999;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.chat-panel.open { display: flex; }
+
+.chat-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface2);
+  flex-shrink: 0;
+}
+.chat-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.chat-header-title i { color: var(--text2); }
+.chat-context-badge {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: var(--green-bg);
+  color: var(--green);
+  font-weight: 500;
+}
+.chat-context-badge.empty {
+  background: var(--surface2);
+  color: var(--text3);
+}
+.chat-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text2);
+  font-size: 16px;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+.chat-close:hover { color: var(--text); }
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 88%;
+}
+.chat-msg.user { align-self: flex-end; }
+.chat-msg.assistant { align-self: flex-start; }
+
+.chat-bubble {
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  word-break: break-word;
+}
+.chat-msg.user .chat-bubble {
+  background: var(--text);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+.chat-msg.assistant .chat-bubble {
+  background: var(--surface2);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+  border: 1px solid var(--border);
+}
+.chat-msg-time {
+  font-size: 10px;
+  color: var(--text3);
+  padding: 0 4px;
+}
+.chat-msg.user .chat-msg-time { text-align: right; }
+
+.chat-typing {
+  align-self: flex-start;
+  padding: 9px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  border-bottom-left-radius: 4px;
+  display: none;
+  gap: 4px;
+  align-items: center;
+}
+.chat-typing.visible { display: flex; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); animation: bounce 1.2s infinite; }
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+
+.chat-source {
+  font-size: 10px;
+  color: var(--blue);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 3px;
+  padding: 0 4px;
+}
+
+.chat-footer {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  flex-shrink: 0;
+  background: var(--surface);
+}
+.chat-input {
+  flex: 1;
+  padding: 8px 11px;
+  font-size: 13px;
+  font-family: var(--sans);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  resize: none;
+  max-height: 100px;
+  min-height: 36px;
+  line-height: 1.5;
+  outline: none;
+}
+.chat-input:focus { border-color: var(--text); }
+.chat-send {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius);
+  background: var(--text);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.chat-send:hover { opacity: 0.8; }
+.chat-send:disabled { opacity: 0.3; cursor: default; }
+
+.chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px 0;
+  flex-shrink: 0;
+}
+.chat-suggestion {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+  font-family: var(--sans);
+  white-space: nowrap;
+}
+.chat-suggestion:hover { background: var(--border); color: var(--text); }
+</style>
+
+<!-- FAB button -->
+<button class="chat-fab" onclick="toggleChat()" title="Assistant IA">
+  <i class="ti ti-message-circle" id="chat-fab-icon" aria-hidden="true"></i>
+  <span class="badge-notif" id="chat-notif"></span>
+</button>
+
+<!-- Chat panel -->
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-header">
+    <div class="chat-header-title">
+      <i class="ti ti-sparkles" aria-hidden="true"></i>
+      Assistant BOM
+      <span class="chat-context-badge empty" id="chat-ctx-badge">Aucune BOM</span>
+    </div>
+    <button class="chat-close" onclick="toggleChat()"><i class="ti ti-x" aria-hidden="true"></i></button>
+  </div>
+
+  <div class="chat-suggestions" id="chat-suggestions">
+    <button class="chat-suggestion" onclick="sendSuggestion(this)">Composants critiques en stock ?</button>
+    <button class="chat-suggestion" onclick="sendSuggestion(this)">Composants sensibles détectés ?</button>
+    <button class="chat-suggestion" onclick="sendSuggestion(this)">Vérifier les IPN condensateurs</button>
+    <button class="chat-suggestion" onclick="sendSuggestion(this)">Alternatives pour un composant ?</button>
+  </div>
+
+  <div class="chat-messages" id="chat-messages">
+    <div class="chat-msg assistant">
+      <div class="chat-bubble">Bonjour ! Je suis votre assistant BOM. Je peux analyser les composants chargés, rechercher des datasheets, trouver des alternatives, ou répondre à toute question technique. Chargez une BOM pour commencer.</div>
+      <div class="chat-msg-time">Maintenant</div>
+    </div>
+  </div>
+
+  <div class="chat-typing" id="chat-typing">
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+  </div>
+
+  <div class="chat-footer">
+    <textarea class="chat-input" id="chat-input" placeholder="Posez une question sur votre BOM…" rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"
+      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+    <button class="chat-send" id="chat-send-btn" onclick="sendChat()"><i class="ti ti-send" aria-hidden="true"></i></button>
+  </div>
+</div>
+
+<script>
+let chatHistory = [];
+let chatOpen = false;
+
+function toggleChat() {
+  chatOpen = !chatOpen;
+  const panel = document.getElementById('chat-panel');
+  const icon = document.getElementById('chat-fab-icon');
+  panel.classList.toggle('open', chatOpen);
+  icon.className = chatOpen ? 'ti ti-x' : 'ti ti-message-circle';
+  document.getElementById('chat-notif').classList.remove('visible');
+  if (chatOpen) {
+    updateChatContext();
+    document.getElementById('chat-input').focus();
+  }
+}
+
+function updateChatContext() {
+  const badge = document.getElementById('chat-ctx-badge');
+  if (bomData && bomData.length > 0) {
+    badge.textContent = bomData.length + ' composants';
+    badge.className = 'chat-context-badge';
+    // Hide suggestions after first real interaction
+    if (chatHistory.length === 0) {
+      document.getElementById('chat-suggestions').style.display = 'flex';
+    }
+  } else {
+    badge.textContent = 'Aucune BOM';
+    badge.className = 'chat-context-badge empty';
+  }
+}
+
+function sendSuggestion(btn) {
+  document.getElementById('chat-input').value = btn.textContent;
+  document.getElementById('chat-suggestions').style.display = 'none';
+  sendChat();
+}
+
+function getBOMContext() {
+  if (!bomData || !bomData.length) return "Aucune BOM chargée.";
+  const rows = bomData.map(r => {
+    const qty   = findCol(r,['aggregated qty','qty','quantity','qté']);
+    const ref   = findCol(r,['designator','reference','ref']);
+    const mpn   = findCol(r,['mpn','manufacturer part','part number']);
+    const ipn   = findCol(r,['approved internal part number','approved internal','ipn','internal part']);
+    const notes = findCol(r,['approved parts','notes','note','description']);
+    const stock = findCol(r,['reçus','recus','stock']);
+    return `${ref} | QTY:${qty} | MPN:${mpn} | IPN:${ipn} | Stock:${stock} | Notes:${notes}`;
+  }).join('\n');
+
+  const clientInfo = activeClient ? `Client: ${activeClient.nom} (MPN strict: ${activeClient.mpn_strict?'oui':'non'})` : '';
+  const stockInfo  = (Object.keys(stockByIPN).length > 0)
+    ? `Fichier stock chargé: ${Object.keys(stockByIPN).length} IPN, ${Object.keys(stockByMPN).length} MPN`
+    : 'Fichier stock non chargé';
+
+  return `${clientInfo}\n${stockInfo}\n\nBOM (${bomData.length} composants):\nRef | Qty | MPN | IPN | Stock | Notes\n${rows}`;
+}
+
+function addMessage(role, text, source) {
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + role;
+  const now = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
+  div.innerHTML = `<div class="chat-bubble">${text.replace(/\n/g,'<br>').replace(/\`([^\`]+)\`/g,'<code style="font-family:var(--mono);background:var(--surface2);padding:1px 5px;border-radius:3px">$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')}</div>
+    ${source ? `<div class="chat-source"><i class="ti ti-world" aria-hidden="true"></i> ${source}</div>` : ''}
+    <div class="chat-msg-time">${now}</div>`;
+  const msgs = document.getElementById('chat-messages');
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  if (!apiKey) { addMessage('assistant', '⚠️ Clé API non configurée. Veuillez relancer la configuration.'); return; }
+
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('chat-send-btn').disabled = true;
+  document.getElementById('chat-suggestions').style.display = 'none';
+
+  addMessage('user', text);
+  chatHistory.push({ role:'user', content: text });
+
+  document.getElementById('chat-typing').classList.add('visible');
+  const msgs = document.getElementById('chat-messages');
+  msgs.scrollTop = msgs.scrollHeight;
+
+  const systemPrompt = `Tu es un assistant expert en électronique et gestion de composants BOM (Bill of Materials).
+Tu as accès au contexte complet de la BOM chargée et tu peux faire des recherches web pour trouver des datasheets, des alternatives de composants, des informations techniques.
+
+CONTEXTE BOM ACTUEL:
+${getBOMContext()}
+
+RÈGLES DE CODIFICATION IPN:
+- Condensateur: C(val)-(boitier)-(V)-(tolP)-(diélec). Ex: C10U-0603-16V-10P-X5R
+- Tantale: CT(val)-(boitier)-(V)-(tolP)-(ESR). Ex: CT10U-A-20V-20P-5R
+- Résistance: R(val)-(boitier)[-(PPM)][-(W)]. Ex: R10K-0603
+- Autre: MPN sans suffixes conditionnement
+
+Réponds en français, de manière concise et technique. Pour les recherches de composants, utilise l'outil web_search.`;
+
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5",
+        max_tokens: 1024,
+        system: systemPrompt,
+        tools: [{
+          type: "web_search_20250305",
+          name: "web_search"
+        }],
+        messages: chatHistory
+      })
+    });
+
+    const data = await resp.json();
+    document.getElementById('chat-typing').classList.remove('visible');
+
+    if (data.error) {
+      addMessage('assistant', '⚠️ Erreur API : ' + data.error.message);
+      chatHistory.pop();
+    } else {
+      // Extract text and search sources from response
+      let fullText = '';
+      let sources = [];
+      data.content.forEach(block => {
+        if (block.type === 'text') fullText += block.text;
+        if (block.type === 'tool_result') {
+          try {
+            const res = JSON.parse(block.content);
+            if (res.results) sources = res.results.slice(0,2).map(r => r.url || r.title).filter(Boolean);
+          } catch(e) {}
+        }
+      });
+
+      // Also check for web search results in tool_use blocks
+      data.content.forEach(block => {
+        if (block.type === 'tool_use' && block.name === 'web_search') {
+          sources.push('Recherche: ' + (block.input.query || ''));
+        }
+      });
+
+      const sourceText = sources.length ? sources.join(' · ') : '';
+      addMessage('assistant', fullText || '(Pas de réponse)', sourceText);
+      chatHistory.push({ role:'assistant', content: data.content });
+
+      // Notify if panel closed
+      if (!chatOpen) {
+        document.getElementById('chat-notif').classList.add('visible');
+      }
+    }
+  } catch(e) {
+    document.getElementById('chat-typing').classList.remove('visible');
+    addMessage('assistant', '⚠️ Erreur de connexion : ' + e.message);
+    chatHistory.pop();
+  }
+
+  document.getElementById('chat-send-btn').disabled = false;
+  input.focus();
+}
+</script>
+
 </body>
 </html>
