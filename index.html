@@ -1072,8 +1072,7 @@ function handleFileUpload(input) {
         const wb = XLSX.read(e.target.result, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         // Convert to TSV to preserve our parser
-        const tsv = XLSX.utils.sheet_to_csv(ws, { FS: '	', RS: '
-' });
+        const tsv = XLSX.utils.sheet_to_csv(ws, { FS: '\t', RS: '\n' });
         document.getElementById('csv-input').value = tsv;
         const rows = filterBOMRows(parseCSV(tsv));
         zone.className = 'upload-drop-zone loaded';
