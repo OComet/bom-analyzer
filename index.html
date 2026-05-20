@@ -506,6 +506,28 @@ tr:hover td { background: var(--surface2); }
       <p class="hint">Obtenir sur <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--blue)">console.anthropic.com</a> → API Keys. Stockée uniquement dans cette page.</p>
     </div>
 
+    <div class="card" style="margin-bottom:16px;">
+      <div class="setup-card-title" style="margin-bottom:10px"><i class="ti ti-shopping-cart" aria-hidden="true"></i> APIs fournisseurs <span class="fixed-tag">enrichissement MPN</span></div>
+      <p class="hint" style="margin-bottom:10px">Utilisées uniquement en fallback quand la codification directe du MPN est incertaine (Würth, connecteurs, composants opaques…)</p>
+      <div class="row2">
+        <div class="col">
+          <label>Clé API Mouser</label>
+          <input type="text" id="setup-mouser-key" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" value="caf565cf-9cba-4626-bd04-f564ebffbcd6" />
+        </div>
+        <div class="col">
+          <label>Clé API Farnell</label>
+          <input type="text" id="setup-farnell-key" placeholder="xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" value="fxum65cx2895hmbrx75zkryh" />
+        </div>
+        <div class="row2" style="margin-top:10px; margin-bottom:0">
+          <div class="col" style="flex:2">
+            <label>URL Proxy Apps Script (Mouser + Farnell)</label>
+            <input type="text" id="setup-proxy-url" placeholder="https://script.google.com/macros/s/…/exec" value="https://script.google.com/macros/s/AKfycbzRChDWNpze7feavQkcFmMYIMRB1lLf7ubnRv13AqyzI29p-dqUXZlPGDB2Bu7n2cX7iQ/exec" />
+            <p class="hint">Script proxy unique pour Mouser et Farnell — contourne les restrictions CORS.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="setup-grid">
       <div class="setup-card">
         <div class="setup-card-title"><i class="ti ti-users" aria-hidden="true"></i> Google Sheet clients <span class="fixed-tag">fixe</span></div>
@@ -678,7 +700,7 @@ tr:hover td { background: var(--surface2); }
       <div class="section-label" style="margin-top:0">Règles de codification IPN</div>
       <div class="rule-box">
         <b>Condensateur céramique/film :</b> C(val)-(boitier)-(V)-(tolP)-(diélec)<br>
-        <span style="color:var(--text3)">Ex: C10U-0603-16V-10P-X5R &nbsp;|&nbsp; C1N5-0603-50V-20P-X7R</span><br><br>
+        <span style="color:var(--text3)">Ex: C10U-0603-16V-10P-X5R &nbsp;|&nbsp; C1N5-0603-50V-20P-X7R &nbsp;|&nbsp; C100P-0805-1KV-5P-C0G (≥1000V → kV)</span><br><br>
         <b>Condensateur tantale :</b> CT(val)-(boitier A/B/C/D/E)-(V)-(tolP)-(ESR)<br>
         <span style="color:var(--text3)">Ex: CT10U-A-20V-20P-5R &nbsp;|&nbsp; CT100U-B-6V3-10P-0R4</span><br><br>
         <b>Résistance :</b> R(val)-(boitier)[-(PPM si &lt;100)][-(W si non standard)]<br>
@@ -719,6 +741,9 @@ let clientsList = [];
 let activeClient = { nom:'Standard', mpn_strict:false, notes:'' };
 let sourceStatus = { clients:'none', stock:'none' };
 let apiKey = "";
+let mouserKey = "";
+let farnellKey = "";
+let proxyUrl = "";
 
 function switchTab(name) {
   const names = ['bom','codif','config'];
@@ -851,6 +876,9 @@ async function loadAll() {
   btn.disabled = true;
   document.getElementById('setup-error').style.display = 'none';
   apiKey = document.getElementById("setup-api-key").value.trim();
+  mouserKey = document.getElementById("setup-mouser-key").value.trim();
+  farnellKey = document.getElementById("setup-farnell-key").value.trim();
+  proxyUrl = document.getElementById("setup-proxy-url").value.trim();
   if (!apiKey) {
     document.getElementById("setup-error").textContent = "Clé API Anthropic obligatoire.";
     document.getElementById("setup-error").style.display = "block";
@@ -969,6 +997,30 @@ async function loadBOM() {
   }
 }
 
+// ---- ENRICHISSEMENT MPN VIA APIs FOURNISSEURS ----
+async function enrichMPN(mpn) {
+  // Essai Mouser en premier — via proxy Apps Script (CORS)
+  if (proxyUrl && mpn) {
+    try {
+      const resp = await fetch(`${proxyUrl}?mpn=${encodeURIComponent(mpn)}&source=mouser`);
+      const data = await resp.json();
+      if (data && !data.error) return data;
+    } catch(e) { console.warn('Mouser proxy error:', e.message); }
+  }
+
+  // Fallback Farnell — via proxy Apps Script (CORS)
+  if (proxyUrl && mpn) {
+    try {
+      const resp = await fetch(`${proxyUrl}?mpn=${encodeURIComponent(mpn)}&source=farnell`);
+      const data = await resp.json();
+      if (data && !data.error) return data;
+    } catch(e) { console.warn('Farnell proxy error:', e.message); }
+  }
+
+  return null;
+}
+// ---- FIN ENRICHISSEMENT ----
+
 async function callClaude(prompt, sys) {
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method:"POST",
@@ -983,12 +1035,15 @@ const IPN_SYS = `Tu es un ingénieur hardware expert en codification de composan
 RÈGLES IPN:
 1. CONDENSATEUR CÉRAMIQUE/FILM: C(valeur)-(boitier)-(tensionV)-(tolP)-(diélectrique)
    Valeur: 10U=10µF,1N5=1.5nF,10P=10pF,100N=100nF. Tension:16V,6V3. Tolérance:10P=10%.
-   Ex: C10U-0603-16V-10P-X5R, C1N5-0603-50V-20P-X7R
+   Tension >=1000V: écrire en kV (1KV,1KV5,2KV...) et NON en V (jamais 1000V,1500V).
+   Ex: C10U-0603-16V-10P-X5R, C1N5-0603-50V-20P-X7R, C100P-0805-1KV-5P-C0G
 2. CONDENSATEUR TANTALE: CT(valeur)-(boitier A/B/C/D/E)-(tensionV)-(tolP)-(ESR)
    ESR:5R=5Ω,0R4=0.4Ω. Ex:CT10U-A-20V-20P-5R
-3. RÉSISTANCE: R(valeur)-(boitier)[-(PPM si <100)][-(W si non standard)]
+3. RÉSISTANCE: R(valeur)-(boitier)[-(NNPPMsi coeff temp <100PPM)][-(W si puissance non standard)]
+   Coeff temp: écrire TOUJOURS avec le suffixe PPM collé au nombre. Ex: 10PPM, 25PPM, 50PPM. JAMAIS juste 'P'.
+   Valeur 0 ohm: TOUJOURS écrire 0R (jamais 0 seul). Résultat: R0R-0603 et NON R0-0603.
    Puissance std:0201=50mW,0402=62mW,0603=100mW,0805=125mW,1206=250mW,2512=1W.
-   Ex:R10K-0603,R40K2-0603-0W33,R30K-0603-10PPM
+   Ex:R10K-0603, R0R-0603, R40K2-0603-0W33, R30K-0603-10PPM, R10K-0805-25PPM
 4. AUTRE: MPN sans suffixes conditionnement (#PBF,#TRPBF,TR,-T,/TR,REEL,TAPE).
 RÉPONSE JSON uniquement:
 {"ipn":"...","type":"C|CT|R|OTHER","explanation":"...","confidence":"high|medium|low","warnings":["..."]}`;
@@ -996,9 +1051,9 @@ RÉPONSE JSON uniquement:
 const BOM_SYS = `Tu es un ingénieur hardware expert. Pour chaque ligne BOM:
 
 RÈGLES IPN:
-- Condensateur céramique/film: C(val)-(boitier)-(V)-(tolP)-(diélec). Ex: C10U-0603-16V-10P-X5R
+- Condensateur céramique/film: C(val)-(boitier)-(V)-(tolP)-(diélec). Tension >=1000V → kV (1KV, 1KV5). Ex: C10U-0603-16V-10P-X5R, C100P-0805-1KV-5P-C0G
 - Condensateur tantale: CT(val)-(boitier A/B/C/D/E)-(V)-(tolP)-(ESR). Ex: CT10U-A-20V-20P-5R
-- Résistance: R(val)-(boitier)[-(PPM si <100)][-(W si non standard)]. Ex: R10K-0603, R40K2-0603-0W33
+- Résistance: R(val)-(boitier)[-(NNPPM si coeff temp <100PPM)][-(W si non standard)]. Toujours écrire PPM en entier (25PPM pas 25P). Valeur 0 ohm = 0R (R0R-0603 et NON R0-0603). Ex: R10K-0603, R0R-0603, R40K2-0603-0W33, R10K-0805-25PPM
 - Autre: MPN sans suffixes conditionnement (#PBF, #TRPBF, TR, -T, /TR, REEL, TAPE)
 
 TRAITEMENT:
@@ -1046,14 +1101,18 @@ function clearCodif() {
 }
 function copyIPN() { navigator.clipboard.writeText(document.getElementById('ipn-output').textContent); }
 
-function getStockInfo(ipn, mpn) {
-  const strict = activeClient.mpn_strict;
+function getStockInfo(ipn, mpn, manufacturerFree) {
   const clientLabel = activeClient.nom;
   const byMPN = mpn ? stockByMPN[mpn.toUpperCase()] : undefined;
   const byIPN = (ipn&&ipn!=='—') ? stockByIPN[ipn.toUpperCase()] : undefined;
+
+  // MPN strict sauf si Manufacturer free = Yes sur cette ligne
+  const isFree = (manufacturerFree||'').toLowerCase().trim() === 'yes';
+  const strict = activeClient.mpn_strict && !isFree;
+
   if (strict) {
     if (byMPN!==undefined) return {qty:byMPN,source:'MPN',status:byMPN>0?'ok':'zero',mpnWarn:false};
-    if (byIPN!==undefined) return {qty:byIPN,source:'IPN',status:'mpnwarn',mpnWarn:true,clientLabel};
+    if (byIPN!==undefined) return {qty:null,source:null,status:'mpnwarn',mpnWarn:true,clientLabel};
     return {qty:null,source:null,status:'na',mpnWarn:false};
   } else {
     if (byIPN!==undefined) return {qty:byIPN,source:'IPN',status:byIPN>0?'ok':'zero',mpnWarn:false};
@@ -1065,8 +1124,7 @@ function getStockInfo(ipn, mpn) {
 function renderStockCell(si) {
   if (si.status==='na') return `<div class="stock-cell"><span class="s-na">—</span></div>`;
   if (si.status==='mpnwarn') return `<div class="stock-cell">
-    <span class="stock-line"><span class="slbl">IPN</span><span class="s-mpnwarn">${si.qty}</span></span>
-    <span class="stock-line" style="color:var(--pink);font-size:10px"><i class="ti ti-alert-triangle" aria-hidden="true"></i> MPN non dispo (${si.clientLabel})</span>
+    <span class="stock-line" style="color:var(--pink);font-size:11px"><i class="ti ti-lock" aria-hidden="true"></i> MPN imposé</span>
   </div>`;
   return `<div class="stock-cell"><span class="stock-line"><span class="slbl">${si.source}</span><span class="${si.status==='ok'?'s-ok':'s-zero'}">${si.qty}</span></span></div>`;
 }
@@ -1092,8 +1150,41 @@ async function analyzeBOM() {
       notes:findCol(row,['notes','note','comment'])
     }));
     try {
+      // First pass: analyse batch
       const raw=await callClaude(`Analyse:\n${JSON.stringify(batch,null,2)}`,BOM_SYS);
-      allResults=allResults.concat(JSON.parse(raw.replace(/```json|```/g,'').trim()));
+      const batchResults = JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+      // Enrich low/medium confidence items via Mouser/Farnell
+      const toEnrich = batchResults.filter(r => r.confidence === 'low' || r.confidence === 'medium');
+      if (toEnrich.length > 0 && (mouserKey || farnellKey)) {
+        document.getElementById('bom-loading-msg').textContent = `Enrichissement fournisseur : ${toEnrich.length} MPN à vérifier…`;
+        for (const r of toEnrich) {
+          const origRow = batch.find(b => b.idx === r.idx);
+          if (!origRow || !origRow.mpn) continue;
+          const enriched = await enrichMPN(origRow.mpn);
+          if (enriched) {
+            // Re-ask Claude with enriched data
+            const enrichPrompt = `MPN: ${origRow.mpn}
+Données fournisseur (${enriched.source}): ${enriched.description}
+Fabricant: ${enriched.manufacturer}
+Catégorie: ${enriched.category}
+Specs: ${enriched.specs}
+Notes BOM: ${origRow.notes || ''}
+IPN existant: ${origRow.ipn || '—'}
+
+Génère ou vérifie l'IPN avec ces informations enrichies.`;
+            try {
+              const enrichedRaw = await callClaude(enrichPrompt, IPN_SYS);
+              const enrichedResult = JSON.parse(enrichedRaw.replace(/```json|```/g,'').trim());
+              r.ipn = enrichedResult.ipn || r.ipn;
+              r.note = (r.note ? r.note + ' | ' : '') + `Enrichi via ${enriched.source}`;
+              r.confidence = enrichedResult.confidence;
+            } catch(e) { /* keep original */ }
+          }
+        }
+      }
+
+      allResults=allResults.concat(batchResults);
     } catch(e) {
       allResults=allResults.concat(batch.map((_,j)=>({idx:i+j,ipn:'—',status:'error',warnings:[],note:'Erreur analyse'})));
     }
@@ -1119,17 +1210,23 @@ function renderBOMTable(rows,results) {
     const ref=findCol(row,['designator','reference','ref']);
     const mpn=findCol(row,['mpn','manufacturer part','part number']);
     const notes=findCol(row,['notes','note','approved parts','description','desc','value']);
+    const mfrFree=findCol(row,['manufacturer free','manufacturer_free','mfr free','free']);
     const ipn=res.ipn||'—';
     const status=res.status||'ok';
     const warns=res.warnings||[];
-    const si=getStockInfo(ipn,mpn);
+    const si=getStockInfo(ipn,mpn,mfrFree);
     if(si.mpnWarn) cntMpnWarn++;
     if(status==='ok'&&!warns.length&&!si.mpnWarn) cntOk++;
     else if(status==='error') cntErr++;
     else cntWarn++;
     warns.forEach(w=>{if(warnSummary[w]) warnSummary[w].push(ref||mpn);});
     const warnBadges=warns.map(w=>`<span class="badge b-warn" style="margin-bottom:2px"><i class="ti ${icons[w]||'ti-alert-triangle'}" aria-hidden="true"></i> ${labels[w]||w}</span>`).join(' ');
-    const mpnBadge=si.mpnWarn?`<span class="badge b-strict" style="margin-bottom:2px"><i class="ti ti-lock" aria-hidden="true"></i> MPN strict</span>`:'';
+    const isFreeRow = (mfrFree||'').toLowerCase().trim() === 'yes';
+    const mpnBadge=si.mpnWarn
+      ?`<span class="badge b-strict" style="margin-bottom:2px"><i class="ti ti-lock" aria-hidden="true"></i> MPN strict</span>`
+      :(activeClient.mpn_strict && isFreeRow)
+        ?`<span class="badge b-ok" style="margin-bottom:2px"><i class="ti ti-check" aria-hidden="true"></i> IPN autorisé</span>`
+        :'';
     const statusBadge=status==='ok'&&!warns.length&&!si.mpnWarn
       ?`<span class="badge b-ok"><i class="ti ti-check" aria-hidden="true"></i></span>`
       :status==='error'?`<span class="badge b-err"><i class="ti ti-x" aria-hidden="true"></i></span>`:'';
@@ -1279,7 +1376,7 @@ function exportCSV() {
   ];
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([lines.join('\n')], {type:'text/tab-separated-values'}));
-  a.download = 'BOM_codifiee.tsv'; a.click();
+  a.download = 'BOM_codifiee.csv'; a.click();
 }
 
 function clearBOM() {
@@ -1657,9 +1754,9 @@ CONTEXTE BOM ACTUEL:
 ${getBOMContext()}
 
 RÈGLES DE CODIFICATION IPN:
-- Condensateur: C(val)-(boitier)-(V)-(tolP)-(diélec). Ex: C10U-0603-16V-10P-X5R
+- Condensateur: C(val)-(boitier)-(V)-(tolP)-(diélec). Tension >=1000V → kV (1KV, 1KV5). Ex: C10U-0603-16V-10P-X5R, C100P-0805-1KV-5P-C0G
 - Tantale: CT(val)-(boitier)-(V)-(tolP)-(ESR). Ex: CT10U-A-20V-20P-5R
-- Résistance: R(val)-(boitier)[-(PPM)][-(W)]. Ex: R10K-0603
+- Résistance: R(val)-(boitier)[-(NNPPM si <100PPM)][-(W)]. Toujours PPM en entier. Valeur 0 ohm = 0R. Ex: R10K-0603, R0R-0603, R10K-0805-25PPM
 - Autre: MPN sans suffixes conditionnement
 
 Réponds en français, de manière concise et technique. Pour les recherches de composants, utilise l'outil web_search.`;
