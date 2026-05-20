@@ -807,6 +807,8 @@ function showMain() {
   document.getElementById('main-screen').style.display = 'block';
   document.getElementById('btn-reconfig').style.display = 'flex';
   renderTopbar();
+  // Init upload zone after main screen is visible
+  setTimeout(initUploadZone, 50);
 }
 
 function skipSetup() { showMain(); }
@@ -1060,6 +1062,11 @@ function handleFileUpload(input) {
   const reader = new FileReader();
 
   if (ext === 'xlsx' || ext === 'xls') {
+    if (typeof XLSX === 'undefined') {
+      zone.className = 'upload-drop-zone';
+      label.innerHTML = '<span style="color:var(--red)">Bibliothèque XLSX non chargée — vérifiez votre connexion internet.</span>';
+      return;
+    }
     reader.onload = function(e) {
       try {
         const wb = XLSX.read(e.target.result, { type: 'array' });
@@ -1093,26 +1100,25 @@ function handleFileUpload(input) {
 }
 
 // Drag & drop support
-document.addEventListener('DOMContentLoaded', () => {
-  const zone = document.getElementById('upload-drop-zone');
-  if (!zone) return;
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault();
-    zone.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file) {
-      const input = document.getElementById('bom-file-input');
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      input.files = dt.files;
-      handleFileUpload(input);
-    }
-  });
-  // Click on zone triggers file input
-  zone.addEventListener('click', () => document.getElementById('bom-file-input').click());
-});
+function initUploadZone() {
+  try {
+    const zone = document.getElementById('upload-drop-zone');
+    if (!zone) return;
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        const input = document.getElementById('bom-file-input');
+        if (input) { const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files; handleFileUpload(input); }
+      }
+    });
+    zone.addEventListener('click', () => { const inp = document.getElementById('bom-file-input'); if(inp) inp.click(); });
+  } catch(e) { console.warn('Upload zone init error:', e); }
+}
+document.addEventListener('DOMContentLoaded', initUploadZone);
 // ---- END BOM SOURCE SWITCHER ----
 
 // ---- ENRICHISSEMENT MPN VIA APIs FOURNISSEURS ----
