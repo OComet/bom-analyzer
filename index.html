@@ -1481,25 +1481,90 @@ function exportCSV() {
     }
   });
 
-  // 2. Mettre à jour la colonne "Reçus" avec le stock du fichier stock
-  const recusKey = Object.keys(bomData[0]).find(k => k.toLowerCase().includes('reçus') || k.toLowerCase().includes('recus') || k.toLowerCase() === 'stock');
-  if (recusKey) {
-    bomData.forEach(row => {
-      const ipn = (row['Approved internal part number']||row['IPN']||row['ipn']||'').trim().toUpperCase();
-      const mpn = (row['MPN']||row['mpn']||'').trim().toUpperCase();
-      const si = getStockInfo(ipn, mpn);
-      if (si.qty !== null) row[recusKey] = String(si.qty);
-    });
-  }
+  // 2. Ajouter/mettre à jour colonne Stock (Reçus si existant, sinon nouvelle colonne)
+  const headers0 = Object.keys(bomData[0]);
+  const recusKey = headers0.find(k => k.toLowerCase().includes('reçus') || k.toLowerCase().includes('recus'));
+  const stockColKey = recusKey || 'Stock';
+  bomData.forEach(row => {
+    const ipn = (row['Approved internal part number']||row['IPN']||row['ipn']||'').trim().toUpperCase();
+    const mpn = (row['MPN']||row['mpn']||'').trim().toUpperCase();
+    const si = getStockInfo(ipn, mpn, row['Manufacturer free']||'');
+    row[stockColKey] = si.qty !== null ? String(si.qty) : '';
+  });
 
-  // 3. Export TSV (même format que l'import — évite les problèmes de virgules)
+  // 3. Construire les headers avec colonne Stock si nouvelle
   const headers = Object.keys(bomData[0]);
+  if (!headers.includes(stockColKey)) headers.push(stockColKey);
+
+  // 4. Export TSV
   const lines = [
     headers.join('\t'),
     ...bomData.map(r => headers.map(h => String(r[h]||'').replace(/\t/g,' ')).join('\t'))
   ];
+
+  // 5. Ajouter les warnings en bas du fichier
+  const warnRows = [];
+  if (rowMeta && rowMeta.length > 0) {
+    const warnTypes = {
+      'sensor':    'Capteurs (pression/humidité/température)',
+      'battery':   'Piles / Batteries',
+      'not-sealed':'Composants non étanches',
+      'msl4+':     'Composants MSL ≥ 4'
+    };
+    const found = {};
+    rowMeta.forEach((meta, i) => {
+      if (!meta.warnings || !meta.warnings.length) return;
+      const row = bomData[i] || {};
+      const ref = findCol(row, ['designator','reference','ref']) || '';
+      meta.warnings.forEach(w => {
+        if (!found[w]) found[w] = [];
+        found[w].push(ref);
+      });
+    });
+
+    // MPN strict non conformes
+    const mpnWarnRefs = [];
+    rowMeta.forEach((meta, i) => {
+      if (!meta.mpnWarn) return;
+      const row = bomData[i] || {};
+      mpnWarnRefs.push(findCol(row, ['designator','reference','ref']) || '');
+    });
+
+    if (Object.keys(found).length > 0 || mpnWarnRefs.length > 0) {
+      warnRows.push('');
+      warnRows.push('--- RAPPORT WARNINGS ---');
+      warnRows.push(`Date\t${new Date().toLocaleString('fr-FR')}`);
+      warnRows.push(`Client\t${activeClient ? activeClient.nom : 'Standard'}`);
+      warnRows.push('');
+
+      Object.entries(found).forEach(([type, refs]) => {
+        warnRows.push(`⚠ ${warnTypes[type]||type}\t${refs.join(', ')}`);
+      });
+
+      if (mpnWarnRefs.length > 0) {
+        warnRows.push(`🔒 MPN strict non conforme (${activeClient?.nom||''})\t${mpnWarnRefs.join(', ')}`);
+      }
+
+      // IPN non codifiés
+      const uncodified = [];
+      document.querySelectorAll('.editable-ipn').forEach((inp, i) => {
+        if (inp.value === '—' || inp.value === '') {
+          const row = bomData[i] || {};
+          uncodified.push(findCol(row, ['designator','reference','ref']) || '');
+        }
+      });
+      if (uncodified.length > 0) {
+        warnRows.push(`❓ IPN à vérifier manuellement\t${uncodified.join(', ')}`);
+      }
+
+      warnRows.push('');
+      warnRows.push('--- FIN RAPPORT ---');
+    }
+  }
+
+  const allLines = [...lines, ...warnRows];
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([lines.join('\n')], {type:'text/tab-separated-values'}));
+  a.href = URL.createObjectURL(new Blob([allLines.join('\n')], {type:'text/tab-separated-values'}));
   a.download = 'BOM_codifiee.csv'; a.click();
 }
 
