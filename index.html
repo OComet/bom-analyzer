@@ -635,7 +635,7 @@ tr:hover td { background: var(--surface2); }
         <!-- Paste -->
         <div id="bom-src-paste" style="display:none">
           <label style="text-transform:none; font-size:12px; font-weight:600; letter-spacing:0">Coller les données (CSV / TSV)</label>
-          <textarea id="csv-paste-input" rows="5" style="margin-top:4px" placeholder="Qty&#9;Reference&#9;MPN&#9;IPN&#9;Description&#9;Notes&#10;2&#9;C1 C2&#9;GXT188R61C106KE13D&#9;&#9;10uF 16V X5R 0603&#9;&#10;…" oninput="document.getElementById('csv-input').value=this.value"></textarea>
+          <textarea id="csv-paste-input" rows="5" style="margin-top:4px" placeholder="Qty&#9;Reference&#9;MPN&#9;IPN&#9;Description&#9;Notes&#10;2&#9;C1 C2&#9;GXT188R61C106KE13D&#9;&#9;10uF 16V X5R 0603&#9;&#10;…" oninput="csvBuffer=this.value"></textarea>
         </div>
       </div>
 
@@ -781,6 +781,7 @@ tr:hover td { background: var(--surface2); }
 
 <script>
 let bomData = [];
+let csvBuffer = "";
 let stockByIPN = {}, stockByMPN = {};
 let clientsList = [];
 let activeClient = { nom:'Standard', mpn_strict:false, notes:'' };
@@ -1036,7 +1037,7 @@ async function loadBOM() {
   statusEl.innerHTML='<div class="spinner" style="width:13px;height:13px;border-width:2px"></div> Chargement…';
   try {
     const text = await fetchCSV(url);
-    document.getElementById('csv-input').value = text;
+    csvBuffer = text;
     const rows = parseCSV(text);
     statusEl.innerHTML=`<span style="color:var(--green)"><i class="ti ti-check"></i> ${rows.length} ligne(s)</span>`;
   } catch(e) {
@@ -1073,7 +1074,7 @@ function handleFileUpload(input) {
         const ws = wb.Sheets[wb.SheetNames[0]];
         // Convert to TSV to preserve our parser
         const tsv = XLSX.utils.sheet_to_csv(ws, { FS: '\t', RS: '\n' });
-        document.getElementById('csv-input').value = tsv;
+        csvBuffer = tsv;
         const rows = filterBOMRows(parseCSV(tsv));
         zone.className = 'upload-drop-zone loaded';
         label.innerHTML = `<i class="ti ti-check" aria-hidden="true"></i> ${file.name} — ${rows.length} composant(s) détecté(s)`;
@@ -1088,7 +1089,7 @@ function handleFileUpload(input) {
     // CSV / TSV
     reader.onload = function(e) {
       const text = e.target.result;
-      document.getElementById('csv-input').value = text;
+      csvBuffer = text;
       const rows = filterBOMRows(parseCSV(text));
       zone.className = 'upload-drop-zone loaded';
       label.innerHTML = `<i class="ti ti-check" aria-hidden="true"></i> ${file.name} — ${rows.length} composant(s) détecté(s)`;
@@ -1253,7 +1254,7 @@ function renderStockCell(si) {
 }
 
 async function analyzeBOM() {
-  const csvText = document.getElementById('csv-input').value.trim();
+  const csvText = csvBuffer.trim();
   if (!csvText) { alert("Chargez une BOM ou collez des données CSV."); return; }
   const rows = filterBOMRows(parseCSV(csvText));
   if (!rows.length) { alert("Format non reconnu ou aucun composant valide trouvé."); return; }
@@ -1503,7 +1504,9 @@ function exportCSV() {
 }
 
 function clearBOM() {
-  document.getElementById('csv-input').value='';
+  csvBuffer='';
+  const pasteEl = document.getElementById('csv-paste-input');
+  if (pasteEl) pasteEl.value='';
   const urlEl = document.getElementById('bom-url');
   if (urlEl) urlEl.value='';
   document.getElementById('bom-url-status').innerHTML='';
