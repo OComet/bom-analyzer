@@ -510,7 +510,10 @@ tr:hover td { background: var(--surface2); }
     BOM Analyzer
   </div>
   <div class="header-chips" id="header-chips"></div>
-  <button class="btn sm" onclick="showSetup()" id="btn-reconfig" style="display:none"><i class="ti ti-settings" aria-hidden="true"></i> Reconfigurer</button>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <a href="bom-client.html" style="font-size:12px;color:var(--text2);text-decoration:none;display:inline-flex;align-items:center;gap:4px;"><i class="ti ti-users" aria-hidden="true"></i> BOM Client</a>
+    <button class="btn sm" onclick="showSetup()" id="btn-reconfig" style="display:none"><i class="ti ti-settings" aria-hidden="true"></i> Reconfigurer</button>
+  </div>
 </header>
 
 <div class="main">
@@ -975,6 +978,12 @@ async function loadAll() {
     }
   }
   btn.disabled = false;
+  // Sync config to localStorage for bom-client.html
+  try {
+    localStorage.setItem('bom_api_key', apiKey);
+    localStorage.setItem('bom_proxy_url', proxyUrl);
+    if (clientsList.length) localStorage.setItem('bom_clients_list', JSON.stringify(clientsList));
+  } catch(e) {}
   showMain();
 }
 
