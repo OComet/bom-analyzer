@@ -200,7 +200,13 @@ textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height
         <span class="badge b-info" id="mapping-confidence-badge"></span>
         <button class="btn sm" style="margin-left:auto" onclick="remapColumns()"><i class="ti ti-refresh" aria-hidden="true"></i> Redétecter</button>
       </div>
-      <p class="hint" style="margin-bottom:12px">L'IA a détecté les colonnes ci-dessous. Corrige si nécessaire avant d'analyser.</p>
+      <p class="hint" style="margin-bottom:8px">L'IA a détecté les colonnes ci-dessous. Corrige si nécessaire avant d'analyser.</p>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:var(--text2)">Mapping client :</span>
+        <button class="btn sm" onclick="saveMappingForClient()"><i class="ti ti-device-floppy" aria-hidden="true"></i> Sauvegarder pour ce client</button>
+        <span id="mapping-save-status" style="font-size:11px;color:var(--green);display:none"><i class="ti ti-check" aria-hidden="true"></i> Sauvegardé</span>
+        <span id="mapping-loaded-badge" style="display:none" class="badge b-info"><i class="ti ti-history" aria-hidden="true"></i> Mapping client chargé</span>
+      </div>
 
       <div style="overflow-x:auto">
         <table class="mapping-table" id="mapping-table">
@@ -352,7 +358,7 @@ textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height
 
     <!-- API Keys -->
     <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title"><span>Configuration API</span></div>
+      <div class="rules-section-title"><span>Configuration API & Sources</span></div>
       <div class="card" style="margin-bottom:0">
         <div class="row2">
           <div class="col">
@@ -364,7 +370,17 @@ textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height
             <input type="text" id="cfg-proxy-url" placeholder="https://script.google.com/macros/s/…/exec" />
           </div>
         </div>
-        <p class="hint">Ces clés sont partagées avec BOM Analyzer via le stockage local du navigateur.</p>
+        <div class="row2" style="margin-bottom:0">
+          <div class="col">
+            <label>URL Google Sheet clients (Apps Script)</label>
+            <div style="display:flex;gap:8px;">
+              <input type="text" id="cfg-clients-url" placeholder="https://script.google.com/macros/s/…/exec" style="flex:1" />
+              <button class="btn sm" onclick="loadClientsFromURL()"><i class="ti ti-refresh" aria-hidden="true"></i> Charger</button>
+            </div>
+            <div id="clients-load-status" style="font-size:12px;margin-top:6px;"></div>
+          </div>
+        </div>
+        <p class="hint" style="margin-top:10px">Sauvegardez après toute modification pour appliquer les changements.</p>
       </div>
     </div>
   </div>
@@ -430,6 +446,41 @@ Exemples: LM317MBSTT3G (pas LM317MBSTT3G#TRPBF) | ISL43L210IHZ (pas ISL43L210IHZ
   msl: '4'
 };
 
+// ===================== MAPPING PERSISTENCE =====================
+function getMappingStorageKey() {
+  const clientKey = activeClientAnalysis.nom || 'Standard';
+  return 'bom_mapping_' + clientKey.replace(/[^a-zA-Z0-9]/g,'_');
+}
+
+function saveMappingForClient() {
+  try {
+    localStorage.setItem(getMappingStorageKey(), JSON.stringify(columnMapping));
+    const status = document.getElementById('mapping-save-status');
+    status.style.display = 'inline';
+    setTimeout(() => status.style.display='none', 2000);
+  } catch(e) { alert('Erreur sauvegarde mapping: ' + e.message); }
+}
+
+function loadMappingForClient() {
+  try {
+    const saved = localStorage.getItem(getMappingStorageKey());
+    if (saved) {
+      const savedMapping = JSON.parse(saved);
+      // Only apply if headers match (at least 50% of mapped columns exist)
+      const savedCols = Object.values(savedMapping).filter(Boolean);
+      const matches = savedCols.filter(c => headers.includes(c)).length;
+      if (matches / Math.max(savedCols.length, 1) >= 0.5) {
+        columnMapping = savedMapping;
+        document.getElementById('mapping-loaded-badge').style.display = 'inline-flex';
+        return true;
+      }
+    }
+    document.getElementById('mapping-loaded-badge').style.display = 'none';
+  } catch(e) {}
+  return false;
+}
+// ===================== END MAPPING PERSISTENCE =====================
+
 // ===================== INIT =====================
 window.addEventListener('load', () => {
   loadRules();
@@ -442,9 +493,44 @@ function loadConfig() {
   try {
     apiKey = localStorage.getItem('bom_api_key') || '';
     proxyUrl = localStorage.getItem('bom_proxy_url') || '';
+    const clientsUrl = localStorage.getItem('bom_clients_url') || '';
     document.getElementById('cfg-api-key').value = apiKey;
     document.getElementById('cfg-proxy-url').value = proxyUrl;
+    document.getElementById('cfg-clients-url').value = clientsUrl;
+    // Auto-load clients if URL saved
+    if (clientsUrl) loadClientsFromURL(true);
   } catch(e) {}
+}
+
+async function loadClientsFromURL(silent) {
+  const url = document.getElementById('cfg-clients-url').value.trim();
+  const statusEl = document.getElementById('clients-load-status');
+  if (!url) { if(!silent) statusEl.innerHTML='<span style="color:var(--red)">URL manquante</span>'; return; }
+  if (!silent) statusEl.innerHTML='Chargement…';
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const text = await resp.text();
+    const lines = text.trim().split(/\r?\n/);
+    const sep = lines[0].includes('\t') ? '\t' : ',';
+    const headers = lines[0].split(sep).map(h=>h.replace(/"/g,'').trim());
+    clientsList = lines.slice(1).map(line => {
+      const cells = line.split(sep).map(c=>c.replace(/"/g,'').trim());
+      const obj = {};
+      headers.forEach((h,i) => obj[h]=cells[i]||'');
+      return {
+        nom: obj['Nom']||obj['nom']||obj['name']||'',
+        mpn_strict: (obj['MPN_strict']||obj['mpn_strict']||'').toLowerCase()==='oui',
+        notes: obj['Notes']||obj['notes']||''
+      };
+    }).filter(c=>c.nom);
+    localStorage.setItem('bom_clients_url', url);
+    localStorage.setItem('bom_clients_list', JSON.stringify(clientsList));
+    populateClientSelect();
+    if (!silent) statusEl.innerHTML=`<span style="color:var(--green)"><i class="ti ti-check"></i> ${clientsList.length} client(s) chargé(s)</span>`;
+  } catch(e) {
+    if (!silent) statusEl.innerHTML=`<span style="color:var(--red)">Erreur: ${e.message}</span>`;
+  }
 }
 
 function loadClientsList() {
@@ -474,6 +560,14 @@ function onClientSelect() {
   activeClientAnalysis = val === '__standard__'
     ? { nom:'Standard', mpn_strict:false, notes:'' }
     : (clientsList.find(c => c.nom === val) || { nom:'Standard', mpn_strict:false, notes:'' });
+  // If mapping is already shown, try to load saved mapping for new client
+  if (rawData.length > 0) {
+    if (!loadMappingForClient()) {
+      // No saved mapping for this client — keep current but show AI detection
+      document.getElementById('mapping-loaded-badge').style.display = 'none';
+    }
+    renderMappingTable();
+  }
 }
 
 // ===================== RULES =====================
@@ -516,8 +610,10 @@ function saveRules() {
   const pu = document.getElementById('cfg-proxy-url').value.trim();
   try {
     localStorage.setItem('bom_coding_rules', JSON.stringify(rules));
+    const cu = document.getElementById('cfg-clients-url').value.trim();
     localStorage.setItem('bom_api_key', ak);
     localStorage.setItem('bom_proxy_url', pu);
+    localStorage.setItem('bom_clients_url', cu);
     apiKey = ak; proxyUrl = pu;
     const ind = document.getElementById('save-indicator');
     ind.classList.add('visible');
@@ -697,6 +793,8 @@ RÉPONSE JSON uniquement:
     columnMapping = autoDetectColumns(headers);
   }
 
+  // Try to load saved mapping for this client (overrides AI detection if match)
+  loadMappingForClient();
   renderMappingTable();
   loadEl.style.display = 'none';
 }
