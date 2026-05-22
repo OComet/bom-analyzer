@@ -410,7 +410,17 @@ textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height
             <div id="clients-load-status" style="font-size:12px;margin-top:6px;"></div>
           </div>
         </div>
-        <p class="hint" style="margin-top:10px">Sauvegardez après toute modification pour appliquer les changements.</p>
+        <div class="row2" style="margin-top:10px; margin-bottom:0">
+          <div class="col">
+            <label>URL Google Sheet règles partagées</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="cfg-rules-url" placeholder="https://script.google.com/macros/s/…/exec" style="flex:1" />
+              <button class="btn sm" onclick="loadRulesFromURL()"><i class="ti ti-refresh" aria-hidden="true"></i> Charger</button>
+            </div>
+            <div id="rules-url-status" style="font-size:12px;margin-top:4px;"></div>
+          </div>
+        </div>
+        <p class="hint" style="margin-top:10px">Les règles partagées écrasent les règles locales pour tous les utilisateurs.</p>
       </div>
     </div>
   </div>
@@ -441,6 +451,7 @@ const REQUIRED_FIELDS = [
   { key:'qty',           label:'Quantité',                      required:false },
   { key:'mfr_free',      label:'Equivalent autorisé (Mfr free)',required:false },
   { key:'ipn',           label:'IPN existant (si déjà codifié)',required:false },
+  { key:'dist_code',     label:'Code distributeur (DigiKey/Mouser/Farnell)',required:false },
 ];
 
 // ===================== DEFAULT RULES =====================
@@ -475,6 +486,39 @@ Exemples: LM317MBSTT3G (pas LM317MBSTT3G#TRPBF) | ISL43L210IHZ (pas ISL43L210IHZ
   sealed: 'relay, relais, not sealed, non étanche, unsealed',
   msl: '4'
 };
+
+async function loadRulesFromURL(silent) {
+  const url = document.getElementById('cfg-rules-url').value.trim();
+  const statusEl = document.getElementById('rules-url-status');
+  if (!url) { if(!silent) statusEl.innerHTML='<span style="color:var(--red)">URL manquante</span>'; return; }
+  if (!silent) statusEl.innerHTML='Chargement…';
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const text = await resp.text();
+    const lines = text.trim().split(/
+?
+/);
+    const sep = lines[0].includes('	') ? '	' : ',';
+    const headers = lines[0].split(sep).map(h=>h.replace(/"/g,'').trim());
+    const rulesObj = {};
+    lines.slice(1).forEach(line => {
+      const cells = line.split(sep).map(c=>c.replace(/"/g,'').trim());
+      const obj = {};
+      headers.forEach((h,i) => obj[h]=cells[i]||'');
+      const k = (obj['Clé']||obj['cle']||obj['key']||'').trim();
+      const v = (obj['Valeur']||obj['valeur']||obj['value']||'').trim();
+      if (k) rulesObj[k] = v;
+    });
+    if (!Object.keys(rulesObj).length) throw new Error('Aucune règle — vérifiez colonnes Clé/Valeur');
+    localStorage.setItem('bom_coding_rules', JSON.stringify(rulesObj));
+    localStorage.setItem('bom_rules_url', url);
+    loadRules();
+    if (!silent) statusEl.innerHTML=`<span style="color:var(--green)"><i class="ti ti-check"></i> ${Object.keys(rulesObj).length} règles chargées</span>`;
+  } catch(e) {
+    if (!silent) statusEl.innerHTML=`<span style="color:var(--red)">Erreur: ${e.message}</span>`;
+  }
+}
 
 // ===================== MAPPING PERSISTENCE =====================
 function getMappingStorageKey() {
@@ -524,11 +568,13 @@ function loadConfig() {
     apiKey = localStorage.getItem('bom_api_key') || '';
     proxyUrl = localStorage.getItem('bom_proxy_url') || '';
     const clientsUrl = localStorage.getItem('bom_clients_url') || '';
+    const rulesUrl = localStorage.getItem('bom_rules_url') || '';
     document.getElementById('cfg-api-key').value = apiKey;
     document.getElementById('cfg-proxy-url').value = proxyUrl;
     document.getElementById('cfg-clients-url').value = clientsUrl;
-    // Auto-load clients if URL saved
+    document.getElementById('cfg-rules-url').value = rulesUrl;
     if (clientsUrl) loadClientsFromURL(true);
+    if (rulesUrl) loadRulesFromURL(true);
   } catch(e) {}
 }
 
@@ -641,9 +687,11 @@ function saveRules() {
   try {
     localStorage.setItem('bom_coding_rules', JSON.stringify(rules));
     const cu = document.getElementById('cfg-clients-url').value.trim();
+    const ru = document.getElementById('cfg-rules-url').value.trim();
     localStorage.setItem('bom_api_key', ak);
     localStorage.setItem('bom_proxy_url', pu);
     localStorage.setItem('bom_clients_url', cu);
+    localStorage.setItem('bom_rules_url', ru);
     apiKey = ak; proxyUrl = pu;
     const ind = document.getElementById('save-indicator');
     ind.classList.add('visible');
@@ -839,7 +887,8 @@ function autoDetectColumns(hdrs) {
     manufacturer: ['manufacturer','fabricant','mfr','brand','marque'],
     qty: ['qty','quantity','quantité','qté','nb','nombre'],
     mfr_free: ['manufacturer free','mfr free','equiv','equivalent','free','autorisé'],
-    ipn: ['ipn','internal part','code interne','approved internal']
+    ipn: ['ipn','internal part','code interne','approved internal'],
+    dist_code: ['digikey','mouser','farnell','rs ','distributor','dist part','order code','supplier part','numéro commande','ref commande']
   };
   Object.entries(patterns).forEach(([field, keywords]) => {
     const found = hdrs.find(h => keywords.some(k => h.toLowerCase().includes(k)));
@@ -927,6 +976,34 @@ function getVal(row, field) {
 }
 
 // ===================== ANALYSIS =====================
+// ============================================================
+// ENRICHISSEMENT : code distributeur → MPN → IPN
+// ============================================================
+async function resolveDistCode(code, proxyUrl) {
+  if (!code || !proxyUrl) return null;
+  try {
+    const resp = await fetch(`${proxyUrl}?code=${encodeURIComponent(code)}`);
+    const data = await resp.json();
+    if (data && !data.error && data.mpn) return data;
+  } catch(e) {}
+  return null;
+}
+
+async function enrichWithProxy(mpn, proxyUrl) {
+  if (!mpn || !proxyUrl) return null;
+  try {
+    const resp = await fetch(`${proxyUrl}?mpn=${encodeURIComponent(mpn)}&source=mouser`);
+    const data = await resp.json();
+    if (data && !data.error) return data;
+    // Fallback Farnell
+    const resp2 = await fetch(`${proxyUrl}?mpn=${encodeURIComponent(mpn)}&source=farnell`);
+    const data2 = await resp2.json();
+    if (data2 && !data2.error) return data2;
+  } catch(e) {}
+  return null;
+}
+// ============================================================
+
 async function analyseClientBOM() {
   if (!rawData.length) { alert("Chargez une BOM d'abord."); return; }
   const key = document.getElementById('cfg-api-key').value.trim() || apiKey;
@@ -956,7 +1033,24 @@ async function analyseClientBOM() {
       qty: getVal(row,'qty'),
       mfr_free: getVal(row,'mfr_free') || defaultMfrFree,
       ipn_existing: getVal(row,'ipn'),
+      dist_code: getVal(row,'dist_code'),
     }));
+
+    // Pre-resolve distributor codes before sending to AI
+    const px = document.getElementById('cfg-proxy-url').value.trim() || proxyUrl;
+    for (const item of batch) {
+      if (!item.mpn && item.dist_code && px) {
+        document.getElementById('analysis-msg').textContent = `Résolution code distributeur: ${item.dist_code}…`;
+        const resolved = await resolveDistCode(item.dist_code, px);
+        if (resolved && resolved.mpn) {
+          item.mpn = resolved.mpn;
+          item.description = item.description || resolved.description || '';
+          item.manufacturer = item.manufacturer || resolved.manufacturer || '';
+          item.notes = [item.notes, resolved.specs].filter(Boolean).join(' | ');
+          item._enriched_source = resolved.source;
+        }
+      }
+    }
 
     const systemPrompt = `Tu es un ingénieur hardware expert en codification de composants électroniques pour BOM.
 
@@ -991,6 +1085,14 @@ RÉPONSE JSON tableau uniquement:
       const data = await resp.json();
       const text = data.content.map(c=>c.text||'').join('');
       const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+
+      // Mark items enriched via distributor code
+      parsed.forEach(r => {
+        const origRow = batch.find(b => b.idx === r.idx);
+        if (origRow?._enriched_source) {
+          r.note = (r.note ? r.note + ' | ' : '') + `MPN résolu via ${origRow._enriched_source} (code: ${origRow.dist_code})`;
+        }
+      });
 
       // Enrich low-confidence via proxy
       const toEnrich = parsed.filter(r => r.confidence === 'low');
@@ -1260,9 +1362,9 @@ function resetAll() {
   <div class="chat-typing" id="chat-typing-c"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
   <div class="chat-footer">
     <textarea class="chat-input" id="chat-input-c" placeholder="Question sur la BOM client…" rows="1"
-      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendClientChat();}"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();event.stopPropagation();sendClientChat();return false;}"
       oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
-    <button class="chat-send" onclick="sendClientChat()"><i class="ti ti-send" aria-hidden="true"></i></button>
+    <button class="chat-send" id="chat-send-c" onclick="sendClientChat()"><i class="ti ti-send" aria-hidden="true"></i></button>
   </div>
 </div>
 
@@ -1313,7 +1415,7 @@ async function sendClientChat() {
   if (!key) { addClientMsg('assistant','⚠️ Clé API non configurée dans Règles & Config.'); return; }
 
   input.value = ''; input.style.height='auto';
-  document.getElementById('chat-send').disabled = true;
+  document.getElementById('chat-send-c').disabled = true;
   addClientMsg('user', text);
   chatHistoryC.push({role:'user', content:text});
 
@@ -1352,7 +1454,7 @@ Réponds en français, de manière concise et technique. Tu peux faire des reche
     addClientMsg('assistant','⚠️ Erreur connexion: '+e.message);
     chatHistoryC.pop();
   }
-  document.getElementById('chat-send').disabled = false;
+  document.getElementById('chat-send-c').disabled = false;
   input.focus();
 }
 </script>
