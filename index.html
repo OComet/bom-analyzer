@@ -583,6 +583,17 @@ tr:hover td { background: var(--surface2); }
       </div>
     </div>
 
+    <div class="card" style="margin-bottom:16px;">
+      <div class="setup-card-title" style="margin-bottom:10px"><i class="ti ti-book" aria-hidden="true"></i> Google Sheet règles de codification <span class="fixed-tag">partagé</span></div>
+      <label>URL Apps Script (colonnes : Clé | Valeur)</label>
+      <input type="text" id="setup-rules-url" placeholder="https://script.google.com/macros/s/…/exec" />
+      <p class="hint">Partagé entre tous les utilisateurs. Laisser vide pour utiliser les règles locales.</p>
+      <div class="status-row" id="rules-status-row">
+        <span class="status-dot" id="rules-dot"></span>
+        <span id="rules-status-msg">En attente</span>
+      </div>
+    </div>
+
     <div class="setup-actions">
       <button class="btn primary" id="btn-load-all" onclick="loadAll()"><i class="ti ti-plug" aria-hidden="true"></i> Charger les sources fixes</button>
       <button class="btn" onclick="skipSetup()">Continuer sans (mode manuel)</button>
@@ -894,7 +905,7 @@ let csvBuffer = "";
 let stockByIPN = {}, stockByMPN = {};
 let clientsList = [];
 let activeClient = { nom:'Standard', mpn_strict:false, notes:'' };
-let sourceStatus = { clients:'none', stock:'none' };
+let sourceStatus = { clients:'none', stock:'none', rules:'none' };
 let apiKey = "";
 let mouserKey = "";
 let farnellKey = "";
@@ -910,6 +921,9 @@ function showSetup() {
   document.getElementById('setup-screen').style.display = 'block';
   document.getElementById('main-screen').style.display = 'none';
   document.getElementById('btn-reconfig').style.display = 'none';
+  // Pre-fill saved URLs
+  const savedRulesUrl = localStorage.getItem('bom_rules_url');
+  if (savedRulesUrl) document.getElementById('setup-rules-url').value = savedRulesUrl;
 }
 
 function showMain() {
@@ -932,7 +946,8 @@ function renderTopbar() {
   const bar = document.getElementById('topbar-status');
   const items = [
     { key:'clients', icon:'ti-users', label:'Clients' },
-    { key:'stock', icon:'ti-package', label:'Stock' }
+    { key:'stock', icon:'ti-package', label:'Stock' },
+    { key:'rules', icon:'ti-book', label:'Règles' }
   ];
   bar.innerHTML = items.map(c => {
     const s = sourceStatus[c.key];
@@ -1036,6 +1051,34 @@ async function loadAll() {
   mouserKey = document.getElementById("setup-mouser-key").value.trim();
   farnellKey = document.getElementById("setup-farnell-key").value.trim();
   proxyUrl = document.getElementById("setup-proxy-url").value.trim();
+  const rulesUrl = document.getElementById("setup-rules-url").value.trim();
+  if (rulesUrl) {
+    setDot('rules','loading','Chargement règles…');
+    try {
+      const rulesText = await fetchCSV(rulesUrl);
+      const rulesRows = parseCSV(rulesText);
+      const rulesObj = {};
+      rulesRows.forEach(r => {
+        const k = (r['Clé']||r['cle']||r['key']||'').trim();
+        const v = (r['Valeur']||r['valeur']||r['value']||'').trim();
+        if (k) rulesObj[k] = v;
+      });
+      if (Object.keys(rulesObj).length > 0) {
+        localStorage.setItem('bom_coding_rules', JSON.stringify(rulesObj));
+        localStorage.setItem('bom_rules_url', rulesUrl);
+        loadRules();
+        setDot('rules','ok', Object.keys(rulesObj).length + ' règles chargées');
+        sourceStatus.rules = 'ok';
+      } else throw new Error('Aucune règle trouvée — vérifiez les colonnes Clé/Valeur');
+    } catch(e) {
+      setDot('rules','err', e.message);
+      sourceStatus.rules = 'err';
+    }
+  } else {
+    // Pre-fill URL if saved
+    const savedUrl = localStorage.getItem('bom_rules_url');
+    if (savedUrl) document.getElementById('setup-rules-url').value = savedUrl;
+  }
   if (!apiKey) {
     document.getElementById("setup-error").textContent = "Clé API Anthropic obligatoire.";
     document.getElementById("setup-error").style.display = "block";
