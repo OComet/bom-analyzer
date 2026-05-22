@@ -386,6 +386,8 @@ textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height
       </div>
     </div>
 
+    <div id="extra-rules-container"></div>
+
     <!-- API Keys -->
     <div class="rules-section" style="margin-top:1.5rem">
       <div class="rules-section-title"><span>Configuration API & Sources</span></div>
@@ -506,18 +508,36 @@ async function loadRulesFromURL(silent) {
       const cells = line.split(sep).map(c=>c.replace(/"/g,'').trim());
       const obj = {};
       headers.forEach((h,i) => obj[h]=cells[i]||'');
-      const k = (obj['Clé']||obj['cle']||obj['key']||'').trim();
-      const v = (obj['Valeur']||obj['valeur']||obj['value']||'').trim();
+      const k = (obj['Clé']||obj['cle']||obj['key']||obj['Cle']||'').trim();
+      const v = (obj['Valeur']||obj['valeur']||obj['value']||'').trim().replace(/\\n/g,'\n');
       if (k) rulesObj[k] = v;
     });
     if (!Object.keys(rulesObj).length) throw new Error('Aucune règle — vérifiez colonnes Clé/Valeur');
     localStorage.setItem('bom_coding_rules', JSON.stringify(rulesObj));
     localStorage.setItem('bom_rules_url', url);
     loadRules();
+    renderExtraRules(rulesObj);
     if (!silent) statusEl.innerHTML=`<span style="color:var(--green)"><i class="ti ti-check"></i> ${Object.keys(rulesObj).length} règles chargées</span>`;
   } catch(e) {
     if (!silent) statusEl.innerHTML=`<span style="color:var(--red)">Erreur: ${e.message}</span>`;
   }
+}
+
+function renderExtraRules(rules) {
+  const knownKeys = ['capacitor','tantalum','resistor','other','suffixes','sensors','batteries','sealed','msl'];
+  const extraKeys = Object.keys(rules).filter(k => !knownKeys.includes(k.toLowerCase()));
+  const container = document.getElementById('extra-rules-container');
+  if (!container) return;
+  if (!extraKeys.length) { container.innerHTML=''; return; }
+  container.innerHTML = `
+    <div class="rules-section" style="margin-top:1.5rem">
+      <div class="rules-section-title"><span>Règles supplémentaires (depuis Google Sheet)</span></div>
+      ${extraKeys.map(k=>`
+        <div class="card" style="margin-bottom:8px">
+          <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">${k}</div>
+          <div style="font-family:var(--mono);font-size:12px;white-space:pre-wrap;color:var(--text2);line-height:1.6">${rules[k]}</div>
+        </div>`).join('')}
+    </div>`;
 }
 
 // ===================== MAPPING PERSISTENCE =====================
@@ -660,8 +680,8 @@ function loadRules() {
     document.getElementById('rule-batteries').value = rules.batteries || DEFAULT_RULES.batteries;
     document.getElementById('rule-sealed').value = rules.sealed || DEFAULT_RULES.sealed;
     document.getElementById('rule-msl').value = rules.msl || DEFAULT_RULES.msl;
+    renderExtraRules(rules);
   } catch(e) {
-    // Use defaults
     Object.entries(DEFAULT_RULES).forEach(([k,v]) => {
       const el = document.getElementById('rule-' + k);
       if (el) el.value = v;
