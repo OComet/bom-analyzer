@@ -146,6 +146,35 @@ textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height
 .filter-btn.active.f-err { background:var(--red); }
 .filter-count { font-size:11px; padding:1px 6px; border-radius:10px; background:var(--surface2); color:var(--text2); }
 .filter-btn.active .filter-count { background:rgba(255,255,255,0.25); color:white; }
+
+/* CHAT */
+.chat-fab { position:fixed; bottom:28px; right:28px; width:52px; height:52px; border-radius:50%; background:var(--pink); color:white; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 4px 16px rgba(0,0,0,0.18); z-index:1000; transition:transform 0.15s; }
+.chat-fab:hover { transform:scale(1.08); }
+.chat-panel { position:fixed; bottom:90px; right:28px; width:380px; max-width:calc(100vw - 40px); height:520px; max-height:calc(100vh - 120px); background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:0 8px 32px rgba(0,0,0,0.14); z-index:999; display:none; flex-direction:column; overflow:hidden; }
+.chat-panel.open { display:flex; }
+.chat-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--surface2); flex-shrink:0; font-size:13px; font-weight:600; }
+.chat-messages { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px; }
+.chat-msg { display:flex; flex-direction:column; gap:3px; max-width:88%; }
+.chat-msg.user { align-self:flex-end; }
+.chat-msg.assistant { align-self:flex-start; }
+.chat-bubble { padding:9px 12px; border-radius:12px; font-size:13px; line-height:1.6; word-break:break-word; }
+.chat-msg.user .chat-bubble { background:var(--pink); color:white; border-bottom-right-radius:4px; }
+.chat-msg.assistant .chat-bubble { background:var(--surface2); color:var(--text); border-bottom-left-radius:4px; border:1px solid var(--border); }
+.chat-msg-time { font-size:10px; color:var(--text3); padding:0 4px; }
+.chat-msg.user .chat-msg-time { text-align:right; }
+.chat-typing { align-self:flex-start; padding:9px 14px; background:var(--surface2); border:1px solid var(--border); border-radius:12px; border-bottom-left-radius:4px; display:none; gap:4px; align-items:center; }
+.chat-typing.visible { display:flex; }
+.dot { width:6px; height:6px; border-radius:50%; background:var(--text3); animation:bounce 1.2s infinite; }
+.dot:nth-child(2){animation-delay:0.2s;} .dot:nth-child(3){animation-delay:0.4s;}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+.chat-footer { padding:10px 12px; border-top:1px solid var(--border); display:flex; gap:8px; align-items:flex-end; flex-shrink:0; }
+.chat-input { flex:1; padding:8px 11px; font-size:13px; font-family:var(--sans); border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); color:var(--text); resize:none; max-height:100px; min-height:36px; line-height:1.5; outline:none; }
+.chat-input:focus { border-color:var(--pink); }
+.chat-send { width:34px; height:34px; border-radius:var(--radius); background:var(--pink); color:white; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+.chat-send:hover { opacity:0.85; }
+.chat-send:disabled { opacity:0.3; cursor:default; }
+.chat-ctx { font-size:10px; padding:2px 8px; border-radius:20px; font-weight:500; }
+
 </style>
 </head>
 <body>
@@ -214,14 +243,15 @@ textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height
             <tr>
               <th style="width:28px"></th>
               <th>Champ requis</th>
-              <th>Colonne détectée</th>
-              <th>Modifier</th>
-              <th>Aperçu (1ère valeur)</th>
+              <th>Colonne(s) détectée(s)</th>
+              <th>Modifier / Concaténer</th>
+              <th>Aperçu</th>
             </tr>
           </thead>
           <tbody id="mapping-tbody"></tbody>
         </table>
       </div>
+      <p class="hint" style="margin-top:8px"><i class="ti ti-plus" aria-hidden="true"></i> Pour concaténer plusieurs colonnes (ex: Valeur + Boitier + Diélectrique → Description), cliquez "+" à droite du sélecteur.</p>
 
       <div id="mapping-loading" class="loading" style="display:none"><div class="spinner"></div> Détection des colonnes en cours…</div>
     </div>
@@ -825,34 +855,75 @@ function renderMappingTable() {
   tbody.innerHTML = '';
   REQUIRED_FIELDS.forEach(field => {
     const detected = columnMapping[field.key];
-    const preview = detected && rawData[0] ? String(rawData[0][detected]||'').slice(0,40) : '—';
-    const statusIcon = detected ? '✅' : (field.required ? '❌' : '⚪');
+    const isArray = Array.isArray(detected);
+    const cols = isArray ? detected : (detected ? [detected] : []);
+    const previewVal = cols.length && rawData[0]
+      ? cols.map(c => String(rawData[0][c]||'')).filter(Boolean).join(' | ').slice(0,50)
+      : '—';
+    const statusIcon = cols.length ? '✅' : (field.required ? '❌' : '⚪');
+
+    const selectors = cols.length
+      ? cols.map((c,i) => `
+          <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px">
+            <select onchange="updateMappingCol('${field.key}',${i},this.value)" style="font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);font-family:var(--sans);flex:1">
+              <option value="">— Supprimer —</option>
+              ${headers.map(h=>`<option value="${h}" ${h===c?'selected':''}>${h}</option>`).join('')}
+            </select>
+            ${i>0?`<button onclick="removeMappingCol('${field.key}',${i})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:0 2px" title="Supprimer">×</button>`:''}
+          </div>`).join('')
+      : `<select onchange="updateMappingCol('${field.key}',0,this.value)" style="font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);font-family:var(--sans);width:100%">
+          <option value="">— Non mappé —</option>
+          ${headers.map(h=>`<option value="${h}">${h}</option>`).join('')}
+        </select>`;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="col-status">${statusIcon}</td>
-      <td style="font-weight:500; font-size:12px">${field.label}${field.required?'<span style="color:var(--red)">*</span>':''}</td>
-      <td class="col-detected">${detected||'—'}</td>
-      <td>
-        <select onchange="updateMapping('${field.key}',this.value)" style="font-size:12px; padding:4px 8px; border-radius:5px; border:1px solid var(--border); font-family:var(--sans);">
-          <option value="">— Non mappé —</option>
-          ${headers.map(h=>`<option value="${h}" ${h===detected?'selected':''}>${h}</option>`).join('')}
-        </select>
+      <td style="font-weight:500;font-size:12px">${field.label}${field.required?'<span style="color:var(--red)">*</span>':''}</td>
+      <td class="col-detected" style="font-size:10px">${isArray?cols.join(' + '):(detected||'—')}</td>
+      <td style="min-width:200px">
+        ${selectors}
+        <button onclick="addMappingCol('${field.key}')" style="font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;padding:2px 0;display:flex;align-items:center;gap:3px;font-family:var(--sans)"><i class="ti ti-plus" aria-hidden="true"></i> Ajouter colonne</button>
       </td>
-      <td style="font-size:11px; color:var(--text3); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">${preview}</td>`;
+      <td style="font-size:11px;color:var(--text3);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${previewVal}</td>`;
     tbody.appendChild(tr);
   });
 }
 
+function updateMappingCol(field, idx, value) {
+  let cols = Array.isArray(columnMapping[field]) ? [...columnMapping[field]] : (columnMapping[field] ? [columnMapping[field]] : []);
+  if (!value) { cols.splice(idx, 1); }
+  else { cols[idx] = value; }
+  columnMapping[field] = cols.length === 0 ? null : cols.length === 1 ? cols[0] : cols;
+  renderMappingTable();
+}
+
+function addMappingCol(field) {
+  let cols = Array.isArray(columnMapping[field]) ? [...columnMapping[field]] : (columnMapping[field] ? [columnMapping[field]] : []);
+  cols.push(headers[0] || '');
+  columnMapping[field] = cols;
+  renderMappingTable();
+}
+
+function removeMappingCol(field, idx) {
+  let cols = Array.isArray(columnMapping[field]) ? [...columnMapping[field]] : (columnMapping[field] ? [columnMapping[field]] : []);
+  cols.splice(idx, 1);
+  columnMapping[field] = cols.length === 0 ? null : cols.length === 1 ? cols[0] : cols;
+  renderMappingTable();
+}
+
 function updateMapping(field, value) {
   columnMapping[field] = value || null;
-  // Update status icons
   renderMappingTable();
 }
 
 function getVal(row, field) {
   const col = columnMapping[field];
-  return col ? String(row[col]||'').trim() : '';
+  if (!col) return '';
+  if (Array.isArray(col)) {
+    return col.map(c => String(row[c]||'').trim()).filter(Boolean).join(' | ');
+  }
+  return String(row[col]||'').trim();
 }
 
 // ===================== ANALYSIS =====================
@@ -903,6 +974,10 @@ INSTRUCTIONS:
 3. Si mpn présent: générer IPN selon les règles
 4. Le MPN peut contenir plusieurs références séparées par ; ou / — utiliser la première comme référence principale
 5. Si confidence=low ou medium: indiquer dans note que vérification recommandée
+6. VÉRIFICATION COHÉRENCE MPN/DESCRIPTION: Si un MPN ET une description/specs sont fournis, vérifier qu'ils sont cohérents.
+   - Ex: MPN="RC0603FR-0710KL" avec description="47uF 16V" → INCOHÉRENCE (résistance vs condensateur) → status="warn", note="Incohérence MPN/description: MPN est une résistance mais description suggère un condensateur"
+   - Ex: MPN="GRM188R61E106KA73J" avec description="10uF 25V 0603 X5R" → COHÉRENT → ok
+   - Si MPN absent: pas de vérification possible
 
 RÉPONSE JSON tableau uniquement:
 [{"idx":0,"ipn":"...","mfr_free":"Yes|No","status":"ok|warn|error","confidence":"high|medium|low","warnings":["sensor|battery|not-sealed|msl4+"],"note":"remarque courte si nécessaire"}]`;
@@ -1161,5 +1236,126 @@ function resetAll() {
   document.getElementById('btn-export').style.display = 'none';
 }
 </script>
+
+<!-- CHAT -->
+<button class="chat-fab" onclick="toggleClientChat()" title="Assistant IA">
+  <i class="ti ti-message-circle" id="chat-fab-icon-c" aria-hidden="true"></i>
+</button>
+
+<div class="chat-panel" id="chat-panel-c">
+  <div class="chat-header">
+    <div style="display:flex;align-items:center;gap:8px">
+      <i class="ti ti-sparkles" aria-hidden="true" style="color:var(--pink)"></i>
+      Assistant BOM Client
+      <span class="chat-ctx b-info" id="chat-ctx-c" style="background:var(--pink-bg);color:var(--pink);border:1px solid var(--pink-border)">Aucune BOM</span>
+    </div>
+    <button onclick="toggleClientChat()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:16px"><i class="ti ti-x" aria-hidden="true"></i></button>
+  </div>
+  <div class="chat-messages" id="chat-msgs-c">
+    <div class="chat-msg assistant">
+      <div class="chat-bubble">Bonjour ! Je suis votre assistant BOM Client. Je peux analyser les composants, vérifier les IPN, rechercher des datasheets ou détecter des anomalies. Chargez une BOM pour commencer.</div>
+      <div class="chat-msg-time">Maintenant</div>
+    </div>
+  </div>
+  <div class="chat-typing" id="chat-typing-c"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  <div class="chat-footer">
+    <textarea class="chat-input" id="chat-input-c" placeholder="Question sur la BOM client…" rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendClientChat();}"
+      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+    <button class="chat-send" onclick="sendClientChat()"><i class="ti ti-send" aria-hidden="true"></i></button>
+  </div>
+</div>
+
+<script>
+let chatHistoryC = [];
+let chatOpenC = false;
+
+function toggleClientChat() {
+  chatOpenC = !chatOpenC;
+  document.getElementById('chat-panel-c').classList.toggle('open', chatOpenC);
+  document.getElementById('chat-fab-icon-c').className = chatOpenC ? 'ti ti-x' : 'ti ti-message-circle';
+  if (chatOpenC) {
+    const badge = document.getElementById('chat-ctx-c');
+    badge.textContent = rawData.length ? rawData.length + ' composants' : 'Aucune BOM';
+    document.getElementById('chat-input-c').focus();
+  }
+}
+
+function addClientMsg(role, text) {
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + role;
+  const now = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  div.innerHTML = `<div class="chat-bubble">${text.replace(/\n/g,'<br>').replace(/\`([^\`]+)\`/g,'<code style="font-family:var(--mono);background:var(--surface2);padding:1px 5px;border-radius:3px">$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')}</div><div class="chat-msg-time">${now}</div>`;
+  const msgs = document.getElementById('chat-msgs-c');
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function getClientBOMContext() {
+  if (!rawData.length) return "Aucune BOM chargée.";
+  const rows = rawData.slice(0,30).map(r => {
+    const desig = getVal(r,'designator');
+    const mpn = getVal(r,'mpn');
+    const desc = getVal(r,'description');
+    const notes = getVal(r,'notes');
+    const res = analysisResults.find(a => rawData[a.idx]===r);
+    const ipn = res?.ipn || '';
+    return `${desig}|${mpn}|${ipn}|${desc}|${notes}`.slice(0,100);
+  }).join('\n');
+  return `BOM client (${rawData.length} composants, ${rawData.length>30?'30 premiers affichés':'tous'}):\nDésig|MPN|IPN|Desc|Notes\n${rows}\nClient: ${activeClientAnalysis.nom} (MPN strict: ${activeClientAnalysis.mpn_strict?'oui':'non'})`;
+}
+
+async function sendClientChat() {
+  const input = document.getElementById('chat-input-c');
+  const text = input.value.trim();
+  if (!text) return;
+  const key = document.getElementById('cfg-api-key').value.trim() || apiKey;
+  if (!key) { addClientMsg('assistant','⚠️ Clé API non configurée dans Règles & Config.'); return; }
+
+  input.value = ''; input.style.height='auto';
+  document.getElementById('chat-send').disabled = true;
+  addClientMsg('user', text);
+  chatHistoryC.push({role:'user', content:text});
+
+  document.getElementById('chat-typing-c').classList.add('visible');
+  document.getElementById('chat-msgs-c').scrollTop = 99999;
+
+  const sys = `Tu es un assistant expert en électronique et BOM client. Tu aides à analyser, vérifier et codifier des BOM clients hétérogènes.
+
+${getRulesPrompt ? getRulesPrompt() : ''}
+
+CONTEXTE BOM ACTUEL:
+${getClientBOMContext()}
+
+Réponds en français, de manière concise et technique. Tu peux faire des recherches web pour trouver des datasheets.`;
+
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body: JSON.stringify({
+        model:"claude-sonnet-4-5", max_tokens:1024, system:sys,
+        tools:[{type:"web_search_20250305",name:"web_search"}],
+        messages: chatHistoryC
+      })
+    });
+    const data = await resp.json();
+    document.getElementById('chat-typing-c').classList.remove('visible');
+    if (data.error) { addClientMsg('assistant','⚠️ Erreur: '+data.error.message); chatHistoryC.pop(); }
+    else {
+      const fullText = data.content.map(b=>b.type==='text'?b.text:'').join('');
+      addClientMsg('assistant', fullText || '(Pas de réponse)');
+      chatHistoryC.push({role:'assistant', content:data.content});
+    }
+  } catch(e) {
+    document.getElementById('chat-typing-c').classList.remove('visible');
+    addClientMsg('assistant','⚠️ Erreur connexion: '+e.message);
+    chatHistoryC.pop();
+  }
+  document.getElementById('chat-send').disabled = false;
+  input.focus();
+}
+</script>
+
 </body>
 </html>
