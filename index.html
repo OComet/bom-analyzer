@@ -745,37 +745,69 @@ tr:hover td { background: var(--surface2); }
 
     <!-- CONFIG TAB -->
     <div class="panel" id="tab-config">
-      <div class="section-label" style="margin-top:0">Règles de codification IPN</div>
-      <div class="rule-box">
-        <b>Condensateur céramique/film :</b> C(val)-(boitier)-(V)-(tolP)-(diélec)<br>
-        <span style="color:var(--text3)">Ex: C10U-0603-16V-10P-X5R &nbsp;|&nbsp; C1N5-0603-50V-20P-X7R &nbsp;|&nbsp; C100P-0805-1KV-5P-C0G (≥1000V → kV)</span><br><br>
-        <b>Condensateur tantale :</b> CT(val)-(boitier A/B/C/D/E)-(V)-(tolP)-(ESR)<br>
-        <span style="color:var(--text3)">Ex: CT10U-A-20V-20P-5R &nbsp;|&nbsp; CT100U-B-6V3-10P-0R4</span><br><br>
-        <b>Résistance :</b> R(val)-(boitier)[-(PPM si &lt;100)][-(W si non standard)]<br>
-        <span style="color:var(--text3)">Ex: R10K-0603 &nbsp;|&nbsp; R40K2-0603-0W33 &nbsp;|&nbsp; R30K-0603-10PPM</span><br>
-        <span style="color:var(--text3)">Puissance std : 0201=50mW · 0402=62mW · 0603=100mW · 0805=125mW · 1206=250mW · 2512=1W</span><br><br>
-        <b>Autre composant :</b> MPN sans suffixes conditionnement<br>
-        <span style="color:var(--text3)">Supprimer : #PBF · #TRPBF · TR · -T · /TR · REEL · TAPE</span>
+
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:8px;">
+        <div>
+          <p style="font-size:13px; color:var(--text2)">Modifiez les règles pour affiner la codification. Partagées avec BOM Client.</p>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span id="rules-save-indicator" style="font-size:11px; color:var(--green); display:none"><i class="ti ti-check" aria-hidden="true"></i> Sauvegardé</span>
+          <button class="btn primary" onclick="saveRules()"><i class="ti ti-device-floppy" aria-hidden="true"></i> Sauvegarder</button>
+          <button class="btn" onclick="resetRules()"><i class="ti ti-refresh" aria-hidden="true"></i> Réinitialiser</button>
+        </div>
       </div>
 
-      <div class="section-label" style="margin-top:1.5rem">Composants sensibles (warnings)</div>
-      <div class="rule-box" style="font-family:var(--sans); line-height:2;">
-        <span class="badge b-warn" style="margin-right:8px"><i class="ti ti-radar" aria-hidden="true"></i> Capteurs</span> Pression, humidité, température…<br>
-        <span class="badge b-warn" style="margin-right:8px"><i class="ti ti-battery" aria-hidden="true"></i> Énergie</span> Piles, batteries, accumulateurs<br>
-        <span class="badge b-warn" style="margin-right:8px"><i class="ti ti-droplet-off" aria-hidden="true"></i> Étanchéité</span> Relais non étanches, composants non sealed<br>
-        <span class="badge b-warn" style="margin-right:8px"><i class="ti ti-moisture" aria-hidden="true"></i> MSL≥4</span> Sensibilité humidité niveau 4 et supérieur
+      <div class="section-label" style="margin-top:0">Condensateur céramique / film</div>
+      <div class="result-box" style="margin-top:0; margin-bottom:12px">
+        <textarea id="rule-capacitor" rows="5" style="width:100%; font-family:var(--font-mono,monospace); font-size:12px; border:none; background:transparent; outline:none; resize:vertical; line-height:1.6; color:var(--color-text-primary)"></textarea>
       </div>
 
-      <div class="section-label" style="margin-top:1.5rem">Logique stock selon client</div>
-      <div class="rule-box" style="font-family:var(--sans); line-height:2;">
-        <b>Client standard</b> — recherche IPN en priorité, puis MPN si IPN absent<br>
-        <b style="color:var(--pink)">Client MPN strict</b> — recherche MPN en priorité. Si MPN absent mais IPN dispo : ⚠️ warning orange<br>
-        Dans tous les cas : le stock est cherché sur <b>IPN et MPN simultanément</b>
+      <div class="section-label">Condensateur tantale</div>
+      <div class="result-box" style="margin-top:0; margin-bottom:12px">
+        <textarea id="rule-tantalum" rows="3" style="width:100%; font-family:var(--font-mono,monospace); font-size:12px; border:none; background:transparent; outline:none; resize:vertical; line-height:1.6; color:var(--color-text-primary)"></textarea>
       </div>
 
-      <div class="section-label" style="margin-top:1.5rem">Clients chargés</div>
+      <div class="section-label">Résistance</div>
+      <div class="result-box" style="margin-top:0; margin-bottom:12px">
+        <textarea id="rule-resistor" rows="7" style="width:100%; font-family:var(--font-mono,monospace); font-size:12px; border:none; background:transparent; outline:none; resize:vertical; line-height:1.6; color:var(--color-text-primary)"></textarea>
+      </div>
+
+      <div class="section-label">Autres composants</div>
+      <div class="result-box" style="margin-top:0; margin-bottom:12px">
+        <textarea id="rule-other" rows="3" style="width:100%; font-family:var(--font-mono,monospace); font-size:12px; border:none; background:transparent; outline:none; resize:vertical; line-height:1.6; color:var(--color-text-primary)"></textarea>
+      </div>
+
+      <div class="section-label">Suffixes conditionnement à supprimer</div>
+      <div class="result-box" style="margin-top:0; margin-bottom:12px">
+        <input type="text" id="rule-suffixes" style="width:100%; border:none; background:transparent; outline:none; font-size:13px; font-family:var(--font-mono,monospace)" />
+      </div>
+
+      <div class="section-label" style="margin-top:1rem">Composants sensibles</div>
+      <div class="result-box" style="margin-top:0; margin-bottom:12px">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div><label style="font-size:11px; color:var(--color-text-secondary); margin-bottom:4px; display:block">Capteurs</label>
+            <input type="text" id="rule-sensors" style="width:100%; border:none; border-bottom:1px solid var(--color-border-tertiary); background:transparent; outline:none; font-size:12px; padding:2px 0" /></div>
+          <div><label style="font-size:11px; color:var(--color-text-secondary); margin-bottom:4px; display:block">Énergie</label>
+            <input type="text" id="rule-batteries" style="width:100%; border:none; border-bottom:1px solid var(--color-border-tertiary); background:transparent; outline:none; font-size:12px; padding:2px 0" /></div>
+          <div><label style="font-size:11px; color:var(--color-text-secondary); margin-bottom:4px; display:block">Non étanches</label>
+            <input type="text" id="rule-sealed" style="width:100%; border:none; border-bottom:1px solid var(--color-border-tertiary); background:transparent; outline:none; font-size:12px; padding:2px 0" /></div>
+          <div><label style="font-size:11px; color:var(--color-text-secondary); margin-bottom:4px; display:block">Niveau MSL minimum</label>
+            <select id="rule-msl" style="border:none; border-bottom:1px solid var(--color-border-tertiary); background:transparent; outline:none; font-size:12px; padding:2px 0; width:100%">
+              <option value="4">MSL ≥ 4</option><option value="3">MSL ≥ 3</option><option value="2">MSL ≥ 2</option>
+            </select></div>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:1rem">Logique stock & Clients</div>
+      <div class="result-box" style="font-family:var(--font-sans,sans-serif); line-height:2; font-size:12px; color:var(--color-text-secondary); margin-top:0; margin-bottom:12px">
+        <b style="color:var(--color-text-primary)">Client standard</b> — recherche IPN en priorité, puis MPN si absent<br>
+        <b style="color:#993556">Client MPN strict</b> — MPN en priorité. IPN dispo sans MPN → ⚠️ warning<br>
+        Stock cherché sur IPN et MPN simultanément
+      </div>
+
+      <div class="section-label">Clients chargés</div>
       <div id="config-clients-preview">
-        <p style="font-size:13px; color:var(--text2)">Aucun client chargé — configurez le Google Sheet clients dans l'écran de setup.</p>
+        <p style="font-size:13px; color:var(--color-text-secondary)">Aucun client chargé.</p>
       </div>
     </div>
 
@@ -783,6 +815,80 @@ tr:hover td { background: var(--surface2); }
 </div>
 
 <script>
+const DEFAULT_RULES_BOM = {
+  capacitor: `Format: C(valeur)-(boitier)-(tensionV)-(tolP)-(diélectrique)
+- Valeur: 10U=10µF, 1N5=1.5nF, 10P=10pF, 100N=100nF
+- Tension: 16V, 6V3. Si >=1000V écrire en kV: 1KV, 1KV5
+- Tolérance: P remplace % — 10P=10%, 5P=5%, 20P=20%
+Exemples: C10U-0603-16V-10P-X5R | C1N5-0603-50V-20P-X7R | C100P-0805-1KV-5P-C0G`,
+  tantalum: `Format: CT(valeur)-(boitier A/B/C/D/E)-(tensionV)-(tolP)-(ESR)
+Exemples: CT10U-A-20V-20P-5R | CT100U-B-6V3-10P-0R4`,
+  resistor: `Format: R(valeur)-(boitier)[-(PPM si coeff <100PPM)][-(W si puissance non standard)]
+- Valeur 0 ohm: TOUJOURS 0R → R0R-0603 (jamais R0-0603)
+- Tolérance >=1%: non codifiée. PPM toujours en entier (25PPM pas 25P)
+- Puissance std: 0201=50mW, 0402=62mW, 0603=100mW, 0805=125mW, 1206=250mW, 2512=1W
+Exemples: R10K-0603 | R0R-0603 | R40K2-0603-0W33 | R30K-0603-10PPM | R10K-0805-25PPM`,
+  other: `Utiliser le MPN sans suffixes de conditionnement.
+Exemples: LM317MBSTT3G | ISL43L210IHZ`,
+  suffixes: '#PBF, #TRPBF, TR, -T, /TR, REEL, TAPE, CT',
+  sensors: 'pressure, humidity, temperature, sensor, transducer, capteur, pression, humidité',
+  batteries: 'battery, pile, accumulator, lithium, LiPo, CR2032',
+  sealed: 'relay, relais, not sealed, non étanche',
+  msl: '4'
+};
+
+function loadRules() {
+  try {
+    const saved = localStorage.getItem('bom_coding_rules');
+    const rules = saved ? JSON.parse(saved) : DEFAULT_RULES_BOM;
+    ['capacitor','tantalum','resistor','other'].forEach(k => {
+      const el = document.getElementById('rule-' + k);
+      if (el) el.value = rules[k] || DEFAULT_RULES_BOM[k] || '';
+    });
+    ['suffixes','sensors','batteries','sealed'].forEach(k => {
+      const el = document.getElementById('rule-' + k);
+      if (el) el.value = rules[k] || DEFAULT_RULES_BOM[k] || '';
+    });
+    const mslEl = document.getElementById('rule-msl');
+    if (mslEl) mslEl.value = rules.msl || '4';
+  } catch(e) {}
+}
+
+function saveRules() {
+  const rules = {};
+  ['capacitor','tantalum','resistor','other','suffixes','sensors','batteries','sealed','msl'].forEach(k => {
+    const el = document.getElementById('rule-' + k);
+    if (el) rules[k] = el.value;
+  });
+  try {
+    localStorage.setItem('bom_coding_rules', JSON.stringify(rules));
+    const ind = document.getElementById('rules-save-indicator');
+    if (ind) { ind.style.display='inline'; setTimeout(()=>ind.style.display='none', 2000); }
+  } catch(e) { alert('Erreur: ' + e.message); }
+}
+
+function resetRules() {
+  if (!confirm('Réinitialiser toutes les règles ?')) return;
+  Object.entries(DEFAULT_RULES_BOM).forEach(([k,v]) => {
+    const el = document.getElementById('rule-' + k);
+    if (el) el.value = v;
+  });
+}
+
+function getRulesPrompt() {
+  const get = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  return `RÈGLES DE CODIFICATION IPN:
+CONDENSATEUR CÉRAMIQUE/FILM:
+${get('rule-capacitor')}
+CONDENSATEUR TANTALE:
+${get('rule-tantalum')}
+RÉSISTANCE:
+${get('rule-resistor')}
+AUTRES COMPOSANTS:
+${get('rule-other')}
+SUFFIXES CONDITIONNEMENT À SUPPRIMER: ${get('rule-suffixes')}`;
+}
+
 let bomData = [];
 let csvBuffer = "";
 let stockByIPN = {}, stockByMPN = {};
@@ -1164,47 +1270,24 @@ async function callClaude(prompt, sys) {
   return data.content.map(c=>c.text||'').join('');
 }
 
-const IPN_SYS = `Tu es un ingénieur hardware expert en codification de composants électroniques.
-RÈGLES IPN:
-1. CONDENSATEUR CÉRAMIQUE/FILM: C(valeur)-(boitier)-(tensionV)-(tolP)-(diélectrique)
-   Valeur: 10U=10µF,1N5=1.5nF,10P=10pF,100N=100nF. Tension:16V,6V3. Tolérance:10P=10%.
-   Tension >=1000V: écrire en kV (1KV,1KV5,2KV...) et NON en V (jamais 1000V,1500V).
-   Ex: C10U-0603-16V-10P-X5R, C1N5-0603-50V-20P-X7R, C100P-0805-1KV-5P-C0G
-2. CONDENSATEUR TANTALE: CT(valeur)-(boitier A/B/C/D/E)-(tensionV)-(tolP)-(ESR)
-   ESR:5R=5Ω,0R4=0.4Ω. Ex:CT10U-A-20V-20P-5R
-3. RÉSISTANCE: R(valeur)-(boitier)[-(NNPPMsi coeff temp <100PPM)][-(W si puissance non standard)]
-   Coeff temp: écrire TOUJOURS avec le suffixe PPM collé au nombre. Ex: 10PPM, 25PPM, 50PPM. JAMAIS juste 'P'.
-   Valeur 0 ohm: TOUJOURS écrire 0R (jamais 0 seul). Résultat: R0R-0603 et NON R0-0603.
-   Puissance std:0201=50mW,0402=62mW,0603=100mW,0805=125mW,1206=250mW,2512=1W.
-   Ex:R10K-0603, R0R-0603, R40K2-0603-0W33, R30K-0603-10PPM, R10K-0805-25PPM
-4. AUTRE: MPN sans suffixes conditionnement (#PBF,#TRPBF,TR,-T,/TR,REEL,TAPE).
+function getIPN_SYS() {
+  return `Tu es un ingénieur hardware expert en codification de composants électroniques.
+${getRulesPrompt()}
 RÉPONSE JSON uniquement:
 {"ipn":"...","type":"C|CT|R|OTHER","explanation":"...","confidence":"high|medium|low","warnings":["..."]}`;
+}
 
-const BOM_SYS = `Tu es un ingénieur hardware expert. Pour chaque ligne BOM:
+function getBOM_SYS() { return `Tu es un ingénieur hardware expert. Pour chaque ligne BOM:
 
-RÈGLES IPN:
-- Condensateur céramique/film: C(val)-(boitier)-(V)-(tolP)-(diélec). Tension >=1000V → kV (1KV, 1KV5). Ex: C10U-0603-16V-10P-X5R, C100P-0805-1KV-5P-C0G
-- Condensateur tantale: CT(val)-(boitier A/B/C/D/E)-(V)-(tolP)-(ESR). Ex: CT10U-A-20V-20P-5R
-- Résistance: R(val)-(boitier)[-(NNPPM si coeff temp <100PPM)][-(W si non standard)]. Toujours écrire PPM en entier (25PPM pas 25P). Valeur 0 ohm = 0R (R0R-0603 et NON R0-0603). Ex: R10K-0603, R0R-0603, R40K2-0603-0W33, R10K-0805-25PPM
-- Autre: MPN sans suffixes conditionnement (#PBF, #TRPBF, TR, -T, /TR, REEL, TAPE)
+${getRulesPrompt()}
 
 TRAITEMENT:
-1. Si le champ IPN (ipn) est déjà renseigné (non vide, non "—"):
-   - CONSERVER cet IPN tel quel
-   - Vérifier sa cohérence avec le MPN et les notes
-   - Si incohérence détectée: status="warn" et expliquer dans note
-   - Si cohérent: status="ok"
+1. Si ipn déjà renseigné: CONSERVER, vérifier cohérence MPN/notes. Incohérence → status="warn"
+2. Si ipn vide: MPN peut avoir plusieurs refs séparées par ";", utiliser la première. Générer IPN selon règles.
+3. Détecter: sensor (capteurs), battery (piles/batteries), not-sealed (relais non étanche), msl4+ (MSL≥4)
 
-2. Si le champ IPN est vide ou "—":
-   - Le champ MPN peut contenir PLUSIEURS références séparées par ";" — utiliser le premier MPN comme référence principale
-   - Générer l'IPN selon les règles ci-dessus
-   - Vérifier cohérence avec les notes si présentes
-
-3. Détecter composants sensibles: sensor (capteurs pression/humidité/temp), battery (piles/batteries), not-sealed (relais non étanche), msl4+ (MSL≥4)
-
-RÉPONSE JSON tableau uniquement, un objet par ligne:
-[{"idx":0,"ipn":"...","status":"ok|warn|error","warnings":["sensor|battery|not-sealed|msl4+"],"note":"remarque courte si problème"}]`;
+RÉPONSE JSON tableau uniquement:
+[{"idx":0,"ipn":"...","status":"ok|warn|error","warnings":["sensor|battery|not-sealed|msl4+"],"note":"remarque courte"}]`; }
 
 async function generateIPN() {
   const mpn = document.getElementById('mpn-input').value.trim();
@@ -1214,14 +1297,14 @@ async function generateIPN() {
   document.getElementById('codif-loading').style.display='flex';
   document.getElementById('codif-result').style.display='none';
   try {
-    const raw = await callClaude(`MPN: ${mpn}${notes?'\nNotes: '+notes:''}${type!=='auto'?'\nType: '+type:''}`, IPN_SYS);
+    const raw = await callClaude(`MPN: ${mpn}${notes?'\nNotes: '+notes:''}${type!=='auto'?'\nType: '+type:''}`, getIPN_SYS());
     const r = JSON.parse(raw.replace(/```json|```/g,'').trim());
     document.getElementById('ipn-output').textContent = r.ipn||'—';
     document.getElementById('ipn-explain').textContent = r.explanation||'';
     const wDiv = document.getElementById('ipn-warnings');
     wDiv.innerHTML = (r.warnings&&r.warnings.length)
       ? r.warnings.map(w=>`<div class="warn-item"><i class="ti ti-alert-triangle" aria-hidden="true"></i><span>${w}</span></div>`).join('')
-      : `<span class="badge b-ok"><i class="ti ti-check" aria-hidden="true"></i> Codification validée</span>`;
+      : `<span class="badge b-ok"><i class="ti ti-check" aria-hidden="true"></i> Codification validée</span>`; }
     document.getElementById('codif-result').style.display='block';
   } catch(e) { alert("Erreur IA. Vérifiez votre connexion."); }
   document.getElementById('codif-loading').style.display='none';
@@ -1284,7 +1367,7 @@ async function analyzeBOM() {
     }));
     try {
       // First pass: analyse batch
-      const raw=await callClaude(`Analyse:\n${JSON.stringify(batch,null,2)}`,BOM_SYS);
+      const raw=await callClaude(`Analyse:\n${JSON.stringify(batch,null,2)}`,getBOM_SYS());
       const batchResults = JSON.parse(raw.replace(/```json|```/g,'').trim());
 
       // Enrich low/medium confidence items via Mouser/Farnell
@@ -1307,7 +1390,7 @@ IPN existant: ${origRow.ipn || '—'}
 
 Génère ou vérifie l'IPN avec ces informations enrichies.`;
             try {
-              const enrichedRaw = await callClaude(enrichPrompt, IPN_SYS);
+              const enrichedRaw = await callClaude(enrichPrompt, getIPN_SYS());
               const enrichedResult = JSON.parse(enrichedRaw.replace(/```json|```/g,'').trim());
               r.ipn = enrichedResult.ipn || r.ipn;
               r.note = (r.note ? r.note + ' | ' : '') + `Enrichi via ${enriched.source}`;
