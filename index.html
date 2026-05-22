@@ -1347,7 +1347,7 @@ async function generateIPN() {
     const wDiv = document.getElementById('ipn-warnings');
     wDiv.innerHTML = (r.warnings&&r.warnings.length)
       ? r.warnings.map(w=>`<div class="warn-item"><i class="ti ti-alert-triangle" aria-hidden="true"></i><span>${w}</span></div>`).join('')
-      : `<span class="badge b-ok"><i class="ti ti-check" aria-hidden="true"></i> Codification validée</span>`; }
+      : `<span class="badge b-ok"><i class="ti ti-check" aria-hidden="true"></i> Codification validée</span>`;
     document.getElementById('codif-result').style.display='block';
   } catch(e) { alert("Erreur IA. Vérifiez votre connexion."); }
   document.getElementById('codif-loading').style.display='none';
