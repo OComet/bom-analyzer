@@ -708,21 +708,38 @@ function resetRules() {
 }
 
 function getRulesPrompt() {
+  const get = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+
+  let extraRules = '';
+  try {
+    const saved = localStorage.getItem('bom_coding_rules');
+    if (saved) {
+      const rules = JSON.parse(saved);
+      const knownKeys = ['capacitor','tantalum','resistor','other','suffixes','sensors','batteries','sealed','msl'];
+      const extraKeys = Object.keys(rules).filter(k => !knownKeys.includes(k));
+      if (extraKeys.length > 0) {
+        extraRules = '\n\n' + extraKeys.map(k =>
+          `RÈGLE SUPPLÉMENTAIRE — ${k.toUpperCase()}:\n${rules[k]}`
+        ).join('\n\n');
+      }
+    }
+  } catch(e) {}
+
   return `RÈGLES DE CODIFICATION IPN:
 
 CONDENSATEUR CÉRAMIQUE/FILM:
-${document.getElementById('rule-capacitor').value}
+${get('rule-capacitor')}
 
 CONDENSATEUR TANTALE:
-${document.getElementById('rule-tantalum').value}
+${get('rule-tantalum')}
 
 RÉSISTANCE:
-${document.getElementById('rule-resistor').value}
+${get('rule-resistor')}
 
 AUTRES COMPOSANTS:
-${document.getElementById('rule-other').value}
+${get('rule-other')}
 
-SUFFIXES CONDITIONNEMENT À SUPPRIMER: ${document.getElementById('rule-suffixes').value}`;
+SUFFIXES CONDITIONNEMENT À SUPPRIMER: ${get('rule-suffixes')}${extraRules}`;
 }
 
 // ===================== TABS =====================
