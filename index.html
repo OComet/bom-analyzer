@@ -816,6 +816,8 @@ tr:hover td { background: var(--surface2); }
         Stock cherché sur IPN et MPN simultanément
       </div>
 
+      <div id="extra-rules-container"></div>
+
       <div class="section-label">Clients chargés</div>
       <div id="config-clients-preview">
         <p style="font-size:13px; color:var(--color-text-secondary)">Aucun client chargé.</p>
@@ -862,6 +864,8 @@ function loadRules() {
     });
     const mslEl = document.getElementById('rule-msl');
     if (mslEl) mslEl.value = rules.msl || '4';
+    // Render any extra keys from sheet
+    renderExtraRules(rules);
   } catch(e) {}
 }
 
@@ -884,6 +888,21 @@ function resetRules() {
     const el = document.getElementById('rule-' + k);
     if (el) el.value = v;
   });
+}
+
+function renderExtraRules(rules) {
+  const knownKeys = ['capacitor','tantalum','resistor','other','suffixes','sensors','batteries','sealed','msl'];
+  const extraKeys = Object.keys(rules).filter(k => !knownKeys.includes(k.toLowerCase()));
+  const container = document.getElementById('extra-rules-container');
+  if (!container) return;
+  if (!extraKeys.length) { container.innerHTML = ''; return; }
+  container.innerHTML = `
+    <div class="section-label" style="margin-top:1rem">Règles supplémentaires (depuis Google Sheet)</div>
+    ${extraKeys.map(k => `
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">${k}</div>
+        <div class="result-box" style="margin-top:0;font-family:var(--font-mono,monospace);font-size:12px;white-space:pre-wrap;color:var(--color-text-secondary)">${rules[k]}</div>
+      </div>`).join('')}`;
 }
 
 function getRulesPrompt() {
@@ -1076,14 +1095,17 @@ async function loadAll() {
       const rulesRows = parseCSV(rulesText);
       const rulesObj = {};
       rulesRows.forEach(r => {
-        const k = (r['Clé']||r['cle']||r['key']||'').trim();
-        const v = (r['Valeur']||r['valeur']||r['value']||'').trim();
+        const k = (r['Clé']||r['cle']||r['key']||r['Cle']||'').trim();
+        // Unescape literal 
+ sequences back to real newlines
+        const v = (r['Valeur']||r['valeur']||r['value']||'').trim().replace(/\\n/g,'\n');
         if (k) rulesObj[k] = v;
       });
       if (Object.keys(rulesObj).length > 0) {
         localStorage.setItem('bom_coding_rules', JSON.stringify(rulesObj));
         localStorage.setItem('bom_rules_url', rulesUrl);
         loadRules();
+        renderExtraRules(rulesObj);
         setDot('rules','ok', Object.keys(rulesObj).length + ' règles chargées');
         sourceStatus.rules = 'ok';
       } else throw new Error('Aucune règle trouvée — vérifiez les colonnes Clé/Valeur');
