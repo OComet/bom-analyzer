@@ -498,9 +498,7 @@ async function loadRulesFromURL(silent) {
     const resp = await fetch(url);
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const text = await resp.text();
-    const lines = text.trim().split(/
-?
-/);
+    const lines = text.trim().split(/\r?\n/);
     const sep = lines[0].includes('	') ? '	' : ',';
     const headers = lines[0].split(sep).map(h=>h.replace(/"/g,'').trim());
     const rulesObj = {};
@@ -1424,7 +1422,8 @@ function addClientMsg(role, text) {
   const div = document.createElement('div');
   div.className = 'chat-msg ' + role;
   const now = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-  div.innerHTML = `<div class="chat-bubble">${text.replace(/\n/g,'<br>').replace(/\`([^\`]+)\`/g,'<code style="font-family:var(--mono);background:var(--surface2);padding:1px 5px;border-radius:3px">$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')}</div><div class="chat-msg-time">${now}</div>`;
+  const bubble = text.replace(/\n/g,'<br>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  div.innerHTML = '<div class="chat-bubble">' + bubble + '</div><div class="chat-msg-time">' + now + '</div>';
   const msgs = document.getElementById('chat-msgs-c');
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
@@ -1439,9 +1438,9 @@ function getClientBOMContext() {
     const notes = getVal(r,'notes');
     const res = analysisResults.find(a => rawData[a.idx]===r);
     const ipn = res?.ipn || '';
-    return `${desig}|${mpn}|${ipn}|${desc}|${notes}`.slice(0,100);
+    return (desig+'|'+mpn+'|'+ipn+'|'+desc+'|'+notes).slice(0,100);
   }).join('\n');
-  return `BOM client (${rawData.length} composants, ${rawData.length>30?'30 premiers affichés':'tous'}):\nDésig|MPN|IPN|Desc|Notes\n${rows}\nClient: ${activeClientAnalysis.nom} (MPN strict: ${activeClientAnalysis.mpn_strict?'oui':'non'})`;
+  return 'BOM client (' + rawData.length + ' composants):\nDesig|MPN|IPN|Desc|Notes\n' + rows + '\nClient: ' + activeClientAnalysis.nom + ' (MPN strict: ' + (activeClientAnalysis.mpn_strict?'oui':'non') + ')';
 }
 
 async function sendClientChat() {
@@ -1459,14 +1458,10 @@ async function sendClientChat() {
   document.getElementById('chat-typing-c').classList.add('visible');
   document.getElementById('chat-msgs-c').scrollTop = 99999;
 
-  const sys = `Tu es un assistant expert en électronique et BOM client. Tu aides à analyser, vérifier et codifier des BOM clients hétérogènes.
-
-${getRulesPrompt ? getRulesPrompt() : ''}
-
-CONTEXTE BOM ACTUEL:
-${getClientBOMContext()}
-
-Réponds en français, de manière concise et technique. Tu peux faire des recherches web pour trouver des datasheets.`;
+  const sys = "Tu es un assistant expert en electronique et BOM client. Tu aides a analyser, verifier et codifier des BOM clients heterogenes.\n\n" +
+    (typeof getRulesPrompt === 'function' ? getRulesPrompt() + "\n\n" : '') +
+    "CONTEXTE BOM ACTUEL:\n" + getClientBOMContext() + "\n\n" +
+    "Reponds en francais, de maniere concise et technique. Tu peux faire des recherches web.";
 
   try {
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
