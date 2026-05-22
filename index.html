@@ -1096,8 +1096,6 @@ async function loadAll() {
       const rulesObj = {};
       rulesRows.forEach(r => {
         const k = (r['Clé']||r['cle']||r['key']||r['Cle']||'').trim();
-        // Unescape literal 
- sequences back to real newlines
         const v = (r['Valeur']||r['valeur']||r['value']||'').trim().replace(/\\n/g,'\n');
         if (k) rulesObj[k] = v;
       });
@@ -2093,9 +2091,10 @@ function addMessage(role, text, source) {
   const div = document.createElement('div');
   div.className = 'chat-msg ' + role;
   const now = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
-  div.innerHTML = `<div class="chat-bubble">${text.replace(/\n/g,'<br>').replace(/\`([^\`]+)\`/g,'<code style="font-family:var(--mono);background:var(--surface2);padding:1px 5px;border-radius:3px">$1</code>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')}</div>
-    ${source ? `<div class="chat-source"><i class="ti ti-world" aria-hidden="true"></i> ${source}</div>` : ''}
-    <div class="chat-msg-time">${now}</div>`;
+  const bubble = text.replace(/\n/g,'<br>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  div.innerHTML = '<div class="chat-bubble">' + bubble + '</div>' +
+    (source ? '<div class="chat-source"><i class="ti ti-world" aria-hidden="true"></i> ' + source + '</div>' : '') +
+    '<div class="chat-msg-time">' + now + '</div>';
   const msgs = document.getElementById('chat-messages');
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
@@ -2120,19 +2119,11 @@ async function sendChat() {
   const msgs = document.getElementById('chat-messages');
   msgs.scrollTop = msgs.scrollHeight;
 
-  const systemPrompt = `Tu es un assistant expert en électronique et gestion de composants BOM (Bill of Materials).
-Tu as accès au contexte complet de la BOM chargée et tu peux faire des recherches web pour trouver des datasheets, des alternatives de composants, des informations techniques.
-
-CONTEXTE BOM ACTUEL:
-${getBOMContext()}
-
-RÈGLES DE CODIFICATION IPN:
-- Condensateur: C(val)-(boitier)-(V)-(tolP)-(diélec). Tension >=1000V → kV (1KV, 1KV5). Ex: C10U-0603-16V-10P-X5R, C100P-0805-1KV-5P-C0G
-- Tantale: CT(val)-(boitier)-(V)-(tolP)-(ESR). Ex: CT10U-A-20V-20P-5R
-- Résistance: R(val)-(boitier)[-(NNPPM si <100PPM)][-(W)]. Toujours PPM en entier. Valeur 0 ohm = 0R. Ex: R10K-0603, R0R-0603, R10K-0805-25PPM
-- Autre: MPN sans suffixes conditionnement
-
-Réponds en français, de manière concise et technique. Pour les recherches de composants, utilise l'outil web_search.`;
+  const systemPrompt = "Tu es un assistant expert en electronique et gestion de composants BOM.\n" +
+    "Tu as acces au contexte complet de la BOM chargee et tu peux faire des recherches web.\n\n" +
+    "CONTEXTE BOM ACTUEL:\n" + getBOMContext() + "\n\n" +
+    getRulesPrompt() + "\n\n" +
+    "Reponds en francais, de maniere concise et technique. Pour les recherches, utilise web_search.";
 
   try {
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
