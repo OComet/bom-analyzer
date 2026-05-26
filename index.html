@@ -1668,14 +1668,17 @@ function exportCSV() {
   const headers = Object.keys(bomData[0]);
   if (!headers.includes(stockColKey)) headers.push(stockColKey);
 
-  // 4. Export TSV
-  const lines = [
-    headers.join('\t'),
-    ...bomData.map(r => headers.map(h => String(r[h]||'').replace(/\t/g,' ')).join('\t'))
-  ];
+  // 4. Export XLS avec SheetJS
+  if (typeof XLSX === 'undefined') { alert('Bibliothèque XLSX non chargée.'); return; }
 
-  // 5. Ajouter les warnings en bas du fichier
-  const warnRows = [];
+  const wb = XLSX.utils.book_new();
+
+  // Feuille principale BOM
+  const wsData = [headers, ...bomData.map(r => headers.map(h => r[h]||''))];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  XLSX.utils.book_append_sheet(wb, ws, 'BOM Codifiée');
+
+  // Feuille warnings si nécessaire
   if (rowMeta && rowMeta.length > 0) {
     const warnTypes = {
       'sensor':    'Capteurs (pression/humidité/température)',
@@ -1684,60 +1687,41 @@ function exportCSV() {
       'msl4+':     'Composants MSL ≥ 4'
     };
     const found = {};
+    const mpnWarnRefs = [];
+    const uncodified = [];
+
     rowMeta.forEach((meta, i) => {
-      if (!meta.warnings || !meta.warnings.length) return;
       const row = bomData[i] || {};
       const ref = findCol(row, ['designator','reference','ref']) || '';
-      meta.warnings.forEach(w => {
-        if (!found[w]) found[w] = [];
-        found[w].push(ref);
-      });
+      (meta.warnings||[]).forEach(w => { if (!found[w]) found[w]=[]; found[w].push(ref); });
+      if (meta.mpnWarn) mpnWarnRefs.push(ref);
+    });
+    document.querySelectorAll('.editable-ipn').forEach((inp, i) => {
+      if (inp.value === '—' || inp.value === '') {
+        const row = bomData[i] || {};
+        uncodified.push(findCol(row, ['designator','reference','ref']) || '');
+      }
     });
 
-    // MPN strict non conformes
-    const mpnWarnRefs = [];
-    rowMeta.forEach((meta, i) => {
-      if (!meta.mpnWarn) return;
-      const row = bomData[i] || {};
-      mpnWarnRefs.push(findCol(row, ['designator','reference','ref']) || '');
-    });
-
-    if (Object.keys(found).length > 0 || mpnWarnRefs.length > 0) {
-      warnRows.push('');
-      warnRows.push('--- RAPPORT WARNINGS ---');
-      warnRows.push(`Date\t${new Date().toLocaleString('fr-FR')}`);
-      warnRows.push(`Client\t${activeClient ? activeClient.nom : 'Standard'}`);
-      warnRows.push('');
-
+    if (Object.keys(found).length || mpnWarnRefs.length || uncodified.length) {
+      const warnData = [
+        ['Type', 'Composants concernés'],
+        ['Date', new Date().toLocaleString('fr-FR')],
+        ['Client', activeClient ? activeClient.nom : 'Standard'],
+        []
+      ];
       Object.entries(found).forEach(([type, refs]) => {
-        warnRows.push(`⚠ ${warnTypes[type]||type}\t${refs.join(', ')}`);
+        warnData.push(['⚠ ' + (warnTypes[type]||type), refs.join(', ')]);
       });
-
-      if (mpnWarnRefs.length > 0) {
-        warnRows.push(`🔒 MPN strict non conforme (${activeClient?.nom||''})\t${mpnWarnRefs.join(', ')}`);
-      }
-
-      // IPN non codifiés
-      const uncodified = [];
-      document.querySelectorAll('.editable-ipn').forEach((inp, i) => {
-        if (inp.value === '—' || inp.value === '') {
-          const row = bomData[i] || {};
-          uncodified.push(findCol(row, ['designator','reference','ref']) || '');
-        }
-      });
-      if (uncodified.length > 0) {
-        warnRows.push(`❓ IPN à vérifier manuellement\t${uncodified.join(', ')}`);
-      }
-
-      warnRows.push('');
-      warnRows.push('--- FIN RAPPORT ---');
+      if (mpnWarnRefs.length) warnData.push(['🔒 MPN strict non conforme', mpnWarnRefs.join(', ')]);
+      if (uncodified.length) warnData.push(['❓ IPN à vérifier', uncodified.join(', ')]);
+      const wsWarn = XLSX.utils.aoa_to_sheet(warnData);
+      XLSX.utils.book_append_sheet(wb, wsWarn, 'Warnings');
     }
   }
 
-  const allLines = [...lines, ...warnRows];
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([allLines.join('\n')], {type:'text/tab-separated-values'}));
-  a.download = 'BOM_codifiee.csv'; a.click();
+  const date = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, 'BOM_codifiee_' + date + '.xlsx');
 }
 
 function clearBOM() {
