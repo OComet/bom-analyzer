@@ -547,7 +547,7 @@ tr:hover td { background: var(--surface2); }
         <div class="row2" style="margin-top:10px; margin-bottom:0">
           <div class="col" style="flex:2">
             <label>URL Proxy Apps Script (Mouser + Farnell)</label>
-            <input type="text" id="setup-proxy-url" placeholder="https://script.google.com/macros/s/…/exec" value="https://script.google.com/macros/s/AKfycbzRChDWNpze7feavQkcFmMYIMRB1lLf7ubnRv13AqyzI29p-dqUXZlPGDB2Bu7n2cX7iQ/exec" />
+            <input type="text" id="setup-proxy-url" value="https://script.google.com/macros/s/AKfycbzRChDWNpze7feavQkcFmMYIMRB1lLf7ubnRv13AqyzI29p-dqUXZlPGDB2Bu7n2cX7iQ/exec" />
             <p class="hint">Script proxy unique pour Mouser et Farnell — contourne les restrictions CORS.</p>
           </div>
         </div>
@@ -558,7 +558,7 @@ tr:hover td { background: var(--surface2); }
       <div class="setup-card">
         <div class="setup-card-title"><i class="ti ti-users" aria-hidden="true"></i> Google Sheet clients <span class="fixed-tag">fixe</span></div>
         <label>URL publiée en CSV</label>
-        <input type="text" id="setup-clients-url" placeholder="https://docs.google.com/spreadsheets/d/…/export?format=csv&sheet=Clients" />
+        <input type="text" id="setup-clients-url" value="https://script.google.com/macros/s/AKfycbxa04R-ZDzXx0OWsz3kISwFcpnT2hgk4-8uMxdI4wPBcjQ8N52xHzu_sjMfpLkrQesg/exec" />
         <p class="hint">Colonnes : <code>Nom</code> | <code>MPN_strict</code> (oui/non) | <code>Notes</code></p>
         <div class="status-row" id="clients-status-row">
           <span class="status-dot" id="clients-dot"></span>
@@ -569,7 +569,7 @@ tr:hover td { background: var(--surface2); }
       <div class="setup-card">
         <div class="setup-card-title"><i class="ti ti-package" aria-hidden="true"></i> Google Sheet stock <span class="fixed-tag">fixe</span></div>
         <label>URL publiée en CSV</label>
-        <input type="text" id="setup-stock-url" placeholder="https://docs.google.com/spreadsheets/d/…/export?format=csv" />
+        <input type="text" id="setup-stock-url" value="https://script.google.com/macros/s/AKfycbwU3wWTBjwLJ42mqrCsBRCPSoMyI4CXFSt1Gj4FdH0VHtz_ek0hyQYa5cMCQ7urNjRD/exec" />
         <p class="hint">Colonnes : <code>IPN</code> | <code>MPN</code> | <code>Stock</code></p>
         <div class="row2" style="margin-top:10px; margin-bottom:0">
           <div class="col"><label>Col. IPN</label><input type="text" id="scol-ipn" value="IPN" /></div>
@@ -586,7 +586,7 @@ tr:hover td { background: var(--surface2); }
     <div class="card" style="margin-bottom:16px;">
       <div class="setup-card-title" style="margin-bottom:10px"><i class="ti ti-book" aria-hidden="true"></i> Google Sheet règles de codification <span class="fixed-tag">partagé</span></div>
       <label>URL Apps Script (colonnes : Clé | Valeur)</label>
-      <input type="text" id="setup-rules-url" placeholder="https://script.google.com/macros/s/…/exec" />
+      <input type="text" id="setup-rules-url" value="https://script.google.com/macros/s/AKfycbw5DJKx46nfIqeg9NuJ_a0Oub4O_L6Mh-VTGmD2nJkbq_2WnIjajt9KSVjfVl12wwR72Q/exec" />
       <p class="hint">Partagé entre tous les utilisateurs. Laisser vide pour utiliser les règles locales.</p>
       <div class="status-row" id="rules-status-row">
         <span class="status-dot" id="rules-dot"></span>
@@ -1313,7 +1313,16 @@ function initUploadZone() {
     zone.addEventListener('click', () => { const inp = document.getElementById('bom-file-input'); if(inp) inp.click(); });
   } catch(e) { console.warn('Upload zone init error:', e); }
 }
-document.addEventListener('DOMContentLoaded', initUploadZone);
+document.addEventListener('DOMContentLoaded', () => {
+  initUploadZone();
+  loadRules();
+  onClientChange();
+  // Auto-load fixed sources
+  setTimeout(() => {
+    const url = document.getElementById('setup-clients-url')?.value.trim();
+    if (url) loadAll();
+  }, 400);
+});
 // ---- END BOM SOURCE SWITCHER ----
 
 // ---- ENRICHISSEMENT MPN VIA APIs FOURNISSEURS ----
