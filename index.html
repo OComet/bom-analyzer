@@ -1704,19 +1704,26 @@ function exportCSV() {
     });
 
     if (Object.keys(found).length || mpnWarnRefs.length || uncodified.length) {
-      const warnData = [
-        ['Type', 'Composants concernés'],
-        ['Date', new Date().toLocaleString('fr-FR')],
-        ['Client', activeClient ? activeClient.nom : 'Standard'],
-        []
-      ];
+      // Ajouter les warnings en bas de la feuille BOM, bien séparés
+      const lastRow = wsData.length;
+      const sep = ['', '', '', '', '', '', ''];
+      const warnHeader = ['--- RAPPORT WARNINGS ---', '', '', '', '', '', ''];
+      const dateRow = ['Date', new Date().toLocaleString('fr-FR'), '', '', '', '', ''];
+      const clientRow = ['Client', activeClient ? activeClient.nom : 'Standard', '', '', '', '', ''];
+
+      const extraRows = [sep, warnHeader, dateRow, clientRow, sep];
       Object.entries(found).forEach(([type, refs]) => {
-        warnData.push(['⚠ ' + (warnTypes[type]||type), refs.join(', ')]);
+        extraRows.push(['⚠ ' + (warnTypes[type]||type), refs.join(', '), '', '', '', '', '']);
       });
-      if (mpnWarnRefs.length) warnData.push(['🔒 MPN strict non conforme', mpnWarnRefs.join(', ')]);
-      if (uncodified.length) warnData.push(['❓ IPN à vérifier', uncodified.join(', ')]);
-      const wsWarn = XLSX.utils.aoa_to_sheet(warnData);
-      XLSX.utils.book_append_sheet(wb, wsWarn, 'Warnings');
+      if (mpnWarnRefs.length) extraRows.push(['🔒 MPN strict non conforme', mpnWarnRefs.join(', '), '', '', '', '', '']);
+      if (uncodified.length) extraRows.push(['❓ IPN à vérifier manuellement', uncodified.join(', '), '', '', '', '', '']);
+      extraRows.push(sep);
+      extraRows.push(['--- FIN RAPPORT ---', '', '', '', '', '', '']);
+
+      // Append to the sheet
+      extraRows.forEach((row, i) => {
+        XLSX.utils.sheet_add_aoa(ws, [row], { origin: lastRow + i });
+      });
     }
   }
 
