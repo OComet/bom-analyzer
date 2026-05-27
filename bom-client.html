@@ -409,14 +409,14 @@ textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height
           </div>
           <div class="col">
             <label>URL Proxy fournisseurs (Mouser/Farnell)</label>
-            <input type="text" id="cfg-proxy-url" placeholder="https://script.google.com/macros/s/…/exec" />
+            <input type="text" id="cfg-proxy-url" value="https://script.google.com/macros/s/AKfycbzRChDWNpze7feavQkcFmMYIMRB1lLf7ubnRv13AqyzI29p-dqUXZlPGDB2Bu7n2cX7iQ/exec" />
           </div>
         </div>
         <div class="row2" style="margin-bottom:0">
           <div class="col">
             <label>URL Google Sheet clients (Apps Script)</label>
             <div style="display:flex;gap:8px;">
-              <input type="text" id="cfg-clients-url" placeholder="https://script.google.com/macros/s/…/exec" style="flex:1" />
+              <input type="text" id="cfg-clients-url" value="https://script.google.com/macros/s/AKfycbxa04R-ZDzXx0OWsz3kISwFcpnT2hgk4-8uMxdI4wPBcjQ8N52xHzu_sjMfpLkrQesg/exec" style="flex:1" />
               <button class="btn sm" onclick="loadClientsFromURL()"><i class="ti ti-refresh" aria-hidden="true"></i> Charger</button>
             </div>
             <div id="clients-load-status" style="font-size:12px;margin-top:6px;"></div>
@@ -426,7 +426,7 @@ textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height
           <div class="col">
             <label>URL Google Sheet règles partagées</label>
             <div style="display:flex;gap:8px">
-              <input type="text" id="cfg-rules-url" placeholder="https://script.google.com/macros/s/…/exec" style="flex:1" />
+              <input type="text" id="cfg-rules-url" value="https://script.google.com/macros/s/AKfycbw5DJKx46nfIqeg9NuJ_a0Oub4O_L6Mh-VTGmD2nJkbq_2WnIjajt9KSVjfVl12wwR72Q/exec" style="flex:1" />
               <button class="btn sm" onclick="loadRulesFromURL()"><i class="ti ti-refresh" aria-hidden="true"></i> Charger</button>
             </div>
             <div id="rules-url-status" style="font-size:12px;margin-top:4px;"></div>
@@ -601,8 +601,11 @@ function loadConfig() {
     document.getElementById('cfg-proxy-url').value = proxyUrl;
     document.getElementById('cfg-clients-url').value = clientsUrl;
     document.getElementById('cfg-rules-url').value = rulesUrl;
-    if (clientsUrl) loadClientsFromURL(true);
-    if (rulesUrl) loadRulesFromURL(true);
+    // Always load from hardcoded URLs if fields have values
+    const cUrl = document.getElementById('cfg-clients-url')?.value.trim();
+    const rUrl = document.getElementById('cfg-rules-url')?.value.trim();
+    if (cUrl) loadClientsFromURL(true);
+    if (rUrl) loadRulesFromURL(true);
   } catch(e) {}
 }
 
