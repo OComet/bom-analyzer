@@ -244,6 +244,28 @@ textarea {
 .row2 .col { flex:1; }
 
 /* BOM LOAD BAR */
+.conf-high { color: #3B6D11; font-size:11px; font-weight:600; }
+.conf-med  { color: #854F0B; font-size:11px; font-weight:600; }
+.conf-low  { color: #A32D2D; font-size:11px; font-weight:600; }
+.rule-suggestion {
+  background: #E6F1FB;
+  border: 1px solid #A8CBF0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #185FA5;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rule-suggestion-text { flex:1; font-family: var(--font-mono, monospace); line-height:1.5; }
+.rule-suggestion-actions { display:flex; gap:6px; flex-shrink:0; }
+.btn-rule-add { font-size:11px; padding:3px 10px; border-radius:5px; border:1px solid #185FA5; background:#185FA5; color:white; cursor:pointer; font-family:inherit; }
+.btn-rule-add:hover { opacity:0.85; }
+.btn-rule-skip { font-size:11px; padding:3px 10px; border-radius:5px; border:1px solid var(--color-border-secondary); background:transparent; color:var(--color-text-secondary); cursor:pointer; font-family:inherit; }
+.rule-added-badge { font-size:10px; color:#3B6D11; background:#EAF3DE; padding:2px 7px; border-radius:10px; }
 .bom-src-btn { opacity: 0.6; }
 .bom-src-btn.active { opacity: 1; background: var(--text); color: white; border-color: transparent; }
 .upload-drop-zone {
@@ -1376,7 +1398,16 @@ TRAITEMENT:
 3. Détecter: sensor (capteurs), battery (piles/batteries), not-sealed (relais non étanche), msl4+ (MSL≥4)
 
 RÉPONSE JSON tableau uniquement:
-[{"idx":0,"ipn":"...","status":"ok|warn|error","warnings":["sensor|battery|not-sealed|msl4+"],"note":"remarque courte"}]`; }
+[{
+  "idx":0,
+  "ipn":"...",
+  "status":"ok|warn|error",
+  "confidence":"high|medium|low",
+  "warnings":["sensor|battery|not-sealed|msl4+"],
+  "note":"remarque courte si problème",
+  "rule_key":"clé_courte_sans_espace (ex: panasonic_erjp_power, eia_cap_3digit) — UNIQUEMENT si convention spéciale détectée",
+  "rule_value":"règle explicite à ajouter (ex: Panasonic ERJP: P06=0.5W, P08=0.25W...) — UNIQUEMENT si rule_key présent"
+}]`; }
 
 async function generateIPN() {
   const mpn = document.getElementById('mpn-input').value.trim();
@@ -1499,6 +1530,59 @@ Génère ou vérifie l'IPN avec ces informations enrichies.`;
   document.getElementById('bom-result').style.display='block';
 }
 
+// ============================================================
+// AUTO-ENRICHISSEMENT RÈGLES
+// ============================================================
+async function pushRuleToSheet(key, value) {
+  const url = 'https://script.google.com/macros/s/AKfycbw5DJKx46nfIqeg9NuJ_a0Oub4O_L6Mh-VTGmD2nJkbq_2WnIjajt9KSVjfVl12wwR72Q/exec';
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({key, value})
+    });
+    const data = await resp.json();
+    return data;
+  } catch(e) {
+    return {success: false, error: e.message};
+  }
+}
+
+function renderRuleSuggestion(res, rowIdx) {
+  if (!res.rule_key || !res.rule_value) return '';
+  const escaped_key = res.rule_key.replace(/'/g, "\'");
+  const escaped_val = res.rule_value.replace(/'/g, "\'").replace(/"/g, '\"');
+  return `<div class="rule-suggestion" id="rule-sug-${rowIdx}">
+    <span style="font-size:14px">💡</span>
+    <span class="rule-suggestion-text"><strong>${res.rule_key}</strong> — ${res.rule_value.slice(0,120)}${res.rule_value.length>120?'…':''}</span>
+    <div class="rule-suggestion-actions">
+      <button class="btn-rule-add" onclick="acceptRule('${escaped_key}','${escaped_val}',${rowIdx})">Ajouter au sheet</button>
+      <button class="btn-rule-skip" onclick="skipRule(${rowIdx})">Ignorer</button>
+    </div>
+  </div>`;
+}
+
+async function acceptRule(key, value, rowIdx) {
+  const btn = document.querySelector(`#rule-sug-${rowIdx} .btn-rule-add`);
+  if (btn) { btn.disabled=true; btn.textContent='Envoi…'; }
+  const result = await pushRuleToSheet(key, value);
+  const sug = document.getElementById('rule-sug-'+rowIdx);
+  if (!sug) return;
+  if (result.success) {
+    sug.innerHTML = '<span class="rule-added-badge">✓ Règle ajoutée au sheet</span>';
+  } else if (result.existing) {
+    sug.innerHTML = '<span class="rule-added-badge" style="background:#FAEEDA;color:#854F0B">⚠ Clé déjà existante dans le sheet</span>';
+  } else {
+    sug.innerHTML = '<span style="color:#A32D2D;font-size:11px">Erreur: ' + result.error + '</span>';
+  }
+}
+
+function skipRule(rowIdx) {
+  const sug = document.getElementById('rule-sug-'+rowIdx);
+  if (sug) sug.style.display='none';
+}
+// ============================================================
+
 function renderBOMTable(rows,results) {
   const tbody=document.getElementById('bom-tbody');
   tbody.innerHTML='';
@@ -1542,7 +1626,13 @@ function renderBOMTable(rows,results) {
       <td>${qty}</td>
       <td style="font-size:11px">${ref}</td>
       <td style="font-size:11px;font-family:var(--mono)">${mpn}</td>
-      <td><input class="editable-ipn" value="${ipn}" data-idx="${i}" onchange="updateIPN(this)"/></td>
+      <td>
+        <input class="editable-ipn" value="${ipn}" data-idx="${i}" onchange="updateIPN(this)"/>
+        <span class="${res.confidence==='high'?'conf-high':res.confidence==='medium'?'conf-med':'conf-low'}" title="Confiance IA">
+          ${res.confidence==='high'?'🟢':res.confidence==='medium'?'🟡':'🔴'} ${res.confidence||'?'}
+        </span>
+        ${renderRuleSuggestion(res, i)}
+      </td>
       <td style="font-size:12px">${notes}${res.note?`<br><span style="color:var(--amber);font-size:11px">${res.note}</span>`:''}</td>
       <td style="vertical-align:top">${statusBadge}${mpnBadge}${warnBadges}</td>
       <td>${renderStockCell(si)}</td>`;
