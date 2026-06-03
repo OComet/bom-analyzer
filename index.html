@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BOM Client — Analyse & Codification</title>
+<title>BOM Analyzer — Codification IPN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   --bg: #F5F4F0;
@@ -33,515 +33,911 @@
   --mono: 'DM Mono', monospace;
   --sans: 'DM Sans', sans-serif;
 }
+
 * { box-sizing:border-box; margin:0; padding:0; }
-body { font-family:var(--sans); font-size:14px; color:var(--text); background:var(--bg); min-height:100vh; }
 
-header { background:var(--surface); border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; height:56px; position:sticky; top:0; z-index:100; }
-.logo { display:flex; align-items:center; gap:10px; font-size:15px; font-weight:600; }
-.logo-icon { width:30px; height:30px; background:var(--pink); border-radius:6px; display:flex; align-items:center; justify-content:center; color:white; font-size:15px; }
-.header-link { font-size:12px; color:var(--text2); text-decoration:none; display:flex; align-items:center; gap:4px; }
-.header-link:hover { color:var(--text); }
+body {
+  font-family: var(--sans);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  min-height: 100vh;
+}
 
-.main { max-width:1200px; margin:0 auto; padding:2rem; }
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
 
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+
+.logo-icon {
+  width: 30px;
+  height: 30px;
+  background: var(--text);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 15px;
+}
+
+.header-chips {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  font-family: var(--sans);
+}
+.chip.ok { border-color: #97C459; color: var(--green); background: var(--green-bg); }
+.chip.err { border-color: #F09595; color: var(--red); background: var(--red-bg); }
+
+.main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+/* SETUP */
+.setup-screen { display: block; }
+.main-screen { display: none; }
+
+.setup-hero {
+  text-align: center;
+  padding: 3rem 0 2rem;
+}
+.setup-hero h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 8px; }
+.setup-hero p { color: var(--text2); font-size: 14px; }
+
+.setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+@media(max-width:700px) { .setup-grid { grid-template-columns: 1fr; } }
+
+.setup-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+}
+.setup-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+.setup-card-title i { color: var(--text2); font-size: 17px; }
+.fixed-tag {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: var(--surface2);
+  color: var(--text3);
+  border: 1px solid var(--border);
+  margin-left: auto;
+}
+
+.setup-actions { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+
+.status-row { display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text2); margin-top:10px; min-height:20px; }
+.status-dot { width:7px; height:7px; border-radius:50%; background:var(--border2); flex-shrink:0; }
+.status-dot.ok { background:var(--green); }
+.status-dot.err { background:var(--red); }
+.status-dot.loading { background:var(--amber); animation:pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* TABS */
 .tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:1.5rem; }
-.tab { padding:10px 20px; font-size:13px; font-weight:500; cursor:pointer; border:none; background:none; color:var(--text2); border-bottom:2px solid transparent; font-family:var(--sans); }
-.tab.active { color:var(--text); border-bottom-color:var(--text); }
-.tab:hover:not(.active) { color:var(--text); }
+.tab {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--text2);
+  border-bottom: 2px solid transparent;
+  font-family: var(--sans);
+  transition: color 0.15s;
+}
+.tab.active { color: var(--text); border-bottom-color: var(--text); }
+.tab:hover:not(.active) { color: var(--text); }
 .panel { display:none; } .panel.active { display:block; }
 
+/* FORMS */
 label { display:block; font-size:11px; font-weight:600; color:var(--text2); margin-bottom:5px; letter-spacing:0.3px; text-transform:uppercase; }
-input[type=text], textarea, select { width:100%; padding:8px 11px; font-size:13px; font-family:var(--sans); border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); color:var(--text); outline:none; transition:border-color 0.15s; }
-input[type=text]:focus, textarea:focus, select:focus { border-color:var(--text); box-shadow:0 0 0 3px rgba(26,25,22,0.06); }
-textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height:1.6; }
-.hint { font-size:11px; color:var(--text3); margin-top:5px; }
-.hint code { font-family:var(--mono); background:var(--surface2); padding:1px 5px; border-radius:4px; }
+input[type=text], textarea, select {
+  width: 100%;
+  padding: 8px 11px;
+  font-size: 13px;
+  font-family: var(--sans);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
+}
+input[type=text]:focus, textarea:focus, select:focus {
+  border-color: var(--text);
+  box-shadow: 0 0 0 3px rgba(26,25,22,0.06);
+}
+textarea {
+  resize: vertical;
+  min-height: 90px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.hint { font-size: 11px; color: var(--text3); margin-top: 5px; }
+.hint code { font-family: var(--mono); background: var(--surface2); padding: 1px 5px; border-radius: 4px; }
 
-.btn { padding:8px 16px; font-size:13px; font-weight:500; font-family:var(--sans); cursor:pointer; border-radius:var(--radius); border:1px solid var(--border); background:var(--surface); color:var(--text); display:inline-flex; align-items:center; gap:6px; transition:background 0.15s; }
-.btn:hover { background:var(--surface2); }
-.btn.primary { background:var(--text); color:white; border-color:transparent; }
-.btn.primary:hover { opacity:0.85; }
-.btn.pink { background:var(--pink); color:white; border-color:transparent; }
-.btn.pink:hover { opacity:0.85; }
-.btn.sm { padding:6px 12px; font-size:12px; }
-.btn:disabled { opacity:0.4; cursor:default; pointer-events:none; }
+/* BUTTONS */
+.btn {
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--sans);
+  cursor: pointer;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  transition: background 0.15s, border-color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn:hover { background: var(--surface2); }
+.btn:active { transform: scale(0.98); }
+.btn.primary { background: var(--text); color: white; border-color: transparent; }
+.btn.primary:hover { opacity: 0.85; }
+.btn.sm { padding: 6px 12px; font-size: 12px; }
+.btn:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
 
-.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.25rem; margin-bottom:12px; }
-.card-title { font-size:13px; font-weight:600; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
-.card-title i { color:var(--text2); font-size:16px; }
+.actions-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
+
+/* CARDS / SECTIONS */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-bottom: 12px;
+}
+
+.section-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
 
 .row2 { display:flex; gap:12px; margin-bottom:12px; }
 .row2 .col { flex:1; }
-.actions-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
 
-.badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:3px 9px; border-radius:20px; font-weight:600; white-space:nowrap; }
-.b-ok { background:var(--green-bg); color:var(--green); }
-.b-warn { background:var(--amber-bg); color:var(--amber); }
-.b-err { background:var(--red-bg); color:var(--red); }
-.b-info { background:var(--blue-bg); color:var(--blue); }
-.b-pink { background:var(--pink-bg); color:var(--pink); border:1px solid var(--pink-border); }
-
-.upload-zone { border:1.5px dashed var(--border2); border-radius:var(--radius-lg); padding:24px; text-align:center; cursor:pointer; transition:all 0.15s; color:var(--text2); font-size:13px; line-height:1.7; }
-.upload-zone:hover, .upload-zone.dragover { border-color:var(--text); background:var(--surface2); }
-.upload-zone.loaded { border-color:#97C459; background:var(--green-bg); color:var(--green); }
-.upload-zone i { font-size:28px; display:block; margin-bottom:6px; }
-.conf-high { color:#3B6D11; font-size:11px; font-weight:600; }
-.conf-med  { color:#854F0B; font-size:11px; font-weight:600; }
-.conf-low  { color:#A32D2D; font-size:11px; font-weight:600; }
-.rule-suggestion { background:#E6F1FB; border:1px solid #A8CBF0; border-radius:8px; padding:8px 12px; margin-top:4px; font-size:11px; color:#185FA5; display:flex; align-items:flex-start; gap:8px; flex-wrap:wrap; }
-.rule-suggestion-text { flex:1; font-family:var(--mono); line-height:1.5; }
+/* BOM LOAD BAR */
+.conf-high { color: #3B6D11; font-size:11px; font-weight:600; }
+.conf-med  { color: #854F0B; font-size:11px; font-weight:600; }
+.conf-low  { color: #A32D2D; font-size:11px; font-weight:600; }
+.rule-suggestion {
+  background: #E6F1FB;
+  border: 1px solid #A8CBF0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #185FA5;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rule-suggestion-text { flex:1; font-family: var(--font-mono, monospace); line-height:1.5; }
 .rule-suggestion-actions { display:flex; gap:6px; flex-shrink:0; }
 .btn-rule-add { font-size:11px; padding:3px 10px; border-radius:5px; border:1px solid #185FA5; background:#185FA5; color:white; cursor:pointer; font-family:inherit; }
 .btn-rule-add:hover { opacity:0.85; }
-.btn-rule-skip { font-size:11px; padding:3px 10px; border-radius:5px; border:1px solid var(--border); background:transparent; color:var(--text2); cursor:pointer; font-family:inherit; }
-.rule-added-badge { font-size:10px; color:var(--green); background:var(--green-bg); padding:2px 7px; border-radius:10px; }
+.btn-rule-skip { font-size:11px; padding:3px 10px; border-radius:5px; border:1px solid var(--color-border-secondary); background:transparent; color:var(--color-text-secondary); cursor:pointer; font-family:inherit; }
+.rule-added-badge { font-size:10px; color:#3B6D11; background:#EAF3DE; padding:2px 7px; border-radius:10px; }
+.bom-src-btn { opacity: 0.6; }
+.bom-src-btn.active { opacity: 1; background: var(--text); color: white; border-color: transparent; }
+.upload-drop-zone {
+  border: 1.5px dashed var(--border2);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.6;
+}
+.upload-drop-zone:hover, .upload-drop-zone.dragover {
+  border-color: var(--text);
+  background: var(--surface2);
+}
+.upload-drop-zone.loaded {
+  border-color: #97C459;
+  background: var(--green-bg);
+  color: var(--green);
+}
+.bom-load-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.bom-load-bar .url-group { flex:1; min-width:260px; }
+.bom-status { font-size: 12px; color: var(--text2); display:flex; align-items:center; gap:6px; }
 
-.loading { display:flex; align-items:center; gap:10px; color:var(--text2); font-size:13px; padding:14px 0; }
-.spinner { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--text2); border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0; }
-@keyframes spin { to{transform:rotate(360deg);} }
+/* CLIENT BAR */
+.client-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.client-bar .lbl { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.client-bar select { width: auto; min-width: 180px; flex:1; max-width: 280px; }
 
-/* MAPPING TABLE */
-.mapping-table { width:100%; border-collapse:collapse; font-size:12px; }
-.mapping-table th { background:var(--surface2); padding:8px 10px; text-align:left; font-size:10px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); }
-.mapping-table td { padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
-.mapping-table tr:last-child td { border-bottom:none; }
-.mapping-table select { padding:4px 8px; font-size:12px; border-radius:5px; }
-.col-detected { font-family:var(--mono); font-size:11px; color:var(--blue); }
-.col-status { width:20px; text-align:center; font-size:14px; }
+/* BADGES */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.b-ok { background:var(--green-bg); color:var(--green); }
+.b-warn { background:var(--amber-bg); color:var(--amber); }
+.b-err { background:var(--red-bg); color:var(--red); }
+.b-strict { background:var(--pink-bg); color:var(--pink); border:1px solid var(--pink-border); }
+.b-info { background:var(--blue-bg); color:var(--blue); }
 
-/* RESULTS TABLE */
-.result-table-wrap { overflow-x:auto; max-height:480px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius-lg); margin-top:1rem; }
-.result-table { width:100%; border-collapse:collapse; font-size:12px; }
-.result-table th { background:var(--surface2); padding:8px 10px; text-align:left; font-size:10px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; position:sticky; top:0; border-bottom:1px solid var(--border); white-space:nowrap; z-index:1; }
-.result-table td { padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top; word-break:break-word; }
-.result-table tr:last-child td { border-bottom:none; }
-.result-table tr:hover td { background:var(--surface2); }
-.row-warn td { background:#FAEEDA10; }
-.row-err td { background:#FCEBEB10; }
-.editable-ipn { font-family:var(--mono); font-size:11px; width:100%; padding:3px 7px; border-radius:5px; border:1px solid var(--border); background:transparent; color:var(--blue); }
+/* TABLE */
+.filter-bar {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.filter-btn:hover { background: var(--surface2); color: var(--text); }
+.filter-btn.active { background: var(--text); color: white; border-color: transparent; }
+.filter-btn.active.f-warn { background: var(--amber); }
+.filter-btn.active.f-err { background: var(--red); }
+.filter-btn.active.f-mpn { background: var(--pink); }
+.filter-btn.active.f-sensor { background: #5B6FBE; }
+.filter-btn.active.f-battery { background: #5B6FBE; }
+.filter-btn.active.f-sealed { background: #5B6FBE; }
+.filter-btn.active.f-msl { background: #5B6FBE; }
+.filter-count {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.25);
+  font-weight: 600;
+}
+.filter-btn:not(.active) .filter-count {
+  background: var(--surface2);
+  color: var(--text2);
+}
+.filter-sep { width: 1px; height: 20px; background: var(--border); margin: 0 2px; }
+.no-results-row td { text-align: center; color: var(--text3); padding: 24px; font-size: 13px; }
+
+.bom-table-wrap {
+  overflow-x: auto;
+  margin-top: 1rem;
+  max-height: 440px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th {
+  background: var(--surface2);
+  padding: 9px 11px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--text2);
+  position: sticky;
+  top: 0;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  z-index: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+td {
+  padding: 8px 11px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  word-break: break-word;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+.row-warn td { background: #FAEEDA18; }
+.row-err td { background: #FCEBEB18; }
+.row-mpnwarn td { background: #FBEAF018; }
+
+.editable-ipn {
+  font-family: var(--mono);
+  font-size: 11px;
+  width: 100%;
+  padding: 3px 7px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--blue);
+}
 .editable-ipn:focus { outline:none; border-color:var(--blue); background:var(--blue-bg); }
-.mfr-free-select { font-size:11px; padding:3px 6px; border-radius:5px; border:1px solid var(--border); background:transparent; font-family:var(--sans); }
-.mfr-free-select.yes { color:var(--green); background:var(--green-bg); border-color:#97C459; }
-.mfr-free-select.no { color:var(--red); background:var(--red-bg); border-color:#F09595; }
 
 /* COUNTERS */
 .counter-row { display:flex; gap:10px; margin:1rem 0; flex-wrap:wrap; }
-.counter { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:10px 16px; }
-.counter-val { font-size:22px; font-weight:600; font-family:var(--mono); }
-.counter-lbl { font-size:11px; color:var(--text2); margin-top:2px; }
+.counter {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  min-width: 80px;
+}
+.counter-val { font-size: 22px; font-weight: 600; font-family: var(--mono); }
+.counter-lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
 
-/* WARN BOX */
-.warn-box { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--amber); border-radius:var(--radius-lg); padding:1rem 1.25rem; margin-bottom:12px; }
+/* WARN SUMMARY */
+.warn-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  margin-bottom: 12px;
+}
 .warn-item { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
 .warn-item:last-child { border-bottom:none; }
 .warn-item i { font-size:17px; color:var(--amber); flex-shrink:0; margin-top:1px; }
 
-/* RULES EDITOR */
-.rules-section { margin-bottom:1.5rem; }
-.rules-section-title { font-size:12px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
-.rule-row { display:flex; gap:8px; align-items:flex-start; margin-bottom:8px; }
-.rule-row input { flex:1; }
-.rule-row .rule-example { width:200px; flex-shrink:0; }
-.rule-row .rule-del { flex-shrink:0; padding:6px 8px; }
-.rule-type-tag { font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; background:var(--surface2); color:var(--text2); white-space:nowrap; min-width:60px; text-align:center; }
-.rules-textarea { min-height:120px; }
-.save-indicator { font-size:11px; color:var(--green); display:none; }
-.save-indicator.visible { display:inline; }
+/* STOCK CELL */
+.stock-cell { display:flex; flex-direction:column; gap:2px; }
+.stock-line { display:flex; align-items:center; gap:5px; font-size:11px; white-space:nowrap; }
+.slbl { font-size:10px; color:var(--text3); min-width:28px; font-family:var(--mono); }
+.s-ok { color:var(--green); font-weight:600; font-family:var(--mono); }
+.s-zero { color:var(--red); font-weight:600; font-family:var(--mono); }
+.s-na { color:var(--text3); }
+.s-mpnwarn { color:var(--pink); font-weight:600; font-family:var(--mono); }
 
-/* FILTER BAR */
-.filter-bar { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
-.filter-btn { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:500; padding:5px 12px; border-radius:20px; border:1px solid var(--border); background:var(--surface); color:var(--text2); cursor:pointer; font-family:var(--sans); white-space:nowrap; }
-.filter-btn.active { background:var(--text); color:white; border-color:transparent; }
-.filter-btn.active.f-warn { background:var(--amber); }
-.filter-btn.active.f-err { background:var(--red); }
-.filter-count { font-size:11px; padding:1px 6px; border-radius:10px; background:var(--surface2); color:var(--text2); }
-.filter-btn.active .filter-count { background:rgba(255,255,255,0.25); color:white; }
+/* CODIF */
+.ipn-result-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  margin-top: 1rem;
+}
+.ipn-code {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--blue);
+  background: var(--blue-bg);
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  display: inline-block;
+  margin: 8px 0;
+  letter-spacing: 0.5px;
+}
+.copy-btn {
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 14px;
+  padding: 0 4px;
+  vertical-align: middle;
+}
+.copy-btn:hover { color: var(--text); }
 
-/* CHAT */
-.chat-fab { position:fixed; bottom:28px; right:28px; width:52px; height:52px; border-radius:50%; background:var(--pink); color:white; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 4px 16px rgba(0,0,0,0.18); z-index:1000; transition:transform 0.15s; }
-.chat-fab:hover { transform:scale(1.08); }
-.chat-panel { position:fixed; bottom:90px; right:28px; width:380px; max-width:calc(100vw - 40px); height:520px; max-height:calc(100vh - 120px); background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:0 8px 32px rgba(0,0,0,0.14); z-index:999; display:none; flex-direction:column; overflow:hidden; }
-.chat-panel.open { display:flex; }
-.chat-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--surface2); flex-shrink:0; font-size:13px; font-weight:600; }
-.chat-messages { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px; }
-.chat-msg { display:flex; flex-direction:column; gap:3px; max-width:88%; }
-.chat-msg.user { align-self:flex-end; }
-.chat-msg.assistant { align-self:flex-start; }
-.chat-bubble { padding:9px 12px; border-radius:12px; font-size:13px; line-height:1.6; word-break:break-word; }
-.chat-msg.user .chat-bubble { background:var(--pink); color:white; border-bottom-right-radius:4px; }
-.chat-msg.assistant .chat-bubble { background:var(--surface2); color:var(--text); border-bottom-left-radius:4px; border:1px solid var(--border); }
-.chat-msg-time { font-size:10px; color:var(--text3); padding:0 4px; }
-.chat-msg.user .chat-msg-time { text-align:right; }
-.chat-typing { align-self:flex-start; padding:9px 14px; background:var(--surface2); border:1px solid var(--border); border-radius:12px; border-bottom-left-radius:4px; display:none; gap:4px; align-items:center; }
-.chat-typing.visible { display:flex; }
-.dot { width:6px; height:6px; border-radius:50%; background:var(--text3); animation:bounce 1.2s infinite; }
-.dot:nth-child(2){animation-delay:0.2s;} .dot:nth-child(3){animation-delay:0.4s;}
-@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
-.chat-footer { padding:10px 12px; border-top:1px solid var(--border); display:flex; gap:8px; align-items:flex-end; flex-shrink:0; }
-.chat-input { flex:1; padding:8px 11px; font-size:13px; font-family:var(--sans); border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); color:var(--text); resize:none; max-height:100px; min-height:36px; line-height:1.5; outline:none; }
-.chat-input:focus { border-color:var(--pink); }
-.chat-send { width:34px; height:34px; border-radius:var(--radius); background:var(--pink); color:white; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
-.chat-send:hover { opacity:0.85; }
-.chat-send:disabled { opacity:0.3; cursor:default; }
-.chat-ctx { font-size:10px; padding:2px 8px; border-radius:20px; font-weight:500; }
+/* LOADING */
+.loading { display:flex; align-items:center; gap:10px; color:var(--text2); font-size:13px; padding:14px 0; }
+.spinner { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--text2); border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0; }
+@keyframes spin { to{transform:rotate(360deg);} }
 
+/* TOPBAR */
+.topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:10px; }
+.topbar-left { display:flex; gap:8px; flex-wrap:wrap; }
+
+/* RULE BOX */
+.rule-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 2;
+  color: var(--text2);
+}
+.rule-box b { color: var(--text); font-weight: 600; }
+
+/* CLIENTS PREVIEW TABLE */
+.clients-table-wrap { border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; margin-top:10px; }
+
+/* FOOTER NOTE */
+.footer-note { font-size:11px; color:var(--text3); margin-top:8px; }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
 <header>
   <div class="logo">
-    <div class="logo-icon"><i class="ti ti-users" aria-hidden="true"></i></div>
-    BOM Client — Analyse & Codification
+    <div class="logo-icon"><i class="ti ti-circuit-board" aria-hidden="true"></i></div>
+    BOM Analyzer
   </div>
+  <div class="header-chips" id="header-chips"></div>
   <div style="display:flex;gap:8px;align-items:center;">
-    <a href="index.html" class="header-link"><i class="ti ti-arrow-left" aria-hidden="true"></i> BOM Analyzer</a>
+    <a href="bom-client.html" style="font-size:12px;color:var(--text2);text-decoration:none;display:inline-flex;align-items:center;gap:4px;"><i class="ti ti-users" aria-hidden="true"></i> BOM Client</a>
     <button onclick="document.getElementById('help-overlay').style.display='flex'" style="background:none;border:1px solid var(--border);border-radius:var(--radius);padding:5px 12px;cursor:pointer;font-size:12px;color:var(--text2);font-family:var(--sans);display:inline-flex;align-items:center;gap:5px;"><i class="ti ti-help" aria-hidden="true"></i> Guide</button>
+    <button class="btn sm" onclick="showSetup()" id="btn-reconfig" style="display:none"><i class="ti ti-settings" aria-hidden="true"></i> Reconfigurer</button>
   </div>
 </header>
 
 <div class="main">
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('analyse')">Analyse BOM Client</button>
-    <button class="tab" onclick="switchTab('rules')">Règles de codification</button>
-  </div>
 
-  <!-- ===== ANALYSE ===== -->
-  <div class="panel active" id="tab-analyse">
+  <!-- ===== SETUP ===== -->
+  <div class="setup-screen" id="setup-screen">
+    <div class="setup-hero">
+      <h1>Configuration des sources</h1>
+      <p>Renseigne les URLs de tes Google Sheets publiés en CSV.<br>Clients et stock sont chargés une fois ; la BOM est rechargée à chaque analyse.</p>
+    </div>
 
-    <!-- STEP 1: Upload -->
-    <div class="card">
-      <div class="card-title"><i class="ti ti-upload" aria-hidden="true"></i> 1 — Charger la BOM client</div>
-      <label for="client-file-input" style="text-transform:none; font-size:12px; font-weight:600; letter-spacing:0; cursor:pointer">
-        <div class="upload-zone" id="upload-zone">
-          <i class="ti ti-file-spreadsheet" aria-hidden="true"></i>
-          <span id="upload-label">Glisser-déposer un fichier XLS, XLSX, CSV ou TSV<br><small style="color:var(--text3)">ou cliquer pour parcourir</small></span>
-        </div>
-      </label>
-      <input type="file" id="client-file-input" accept=".xls,.xlsx,.csv,.tsv" style="display:none" onchange="handleUpload(this)" />
-      <div class="row2" style="margin-top:12px; margin-bottom:0">
+    <div class="card" style="margin-bottom:16px; border:1.5px solid var(--blue); background:var(--blue-bg);">
+      <div class="setup-card-title" style="margin-bottom:10px"><i class="ti ti-key" aria-hidden="true" style="color:var(--blue)"></i> <span style="color:var(--blue)">Clé API Anthropic</span> <span class="fixed-tag">obligatoire</span></div>
+      <label>Clé API (commence par sk-ant-…)</label>
+      <input type="text" id="setup-api-key" placeholder="sk-ant-api03-…" autocomplete="off" />
+      <p class="hint">Obtenir sur <a href="https://console.anthropic.com/settings/keys" target="_blank" style="color:var(--blue)">console.anthropic.com</a> → API Keys. Stockée uniquement dans cette page.</p>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="setup-card-title" style="margin-bottom:10px"><i class="ti ti-shopping-cart" aria-hidden="true"></i> APIs fournisseurs <span class="fixed-tag">enrichissement MPN</span></div>
+      <p class="hint" style="margin-bottom:10px">Utilisées uniquement en fallback quand la codification directe du MPN est incertaine (Würth, connecteurs, composants opaques…)</p>
+      <div class="row2">
         <div class="col">
-          <label>Client</label>
-          <select id="client-select-analysis" onchange="onClientSelect()">
-            <option value="__standard__">Standard (IPN autorisé)</option>
-          </select>
+          <label>Clé API Mouser</label>
+          <input type="text" id="setup-mouser-key" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" value="caf565cf-9cba-4626-bd04-f564ebffbcd6" />
         </div>
         <div class="col">
-          <label>Feuille Excel (si XLSX multi-onglets)</label>
-          <select id="sheet-select" onchange="onSheetChange()">
-            <option value="0">Feuille 1</option>
-          </select>
-        </div>
-        <div class="col" style="max-width:160px">
-          <label>Ligne de début (en-têtes)</label>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <input type="number" id="start-row" value="1" min="1" max="50"
-              style="width:70px; padding:7px 10px; font-size:13px; font-family:var(--sans); border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); color:var(--text); outline:none;"
-              onchange="onStartRowChange()" />
-            <span style="font-size:12px; color:var(--text2)">sur <span id="total-rows-hint">—</span> lignes</span>
-          </div>
-          <p class="hint">Ligne contenant les en-têtes de colonnes</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- STEP 2: Column Mapping -->
-    <div class="card" id="mapping-card" style="display:none">
-      <div class="card-title">
-        <i class="ti ti-columns" aria-hidden="true"></i> 2 — Mapping des colonnes
-        <span class="badge b-info" id="mapping-confidence-badge"></span>
-        <button class="btn sm" style="margin-left:auto" onclick="remapColumns()"><i class="ti ti-refresh" aria-hidden="true"></i> Redétecter</button>
-      </div>
-      <p class="hint" style="margin-bottom:8px">L'IA a détecté les colonnes ci-dessous. Corrige si nécessaire avant d'analyser.</p>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-        <span style="font-size:12px;color:var(--text2)">Mapping client :</span>
-        <button class="btn sm" onclick="saveMappingForClient()"><i class="ti ti-device-floppy" aria-hidden="true"></i> Sauvegarder pour ce client</button>
-        <span id="mapping-save-status" style="font-size:11px;color:var(--green);display:none"><i class="ti ti-check" aria-hidden="true"></i> Sauvegardé</span>
-        <span id="mapping-loaded-badge" style="display:none" class="badge b-info"><i class="ti ti-history" aria-hidden="true"></i> Mapping client chargé</span>
-      </div>
-
-      <div style="overflow-x:auto">
-        <table class="mapping-table" id="mapping-table">
-          <thead>
-            <tr>
-              <th style="width:28px"></th>
-              <th>Champ requis</th>
-              <th>Colonne(s) détectée(s)</th>
-              <th>Modifier / Concaténer</th>
-              <th>Aperçu</th>
-            </tr>
-          </thead>
-          <tbody id="mapping-tbody"></tbody>
-        </table>
-      </div>
-      <p class="hint" style="margin-top:8px"><i class="ti ti-plus" aria-hidden="true"></i> Pour concaténer plusieurs colonnes (ex: Valeur + Boitier + Diélectrique → Description), cliquez "+" à droite du sélecteur.</p>
-
-      <div id="mapping-loading" class="loading" style="display:none"><div class="spinner"></div> Détection des colonnes en cours…</div>
-    </div>
-
-    <!-- STEP 3: Analyse -->
-    <div id="step3-bar" style="display:none">
-      <div class="actions-bar">
-        <button class="btn pink" onclick="analyseClientBOM()"><i class="ti ti-cpu" aria-hidden="true"></i> Analyser & Codifier (IA)</button>
-        <button class="btn" onclick="exportClientXLS()" id="btn-export" style="display:none"><i class="ti ti-file-download" aria-hidden="true"></i> Exporter XLS enrichi</button>
-        <button class="btn" onclick="resetAll()"><i class="ti ti-trash" aria-hidden="true"></i> Réinitialiser</button>
-      </div>
-      <div id="analysis-loading" class="loading" style="display:none"><div class="spinner"></div><span id="analysis-msg">Analyse en cours…</span></div>
-    </div>
-
-    <!-- RESULTS -->
-    <div id="results-section" style="display:none">
-      <div id="result-counters" class="counter-row"></div>
-      <div id="result-warnings"></div>
-
-      <div class="filter-bar" id="result-filter-bar">
-        <button class="filter-btn active f-all" onclick="setResultFilter('all',this)"><i class="ti ti-list" aria-hidden="true"></i> Tous <span class="filter-count" id="rfc-all">0</span></button>
-        <button class="filter-btn f-err" onclick="setResultFilter('error',this)" style="display:none"><i class="ti ti-x" aria-hidden="true"></i> Erreurs <span class="filter-count" id="rfc-err">0</span></button>
-        <button class="filter-btn f-warn" onclick="setResultFilter('warn',this)" style="display:none"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Warnings <span class="filter-count" id="rfc-warn">0</span></button>
-        <button class="filter-btn" onclick="setResultFilter('sensor',this)" style="display:none"><i class="ti ti-radar" aria-hidden="true"></i> Capteurs <span class="filter-count" id="rfc-sensor">0</span></button>
-        <button class="filter-btn" onclick="setResultFilter('battery',this)" style="display:none"><i class="ti ti-battery" aria-hidden="true"></i> Batteries <span class="filter-count" id="rfc-battery">0</span></button>
-        <button class="filter-btn" onclick="setResultFilter('not-sealed',this)" style="display:none"><i class="ti ti-droplet-off" aria-hidden="true"></i> Non étanches <span class="filter-count" id="rfc-sealed">0</span></button>
-        <button class="filter-btn" onclick="setResultFilter('msl4+',this)" style="display:none"><i class="ti ti-moisture" aria-hidden="true"></i> MSL≥4 <span class="filter-count" id="rfc-msl">0</span></button>
-      </div>
-
-      <div class="result-table-wrap">
-        <table class="result-table">
-          <thead id="result-thead"><tr></tr></thead>
-          <tbody id="result-tbody"></tbody>
-        </table>
-      </div>
-      <p style="font-size:11px; color:var(--text3); margin-top:8px">IPN et Manufacturer free éditables. Exportez en XLS pour import dans Luminovo.</p>
-    </div>
-  </div>
-
-  <!-- ===== RULES ===== -->
-  <div class="panel" id="tab-rules">
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:8px;">
-      <div>
-        <h2 style="font-size:18px; font-weight:600; margin-bottom:4px">Règles de codification IPN</h2>
-        <p style="font-size:13px; color:var(--text2)">Ces règles sont utilisées par l'IA dans tous les outils. Modifiez-les pour affiner la codification.</p>
-      </div>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <span class="save-indicator" id="save-indicator"><i class="ti ti-check" aria-hidden="true"></i> Sauvegardé</span>
-        <button class="btn primary" onclick="saveRules()"><i class="ti ti-device-floppy" aria-hidden="true"></i> Sauvegarder</button>
-        <button class="btn" onclick="resetRules()"><i class="ti ti-refresh" aria-hidden="true"></i> Réinitialiser</button>
-      </div>
-    </div>
-
-    <div class="rules-section">
-      <div class="rules-section-title">
-        <span>Condensateurs céramique / film</span>
-        <span style="font-family:var(--mono); font-size:11px; color:var(--text3)">C(val)-(boitier)-(V)-(tolP)-(diélec)</span>
-      </div>
-      <div class="card" style="margin-bottom:0">
-        <textarea id="rule-capacitor" class="rules-textarea" rows="6"></textarea>
-        <p class="hint">Format : règle sur la 1ère ligne, exemples ensuite. Ex: <code>C10U-0603-16V-10P-X5R</code></p>
-      </div>
-    </div>
-
-    <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title">
-        <span>Condensateurs tantale</span>
-        <span style="font-family:var(--mono); font-size:11px; color:var(--text3)">CT(val)-(boitier)-(V)-(tolP)-(ESR)</span>
-      </div>
-      <div class="card" style="margin-bottom:0">
-        <textarea id="rule-tantalum" class="rules-textarea" rows="4"></textarea>
-      </div>
-    </div>
-
-    <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title">
-        <span>Résistances</span>
-        <span style="font-family:var(--mono); font-size:11px; color:var(--text3)">R(val)-(boitier)[-(PPM)][-(W)]</span>
-      </div>
-      <div class="card" style="margin-bottom:0">
-        <textarea id="rule-resistor" class="rules-textarea" rows="8"></textarea>
-      </div>
-    </div>
-
-    <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title">
-        <span>Autres composants</span>
-        <span style="font-family:var(--mono); font-size:11px; color:var(--text3)">MPN sans suffixes conditionnement</span>
-      </div>
-      <div class="card" style="margin-bottom:0">
-        <textarea id="rule-other" class="rules-textarea" rows="4"></textarea>
-      </div>
-    </div>
-
-    <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title">
-        <span>Suffixes conditionnement à supprimer</span>
-      </div>
-      <div class="card" style="margin-bottom:0">
-        <input type="text" id="rule-suffixes" placeholder="#PBF, #TRPBF, TR, -T, /TR, REEL, TAPE, CT, -ND" />
-        <p class="hint">Séparés par des virgules</p>
-      </div>
-    </div>
-
-    <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title"><span>Composants sensibles (critères de warning)</span></div>
-      <div class="card" style="margin-bottom:0">
-        <div class="row2">
-          <div class="col">
-            <label>Capteurs — mots-clés à détecter</label>
-            <input type="text" id="rule-sensors" placeholder="pressure, humidity, temperature, sensor, transducer..." />
-          </div>
-          <div class="col">
-            <label>Énergie — mots-clés</label>
-            <input type="text" id="rule-batteries" placeholder="battery, pile, accumulator, lithium, LiPo..." />
-          </div>
-        </div>
-        <div class="row2" style="margin-bottom:0">
-          <div class="col">
-            <label>Non étanches — mots-clés</label>
-            <input type="text" id="rule-sealed" placeholder="relay, relais, not sealed, non étanche..." />
-          </div>
-          <div class="col">
-            <label>Niveau MSL minimum pour warning</label>
-            <select id="rule-msl">
-              <option value="4">MSL ≥ 4</option>
-              <option value="3">MSL ≥ 3</option>
-              <option value="2">MSL ≥ 2</option>
-            </select>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="extra-rules-container"></div>
-
-    <!-- API Keys -->
-    <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title"><span>Configuration API & Sources</span></div>
-      <div class="card" style="margin-bottom:0">
-        <div class="row2">
-          <div class="col">
-            <label>Clé API Anthropic</label>
-            <input type="text" id="cfg-api-key" placeholder="sk-ant-api03-…" autocomplete="off" />
-          </div>
-          <div class="col">
-            <label>URL Proxy fournisseurs (Mouser/Farnell)</label>
-            <input type="text" id="cfg-proxy-url" value="https://script.google.com/macros/s/AKfycbzRChDWNpze7feavQkcFmMYIMRB1lLf7ubnRv13AqyzI29p-dqUXZlPGDB2Bu7n2cX7iQ/exec" />
-          </div>
-        </div>
-        <div class="row2" style="margin-bottom:0">
-          <div class="col">
-            <label>URL Google Sheet clients (Apps Script)</label>
-            <div style="display:flex;gap:8px;">
-              <input type="text" id="cfg-clients-url" value="https://script.google.com/macros/s/AKfycbxa04R-ZDzXx0OWsz3kISwFcpnT2hgk4-8uMxdI4wPBcjQ8N52xHzu_sjMfpLkrQesg/exec" style="flex:1" />
-              <button class="btn sm" onclick="loadClientsFromURL()"><i class="ti ti-refresh" aria-hidden="true"></i> Charger</button>
-            </div>
-            <div id="clients-load-status" style="font-size:12px;margin-top:6px;"></div>
-          </div>
+          <label>Clé API Farnell</label>
+          <input type="text" id="setup-farnell-key" placeholder="xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" value="fxum65cx2895hmbrx75zkryh" />
         </div>
         <div class="row2" style="margin-top:10px; margin-bottom:0">
-          <div class="col">
-            <label>URL Google Sheet règles partagées</label>
-            <div style="display:flex;gap:8px">
-              <input type="text" id="cfg-rules-url" value="https://script.google.com/macros/s/AKfycbwWqEWTLh8EVPq9tnTIbqyoa9gdKlKimAs74iMVobZfI7WlGxWOSJqmlujBbCFcl5H-eg/exec" style="flex:1" />
-              <button class="btn sm" onclick="loadRulesFromURL()"><i class="ti ti-refresh" aria-hidden="true"></i> Charger</button>
-            </div>
-            <div id="rules-url-status" style="font-size:12px;margin-top:4px;"></div>
+          <div class="col" style="flex:2">
+            <label>URL Proxy Apps Script (Mouser + Farnell)</label>
+            <input type="text" id="setup-proxy-url" value="https://script.google.com/macros/s/AKfycbzRChDWNpze7feavQkcFmMYIMRB1lLf7ubnRv13AqyzI29p-dqUXZlPGDB2Bu7n2cX7iQ/exec" />
+            <p class="hint">Script proxy unique pour Mouser et Farnell — contourne les restrictions CORS.</p>
           </div>
         </div>
-        <p class="hint" style="margin-top:10px">Les règles partagées écrasent les règles locales pour tous les utilisateurs.</p>
       </div>
     </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="setup-card-title" style="margin-bottom:10px"><i class="ti ti-table" aria-hidden="true"></i> Apps Script écriture GSheet achat <span class="fixed-tag">optionnel</span></div>
+      <label>URL Apps Script writer</label>
+      <input type="text" id="setup-writer-url" value="https://script.google.com/macros/s/AKfycbxHOVSS4nDASlpYPFvjW8ZkNH2inWCG5VO9HoeTILx2R9f-aOi0Wf62JVWW7ZIfm-U_fQ/exec" />
+      <p class="hint">Permet d'écrire directement dans la GSheet achat après analyse. Déployez <code>write_sheet_script.js</code> une seule fois.</p>
+    </div>
+
+    <div class="setup-grid">
+      <div class="setup-card">
+        <div class="setup-card-title"><i class="ti ti-users" aria-hidden="true"></i> Google Sheet clients <span class="fixed-tag">fixe</span></div>
+        <label>URL publiée en CSV</label>
+        <input type="text" id="setup-clients-url" value="https://script.google.com/macros/s/AKfycbxa04R-ZDzXx0OWsz3kISwFcpnT2hgk4-8uMxdI4wPBcjQ8N52xHzu_sjMfpLkrQesg/exec" />
+        <p class="hint">Colonnes : <code>Nom</code> | <code>MPN_strict</code> (oui/non) | <code>Notes</code></p>
+        <div class="status-row" id="clients-status-row">
+          <span class="status-dot" id="clients-dot"></span>
+          <span id="clients-status-msg">En attente</span>
+        </div>
+      </div>
+
+      <div class="setup-card">
+        <div class="setup-card-title"><i class="ti ti-package" aria-hidden="true"></i> Google Sheet stock <span class="fixed-tag">fixe</span></div>
+        <label>URL publiée en CSV</label>
+        <input type="text" id="setup-stock-url" value="https://script.google.com/macros/s/AKfycbwU3wWTBjwLJ42mqrCsBRCPSoMyI4CXFSt1Gj4FdH0VHtz_ek0hyQYa5cMCQ7urNjRD/exec" />
+        <p class="hint">Colonnes : <code>IPN</code> | <code>MPN</code> | <code>Stock</code></p>
+        <div class="row2" style="margin-top:10px; margin-bottom:0">
+          <div class="col"><label>Col. IPN</label><input type="text" id="scol-ipn" value="IPN" /></div>
+          <div class="col"><label>Col. MPN</label><input type="text" id="scol-mpn" value="MPN" /></div>
+          <div class="col"><label>Col. Qté</label><input type="text" id="scol-qty" value="Stock" /></div>
+        </div>
+        <div class="status-row" id="stock-status-row">
+          <span class="status-dot" id="stock-dot"></span>
+          <span id="stock-status-msg">En attente</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="setup-card-title" style="margin-bottom:10px"><i class="ti ti-book" aria-hidden="true"></i> Google Sheet règles de codification <span class="fixed-tag">partagé</span></div>
+      <label>URL Apps Script (colonnes : Clé | Valeur)</label>
+      <input type="text" id="setup-rules-url" value="https://script.google.com/macros/s/AKfycbwWqEWTLh8EVPq9tnTIbqyoa9gdKlKimAs74iMVobZfI7WlGxWOSJqmlujBbCFcl5H-eg/exec" />
+      <p class="hint">Partagé entre tous les utilisateurs. Laisser vide pour utiliser les règles locales.</p>
+      <div class="status-row" id="rules-status-row">
+        <span class="status-dot" id="rules-dot"></span>
+        <span id="rules-status-msg">En attente</span>
+      </div>
+    </div>
+
+    <div class="setup-actions">
+      <button class="btn primary" id="btn-load-all" onclick="loadAll()"><i class="ti ti-plug" aria-hidden="true"></i> Charger les sources fixes</button>
+      <button class="btn" onclick="skipSetup()">Continuer sans (mode manuel)</button>
+    </div>
+    <div id="setup-error" style="margin-top:12px; font-size:12px; color:var(--red); text-align:center; display:none;"></div>
+  </div>
+
+  <!-- ===== MAIN ===== -->
+  <div class="main-screen" id="main-screen">
+
+    <div class="topbar">
+      <div class="topbar-left" id="topbar-status"></div>
+      <button class="btn sm" onclick="showSetup()"><i class="ti ti-settings" aria-hidden="true"></i> Reconfigurer les sources</button>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('bom')">Analyse BOM</button>
+      <button class="tab" onclick="switchTab('codif')">Codification IPN</button>
+      <button class="tab" onclick="switchTab('config')">Règles &amp; Config</button>
+    </div>
+
+    <!-- BOM TAB -->
+    <div class="panel active" id="tab-bom">
+      <!-- BOM SOURCE: Upload ou URL ou paste -->
+      <div class="card" style="margin-bottom:12px;">
+        <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+          <button class="btn sm bom-src-btn active" id="src-btn-upload" onclick="setBOMSource('upload')"><i class="ti ti-upload" aria-hidden="true"></i> Fichier XLS / CSV</button>
+          <button class="btn sm bom-src-btn" id="src-btn-url" onclick="setBOMSource('url')"><i class="ti ti-link" aria-hidden="true"></i> URL Google Sheet</button>
+          <button class="btn sm bom-src-btn" id="src-btn-paste" onclick="setBOMSource('paste')"><i class="ti ti-clipboard" aria-hidden="true"></i> Coller CSV/TSV</button>
+          <div class="bom-status" id="bom-url-status" style="margin-left:auto"></div>
+        </div>
+
+        <!-- Upload -->
+        <div id="bom-src-upload">
+          <label for="bom-file-input" style="text-transform:none; font-size:12px; font-weight:600; letter-spacing:0; cursor:pointer;">
+            <div class="upload-drop-zone" id="upload-drop-zone">
+              <i class="ti ti-file-spreadsheet" aria-hidden="true" style="font-size:28px; color:var(--text3); display:block; margin-bottom:6px;"></i>
+              <span id="upload-label-text">Glisser-déposer un fichier XLS, XLSX, CSV ou TSV<br><span style="font-size:11px; color:var(--text3)">ou cliquer pour parcourir</span></span>
+            </div>
+          </label>
+          <input type="file" id="bom-file-input" accept=".xls,.xlsx,.csv,.tsv,.txt" style="display:none" onchange="handleFileUpload(this)" />
+        </div>
+
+        <!-- URL -->
+        <div id="bom-src-url" style="display:none">
+          <label style="text-transform:none; font-size:12px; font-weight:600; letter-spacing:0">URL Google Sheet (Apps Script)</label>
+          <div style="display:flex; gap:8px; margin-top:4px;">
+            <input type="text" id="bom-url" placeholder="https://script.google.com/macros/s/…/exec" style="flex:1" />
+            <button class="btn sm" onclick="loadBOM()"><i class="ti ti-refresh" aria-hidden="true"></i> Charger</button>
+          </div>
+        </div>
+
+        <!-- Paste -->
+        <div id="bom-src-paste" style="display:none">
+          <label style="text-transform:none; font-size:12px; font-weight:600; letter-spacing:0">Coller les données (CSV / TSV)</label>
+          <textarea id="csv-paste-input" rows="5" style="margin-top:4px" placeholder="Qty&#9;Reference&#9;MPN&#9;IPN&#9;Description&#9;Notes&#10;2&#9;C1 C2&#9;GXT188R61C106KE13D&#9;&#9;10uF 16V X5R 0603&#9;&#10;…" oninput="csvBuffer=this.value"></textarea>
+        </div>
+      </div>
+
+
+      <div class="client-bar">
+        <span class="lbl"><i class="ti ti-building" aria-hidden="true" style="font-size:15px; vertical-align:-2px; margin-right:3px;"></i> Client</span>
+        <select id="client-select" onchange="onClientChange()">
+          <option value="__standard__">Standard (pas de contrainte MPN)</option>
+        </select>
+        <div id="client-badge"></div>
+        <span id="client-note-text" style="font-size:12px; color:var(--text2); font-style:italic;"></span>
+      </div>
+
+      <!-- GSheet achat writer bar -->
+      <div id="gsheet-write-bar" style="display:none; margin-bottom:10px;">
+        <div style="display:flex; gap:12px; align-items:center; padding:12px 16px; background:var(--green-bg); border:1px solid #97C459; border-radius:var(--radius-lg); flex-wrap:wrap;">
+          <i class="ti ti-table" style="font-size:20px; color:var(--green); flex-shrink:0;" aria-hidden="true"></i>
+          <div style="flex:1;">
+            <div style="font-size:13px; font-weight:600; color:var(--green);" id="gsheet-file-info">GSheet achat détectée</div>
+            <div style="font-size:11px; color:var(--green); opacity:0.8;">Le dossier Drive sera recherché automatiquement par SO + référence</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+            <label style="font-size:12px; color:var(--green); white-space:nowrap; margin:0; font-weight:600;">N° SO</label>
+            <input type="text" id="so-reference" placeholder="ex: 2605-254"
+              style="width:130px; border-color:#97C459; background:white; padding:6px 10px; font-size:13px; border-radius:6px; border:1px solid #97C459;" />
+          </div>
+          <button class="btn" onclick="writeToGSheet()" style="background:var(--green); color:white; border-color:transparent; flex-shrink:0;">
+            <i class="ti ti-send" aria-hidden="true"></i> Écrire dans GSheet achat
+          </button>
+          <div id="gsheet-write-status" style="font-size:12px; width:100%;"></div>
+        </div>
+      </div>
+
+      <div class="actions-bar">
+        <button class="btn primary" onclick="analyzeBOM()"><i class="ti ti-cpu" aria-hidden="true"></i> Analyser BOM (IA)</button>
+        <button class="btn" onclick="exportCSV()"><i class="ti ti-file-download" aria-hidden="true"></i> Exporter XLS</button>
+        <button class="btn" onclick="clearBOM()"><i class="ti ti-trash" aria-hidden="true"></i> Effacer</button>
+      </div>
+
+      <div id="bom-loading" class="loading" style="display:none">
+        <div class="spinner"></div><span id="bom-loading-msg">Analyse IA en cours…</span>
+      </div>
+
+      <div id="bom-result" style="display:none">
+        <div id="bom-counters" class="counter-row"></div>
+        <div id="bom-warnings-section"></div>
+        <div class="filter-bar" id="filter-bar" style="display:none">
+          <button class="filter-btn f-all active" onclick="setFilter('all',this)"><i class="ti ti-list" aria-hidden="true"></i> Tous <span class="filter-count" id="fc-all">0</span></button>
+          <div class="filter-sep"></div>
+          <button class="filter-btn f-err" onclick="setFilter('error',this)"><i class="ti ti-x" aria-hidden="true"></i> Erreurs <span class="filter-count" id="fc-err">0</span></button>
+          <button class="filter-btn f-warn" onclick="setFilter('warn',this)"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Warnings <span class="filter-count" id="fc-warn">0</span></button>
+          <button class="filter-btn f-mpn" onclick="setFilter('mpn',this)"><i class="ti ti-lock" aria-hidden="true"></i> MPN strict <span class="filter-count" id="fc-mpn">0</span></button>
+          <div class="filter-sep"></div>
+          <button class="filter-btn f-sensor" onclick="setFilter('sensor',this)"><i class="ti ti-radar" aria-hidden="true"></i> Capteurs <span class="filter-count" id="fc-sensor">0</span></button>
+          <button class="filter-btn f-battery" onclick="setFilter('battery',this)"><i class="ti ti-battery" aria-hidden="true"></i> Batteries <span class="filter-count" id="fc-battery">0</span></button>
+          <button class="filter-btn f-sealed" onclick="setFilter('not-sealed',this)"><i class="ti ti-droplet-off" aria-hidden="true"></i> Non étanches <span class="filter-count" id="fc-sealed">0</span></button>
+          <button class="filter-btn f-msl" onclick="setFilter('msl4+',this)"><i class="ti ti-moisture" aria-hidden="true"></i> MSL≥4 <span class="filter-count" id="fc-msl">0</span></button>
+        </div>
+        <div class="bom-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:40px">Qty</th>
+                <th style="width:90px">Réf.</th>
+                <th style="width:130px">MPN</th>
+                <th style="width:155px">IPN (éditable)</th>
+                <th>Notes / Description</th>
+                <th style="width:92px">Alertes</th>
+                <th style="width:105px">Stock</th>
+              </tr>
+            </thead>
+            <tbody id="bom-tbody"></tbody>
+          </table>
+        </div>
+        <p class="footer-note" style="margin-top:8px">IPN éditables directement. Exportez en CSV pour mise à jour du Google Sheet.</p>
+      </div>
+    </div>
+
+    <!-- CODIF TAB -->
+    <div class="panel" id="tab-codif">
+      <div class="card">
+        <div class="row2">
+          <div class="col">
+            <label>MPN (référence fabricant)</label>
+            <input type="text" id="mpn-input" placeholder="ex: GXT188R61C106KE13D, CRCW060340K2FKEAHP…" />
+          </div>
+        </div>
+        <div class="row2">
+          <div class="col">
+            <label>Type de composant</label>
+            <select id="comp-type">
+              <option value="auto">Détection automatique</option>
+              <option value="C">Condensateur céramique / film</option>
+              <option value="CT">Condensateur tantale</option>
+              <option value="R">Résistance</option>
+              <option value="OTHER">Autre composant</option>
+            </select>
+          </div>
+          <div class="col">
+            <label>Notes / Description (optionnel)</label>
+            <input type="text" id="notes-input" placeholder="ex: 10uF 16V X5R 0603…" />
+          </div>
+        </div>
+        <div class="actions-bar" style="margin-bottom:0">
+          <button class="btn primary" onclick="generateIPN()"><i class="ti ti-wand" aria-hidden="true"></i> Générer IPN via IA</button>
+          <button class="btn" onclick="clearCodif()">Réinitialiser</button>
+        </div>
+      </div>
+
+      <div id="codif-loading" class="loading" style="display:none"><div class="spinner"></div> Analyse en cours…</div>
+
+      <div id="codif-result" style="display:none">
+        <div class="ipn-result-card">
+          <div class="section-label">IPN généré</div>
+          <div>
+            <span id="ipn-output" class="ipn-code">—</span>
+            <button class="copy-btn" onclick="copyIPN()" title="Copier"><i class="ti ti-copy"></i></button>
+          </div>
+          <div id="ipn-explain" style="font-size:12px; color:var(--text2); margin-top:6px; line-height:1.7;"></div>
+          <div id="ipn-warnings" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIG TAB -->
+    <div class="panel" id="tab-config">
+
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:8px;">
+        <div>
+          <p style="font-size:13px; color:var(--text2)">Modifiez les règles pour affiner la codification. Partagées avec BOM Client.</p>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <span id="rules-save-indicator" style="font-size:11px; color:var(--green); display:none"><i class="ti ti-check" aria-hidden="true"></i> Sauvegardé</span>
+          <button class="btn primary" onclick="saveRules()"><i class="ti ti-device-floppy" aria-hidden="true"></i> Sauvegarder</button>
+          <button class="btn" onclick="resetRules()"><i class="ti ti-refresh" aria-hidden="true"></i> Réinitialiser</button>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:0">Condensateur céramique / film</div>
+      <div class="result-box" style="margin-top:0; margin-bottom:12px">
+        <textarea id="rule-capacitor" rows="5" style="width:100%; font-family:var(--font-mono,monospace); font-size:12px; border:none; background:transparent; outline:none; resize:vertical; line-height:1.6; color:var(--color-text-primary)"></textarea>
+      </div>
+
+      <div class="section-label">Condensateur tantale</div>
+      <div class="result-box" style="margin-top:0; margin-bottom:12px">
+        <textarea id="rule-tantalum" rows="3" style="width:100%; font-family:var(--font-mono,monospace); font-size:12px; border:none; background:transparent; outline:none; resize:vertical; line-height:1.6; color:var(--color-text-primary)"></textarea>
+      </div>
+
+      <div class="section-label">Résistance</div>
+      <div class="result-box" style="margin-top:0; margin-bottom:12px">
+        <textarea id="rule-resistor" rows="7" style="width:100%; font-family:var(--font-mono,monospace); font-size:12px; border:none; background:transparent; outline:none; resize:vertical; line-height:1.6; color:var(--color-text-primary)"></textarea>
+      </div>
+
+      <div class="section-label">Autres composants</div>
+      <div class="result-box" style="margin-top:0; margin-bottom:12px">
+        <textarea id="rule-other" rows="3" style="width:100%; font-family:var(--font-mono,monospace); font-size:12px; border:none; background:transparent; outline:none; resize:vertical; line-height:1.6; color:var(--color-text-primary)"></textarea>
+      </div>
+
+      <div class="section-label">Suffixes conditionnement à supprimer</div>
+      <div class="result-box" style="margin-top:0; margin-bottom:12px">
+        <input type="text" id="rule-suffixes" style="width:100%; border:none; background:transparent; outline:none; font-size:13px; font-family:var(--font-mono,monospace)" />
+      </div>
+
+      <div class="section-label" style="margin-top:1rem">Composants sensibles</div>
+      <div class="result-box" style="margin-top:0; margin-bottom:12px">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div><label style="font-size:11px; color:var(--color-text-secondary); margin-bottom:4px; display:block">Capteurs</label>
+            <input type="text" id="rule-sensors" style="width:100%; border:none; border-bottom:1px solid var(--color-border-tertiary); background:transparent; outline:none; font-size:12px; padding:2px 0" /></div>
+          <div><label style="font-size:11px; color:var(--color-text-secondary); margin-bottom:4px; display:block">Énergie</label>
+            <input type="text" id="rule-batteries" style="width:100%; border:none; border-bottom:1px solid var(--color-border-tertiary); background:transparent; outline:none; font-size:12px; padding:2px 0" /></div>
+          <div><label style="font-size:11px; color:var(--color-text-secondary); margin-bottom:4px; display:block">Non étanches</label>
+            <input type="text" id="rule-sealed" style="width:100%; border:none; border-bottom:1px solid var(--color-border-tertiary); background:transparent; outline:none; font-size:12px; padding:2px 0" /></div>
+          <div><label style="font-size:11px; color:var(--color-text-secondary); margin-bottom:4px; display:block">Niveau MSL minimum</label>
+            <select id="rule-msl" style="border:none; border-bottom:1px solid var(--color-border-tertiary); background:transparent; outline:none; font-size:12px; padding:2px 0; width:100%">
+              <option value="4">MSL ≥ 4</option><option value="3">MSL ≥ 3</option><option value="2">MSL ≥ 2</option>
+            </select></div>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:1rem">Logique stock & Clients</div>
+      <div class="result-box" style="font-family:var(--font-sans,sans-serif); line-height:2; font-size:12px; color:var(--color-text-secondary); margin-top:0; margin-bottom:12px">
+        <b style="color:var(--color-text-primary)">Client standard</b> — recherche IPN en priorité, puis MPN si absent<br>
+        <b style="color:#993556">Client MPN strict</b> — MPN en priorité. IPN dispo sans MPN → ⚠️ warning<br>
+        Stock cherché sur IPN et MPN simultanément
+      </div>
+
+      <div id="extra-rules-container"></div>
+
+      <div class="section-label">Clients chargés</div>
+      <div id="config-clients-preview">
+        <p style="font-size:13px; color:var(--color-text-secondary)">Aucun client chargé.</p>
+      </div>
+    </div>
+
   </div>
 </div>
 
 <script>
-// ===================== STATE =====================
-let rawData = [];       // parsed rows from uploaded file
-let headers = [];       // original file headers
-let workbook = null;    // XLSX workbook
-let activeSheetIdx = 0;
-let columnMapping = {}; // field -> detected column name
-let analysisResults = [];
-let resultMeta = [];
-let clientsList = [];
-let activeClientAnalysis = { nom:'Standard', mpn_strict:false, notes:'' };
-let currentResultFilter = 'all';
-let apiKey = '';
-let proxyUrl = '';
-
-// ===================== REQUIRED FIELDS FOR MAPPING =====================
-const REQUIRED_FIELDS = [
-  { key:'designator',    label:'Désignateur / Référence',       required:true  },
-  { key:'mpn',           label:'MPN (référence fabricant)',      required:false },
-  { key:'description',   label:'Description / Valeur',          required:false },
-  { key:'notes',         label:'Notes / Specs techniques',      required:false },
-  { key:'manufacturer',  label:'Fabricant(s)',                  required:false },
-  { key:'qty',           label:'Quantité',                      required:false },
-  { key:'mfr_free',      label:'Equivalent autorisé (Mfr free)',required:false },
-  { key:'ipn',           label:'IPN existant (si déjà codifié)',required:false },
-  { key:'dist_code',     label:'Code distributeur (DigiKey/Mouser/Farnell)',required:false },
-];
-
-// ===================== DEFAULT RULES =====================
-const DEFAULT_RULES = {
+const DEFAULT_RULES_BOM = {
   capacitor: `Format: C(valeur)-(boitier)-(tensionV)-(tolP)-(diélectrique)
 - Valeur: 10U=10µF, 1N5=1.5nF, 10P=10pF, 100N=100nF
-- Tension: 16V, 6V3 (pour 6.3V), 50V. Si >=1000V écrire en kV: 1KV, 1KV5
+- Tension: 16V, 6V3. Si >=1000V écrire en kV: 1KV, 1KV5
 - Tolérance: P remplace % — 10P=10%, 5P=5%, 20P=20%
-- Diélectrique: X5R, X7R, C0G, Y5V, etc.
 Exemples: C10U-0603-16V-10P-X5R | C1N5-0603-50V-20P-X7R | C100P-0805-1KV-5P-C0G`,
-
   tantalum: `Format: CT(valeur)-(boitier A/B/C/D/E)-(tensionV)-(tolP)-(ESR)
-- Boitier: A=EIA3216, B=EIA3528, C=EIA6032, D=EIA7343, E=EIA7360
-- ESR: 5R=5Ω, 0R4=0.4Ω
 Exemples: CT10U-A-20V-20P-5R | CT100U-B-6V3-10P-0R4`,
-
   resistor: `Format: R(valeur)-(boitier)[-(PPM si coeff <100PPM)][-(W si puissance non standard)]
-- Valeur: R100=0.1Ω, 1R=1Ω, 10R=10Ω, 1K=1kΩ, 10K=10kΩ, 40K2=40.2kΩ
-- Valeur 0 ohm: TOUJOURS écrire 0R → R0R-0603 (jamais R0-0603)
-- Tolérance >=1%: non codifiée (1% sous-entendu). Les >1% sont remplacées par 1%
-- Coefficient temp: écrire PPM en entier collé au nombre (25PPM, 10PPM). JAMAIS juste P
-- Puissance standard: 0201=50mW, 0402=62mW, 0603=100mW, 0805=125mW, 1206=250mW, 2512=1W
-- Puissance non standard: ajouter avec W comme virgule: 0W33, 0W25, 1W
+- Valeur 0 ohm: TOUJOURS 0R → R0R-0603 (jamais R0-0603)
+- Tolérance >=1%: non codifiée. PPM toujours en entier (25PPM pas 25P)
+- Puissance std: 0201=50mW, 0402=62mW, 0603=100mW, 0805=125mW, 1206=250mW, 2512=1W
 Exemples: R10K-0603 | R0R-0603 | R40K2-0603-0W33 | R30K-0603-10PPM | R10K-0805-25PPM`,
-
-  other: `Pour tout autre composant: utiliser le MPN sans suffixes de conditionnement.
-Exemples: LM317MBSTT3G (pas LM317MBSTT3G#TRPBF) | ISL43L210IHZ (pas ISL43L210IHZ-T)`,
-
+  other: `Utiliser le MPN sans suffixes de conditionnement.
+Exemples: LM317MBSTT3G | ISL43L210IHZ`,
   suffixes: '#PBF, #TRPBF, TR, -T, /TR, REEL, TAPE, CT',
-  sensors: 'pressure, humidity, temperature, sensor, transducer, accelerometer, gyroscope, capteur, pression, humidité, température',
-  batteries: 'battery, pile, accumulator, lithium, LiPo, LiFe, LiIon, CR2032, AA, AAA',
-  sealed: 'relay, relais, not sealed, non étanche, unsealed',
+  sensors: 'pressure, humidity, temperature, sensor, transducer, capteur, pression, humidité',
+  batteries: 'battery, pile, accumulator, lithium, LiPo, CR2032',
+  sealed: 'relay, relais, not sealed, non étanche',
   msl: '4'
 };
 
-async function loadRulesFromURL(silent) {
-  const url = document.getElementById('cfg-rules-url').value.trim();
-  const statusEl = document.getElementById('rules-url-status');
-  if (!url) { if(!silent) statusEl.innerHTML='<span style="color:var(--red)">URL manquante</span>'; return; }
-  if (!silent) statusEl.innerHTML='Chargement…';
+function loadRules() {
   try {
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const text = await resp.text();
-    const lines = text.trim().split(/\r?\n/);
-    const sep = lines[0].includes('	') ? '	' : ',';
-    const headers = lines[0].split(sep).map(h=>h.replace(/"/g,'').trim());
-    const rulesObj = {};
-    lines.slice(1).forEach(line => {
-      const cells = line.split(sep).map(c=>c.replace(/"/g,'').trim());
-      const obj = {};
-      headers.forEach((h,i) => obj[h]=cells[i]||'');
-      const k = (obj['Clé']||obj['cle']||obj['key']||obj['Cle']||'').trim();
-      const v = (obj['Valeur']||obj['valeur']||obj['value']||'').trim().replace(/\\n/g,'\n');
-      if (k) rulesObj[k] = v;
+    const saved = localStorage.getItem('bom_coding_rules');
+    const rules = saved ? JSON.parse(saved) : DEFAULT_RULES_BOM;
+    ['capacitor','tantalum','resistor','other'].forEach(k => {
+      const el = document.getElementById('rule-' + k);
+      if (el) el.value = rules[k] || DEFAULT_RULES_BOM[k] || '';
     });
-    if (!Object.keys(rulesObj).length) throw new Error('Aucune règle — vérifiez colonnes Clé/Valeur');
-    localStorage.setItem('bom_coding_rules', JSON.stringify(rulesObj));
-    localStorage.setItem('bom_rules_url', url);
-    loadRules();
-    renderExtraRules(rulesObj);
-    if (!silent) statusEl.innerHTML=`<span style="color:var(--green)"><i class="ti ti-check"></i> ${Object.keys(rulesObj).length} règles chargées</span>`;
-  } catch(e) {
-    if (!silent) statusEl.innerHTML=`<span style="color:var(--red)">Erreur: ${e.message}</span>`;
-  }
+    ['suffixes','sensors','batteries','sealed'].forEach(k => {
+      const el = document.getElementById('rule-' + k);
+      if (el) el.value = rules[k] || DEFAULT_RULES_BOM[k] || '';
+    });
+    const mslEl = document.getElementById('rule-msl');
+    if (mslEl) mslEl.value = rules.msl || '4';
+    // Render any extra keys from sheet
+    renderExtraRules(rules);
+  } catch(e) {}
+}
+
+function saveRules() {
+  const rules = {};
+  ['capacitor','tantalum','resistor','other','suffixes','sensors','batteries','sealed','msl'].forEach(k => {
+    const el = document.getElementById('rule-' + k);
+    if (el) rules[k] = el.value;
+  });
+  try {
+    localStorage.setItem('bom_coding_rules', JSON.stringify(rules));
+    const ind = document.getElementById('rules-save-indicator');
+    if (ind) { ind.style.display='inline'; setTimeout(()=>ind.style.display='none', 2000); }
+  } catch(e) { alert('Erreur: ' + e.message); }
+}
+
+function resetRules() {
+  if (!confirm('Réinitialiser toutes les règles ?')) return;
+  Object.entries(DEFAULT_RULES_BOM).forEach(([k,v]) => {
+    const el = document.getElementById('rule-' + k);
+    if (el) el.value = v;
+  });
 }
 
 function renderExtraRules(rules) {
@@ -549,211 +945,20 @@ function renderExtraRules(rules) {
   const extraKeys = Object.keys(rules).filter(k => !knownKeys.includes(k.toLowerCase()));
   const container = document.getElementById('extra-rules-container');
   if (!container) return;
-  if (!extraKeys.length) { container.innerHTML=''; return; }
+  if (!extraKeys.length) { container.innerHTML = ''; return; }
   container.innerHTML = `
-    <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title"><span>Règles supplémentaires (depuis Google Sheet)</span></div>
-      ${extraKeys.map(k=>`
-        <div class="card" style="margin-bottom:8px">
-          <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">${k}</div>
-          <div style="font-family:var(--mono);font-size:12px;white-space:pre-wrap;color:var(--text2);line-height:1.6">${rules[k]}</div>
-        </div>`).join('')}
-    </div>`;
-}
-
-// ===================== MAPPING PERSISTENCE =====================
-function getMappingStorageKey() {
-  const clientKey = activeClientAnalysis.nom || 'Standard';
-  return 'bom_mapping_' + clientKey.replace(/[^a-zA-Z0-9]/g,'_');
-}
-
-function saveMappingForClient() {
-  try {
-    localStorage.setItem(getMappingStorageKey(), JSON.stringify(columnMapping));
-    const status = document.getElementById('mapping-save-status');
-    status.style.display = 'inline';
-    setTimeout(() => status.style.display='none', 2000);
-  } catch(e) { alert('Erreur sauvegarde mapping: ' + e.message); }
-}
-
-function loadMappingForClient() {
-  try {
-    const saved = localStorage.getItem(getMappingStorageKey());
-    if (saved) {
-      const savedMapping = JSON.parse(saved);
-      // Only apply if headers match (at least 50% of mapped columns exist)
-      const savedCols = Object.values(savedMapping).filter(Boolean);
-      const matches = savedCols.filter(c => headers.includes(c)).length;
-      if (matches / Math.max(savedCols.length, 1) >= 0.5) {
-        columnMapping = savedMapping;
-        document.getElementById('mapping-loaded-badge').style.display = 'inline-flex';
-        return true;
-      }
-    }
-    document.getElementById('mapping-loaded-badge').style.display = 'none';
-  } catch(e) {}
-  return false;
-}
-// ===================== END MAPPING PERSISTENCE =====================
-
-// ===================== INIT =====================
-window.addEventListener('load', () => {
-  loadRules();
-  loadConfig();
-  loadClientsList();
-  initUploadZone();
-});
-
-function loadConfig() {
-  try {
-    apiKey = localStorage.getItem('bom_api_key') || '';
-    proxyUrl = localStorage.getItem('bom_proxy_url') || '';
-    const clientsUrl = localStorage.getItem('bom_clients_url') || '';
-    const rulesUrl = localStorage.getItem('bom_rules_url') || '';
-    document.getElementById('cfg-api-key').value = apiKey;
-    document.getElementById('cfg-proxy-url').value = proxyUrl;
-    document.getElementById('cfg-clients-url').value = clientsUrl;
-    document.getElementById('cfg-rules-url').value = rulesUrl;
-    // Always load from hardcoded URLs if fields have values
-    const cUrl = document.getElementById('cfg-clients-url')?.value.trim();
-    const rUrl = document.getElementById('cfg-rules-url')?.value.trim();
-    if (cUrl) loadClientsFromURL(true);
-    if (rUrl) loadRulesFromURL(true);
-  } catch(e) {}
-}
-
-async function loadClientsFromURL(silent) {
-  const url = document.getElementById('cfg-clients-url').value.trim();
-  const statusEl = document.getElementById('clients-load-status');
-  if (!url) { if(!silent) statusEl.innerHTML='<span style="color:var(--red)">URL manquante</span>'; return; }
-  if (!silent) statusEl.innerHTML='Chargement…';
-  try {
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const text = await resp.text();
-    const lines = text.trim().split(/\r?\n/);
-    const sep = lines[0].includes('\t') ? '\t' : ',';
-    const headers = lines[0].split(sep).map(h=>h.replace(/"/g,'').trim());
-    clientsList = lines.slice(1).map(line => {
-      const cells = line.split(sep).map(c=>c.replace(/"/g,'').trim());
-      const obj = {};
-      headers.forEach((h,i) => obj[h]=cells[i]||'');
-      return {
-        nom: obj['Nom']||obj['nom']||obj['name']||'',
-        mpn_strict: (obj['MPN_strict']||obj['mpn_strict']||'').toLowerCase()==='oui',
-        notes: obj['Notes']||obj['notes']||''
-      };
-    }).filter(c=>c.nom);
-    localStorage.setItem('bom_clients_url', url);
-    localStorage.setItem('bom_clients_list', JSON.stringify(clientsList));
-    populateClientSelect();
-    if (!silent) statusEl.innerHTML=`<span style="color:var(--green)"><i class="ti ti-check"></i> ${clientsList.length} client(s) chargé(s)</span>`;
-  } catch(e) {
-    if (!silent) statusEl.innerHTML=`<span style="color:var(--red)">Erreur: ${e.message}</span>`;
-  }
-}
-
-function loadClientsList() {
-  try {
-    const saved = localStorage.getItem('bom_clients_list');
-    if (saved) {
-      clientsList = JSON.parse(saved);
-      populateClientSelect();
-    }
-  } catch(e) {}
-}
-
-function populateClientSelect() {
-  const sel = document.getElementById('client-select-analysis');
-  sel.innerHTML = '<option value="__standard__">Standard (IPN autorisé)</option>';
-  clientsList.forEach(c => {
-    if (c.nom.toLowerCase() === 'standard') return;
-    const opt = document.createElement('option');
-    opt.value = c.nom;
-    opt.textContent = c.nom + (c.mpn_strict ? ' 🔒' : '');
-    sel.appendChild(opt);
-  });
-}
-
-function onClientSelect() {
-  const val = document.getElementById('client-select-analysis').value;
-  activeClientAnalysis = val === '__standard__'
-    ? { nom:'Standard', mpn_strict:false, notes:'' }
-    : (clientsList.find(c => c.nom === val) || { nom:'Standard', mpn_strict:false, notes:'' });
-  // If mapping is already shown, try to load saved mapping for new client
-  if (rawData.length > 0) {
-    if (!loadMappingForClient()) {
-      // No saved mapping for this client — keep current but show AI detection
-      document.getElementById('mapping-loaded-badge').style.display = 'none';
-    }
-    renderMappingTable();
-  }
-}
-
-// ===================== RULES =====================
-function loadRules() {
-  try {
-    const saved = localStorage.getItem('bom_coding_rules');
-    const rules = saved ? JSON.parse(saved) : DEFAULT_RULES;
-    document.getElementById('rule-capacitor').value = rules.capacitor || DEFAULT_RULES.capacitor;
-    document.getElementById('rule-tantalum').value = rules.tantalum || DEFAULT_RULES.tantalum;
-    document.getElementById('rule-resistor').value = rules.resistor || DEFAULT_RULES.resistor;
-    document.getElementById('rule-other').value = rules.other || DEFAULT_RULES.other;
-    document.getElementById('rule-suffixes').value = rules.suffixes || DEFAULT_RULES.suffixes;
-    document.getElementById('rule-sensors').value = rules.sensors || DEFAULT_RULES.sensors;
-    document.getElementById('rule-batteries').value = rules.batteries || DEFAULT_RULES.batteries;
-    document.getElementById('rule-sealed').value = rules.sealed || DEFAULT_RULES.sealed;
-    document.getElementById('rule-msl').value = rules.msl || DEFAULT_RULES.msl;
-    renderExtraRules(rules);
-  } catch(e) {
-    Object.entries(DEFAULT_RULES).forEach(([k,v]) => {
-      const el = document.getElementById('rule-' + k);
-      if (el) el.value = v;
-    });
-  }
-}
-
-function saveRules() {
-  const rules = {
-    capacitor: document.getElementById('rule-capacitor').value,
-    tantalum:  document.getElementById('rule-tantalum').value,
-    resistor:  document.getElementById('rule-resistor').value,
-    other:     document.getElementById('rule-other').value,
-    suffixes:  document.getElementById('rule-suffixes').value,
-    sensors:   document.getElementById('rule-sensors').value,
-    batteries: document.getElementById('rule-batteries').value,
-    sealed:    document.getElementById('rule-sealed').value,
-    msl:       document.getElementById('rule-msl').value,
-  };
-  // Also save API config
-  const ak = document.getElementById('cfg-api-key').value.trim();
-  const pu = document.getElementById('cfg-proxy-url').value.trim();
-  try {
-    localStorage.setItem('bom_coding_rules', JSON.stringify(rules));
-    const cu = document.getElementById('cfg-clients-url').value.trim();
-    const ru = document.getElementById('cfg-rules-url').value.trim();
-    localStorage.setItem('bom_api_key', ak);
-    localStorage.setItem('bom_proxy_url', pu);
-    localStorage.setItem('bom_clients_url', cu);
-    localStorage.setItem('bom_rules_url', ru);
-    apiKey = ak; proxyUrl = pu;
-    const ind = document.getElementById('save-indicator');
-    ind.classList.add('visible');
-    setTimeout(() => ind.classList.remove('visible'), 2000);
-  } catch(e) { alert('Erreur sauvegarde : ' + e.message); }
-}
-
-function resetRules() {
-  if (!confirm('Réinitialiser toutes les règles aux valeurs par défaut ?')) return;
-  Object.entries(DEFAULT_RULES).forEach(([k,v]) => {
-    const el = document.getElementById('rule-' + k);
-    if (el) el.value = v;
-  });
+    <div class="section-label" style="margin-top:1rem">Règles supplémentaires (depuis Google Sheet)</div>
+    ${extraKeys.map(k => `
+      <div style="margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">${k}</div>
+        <div class="result-box" style="margin-top:0;font-family:var(--font-mono,monospace);font-size:12px;white-space:pre-wrap;color:var(--color-text-secondary)">${rules[k]}</div>
+      </div>`).join('')}`;
 }
 
 function getRulesPrompt() {
   const get = id => { const el = document.getElementById(id); return el ? el.value : ''; };
 
+  // Load all saved rules including custom keys from Google Sheet
   let extraRules = '';
   try {
     const saved = localStorage.getItem('bom_coding_rules');
@@ -762,7 +967,7 @@ function getRulesPrompt() {
       const knownKeys = ['capacitor','tantalum','resistor','other','suffixes','sensors','batteries','sealed','msl'];
       const extraKeys = Object.keys(rules).filter(k => !knownKeys.includes(k));
       if (extraKeys.length > 0) {
-        extraRules = '\n\n' + extraKeys.map(k =>
+        extraRules = '\n' + extraKeys.map(k =>
           `RÈGLE SUPPLÉMENTAIRE — ${k.toUpperCase()}:\n${rules[k]}`
         ).join('\n\n');
       }
@@ -770,828 +975,1435 @@ function getRulesPrompt() {
   } catch(e) {}
 
   return `RÈGLES DE CODIFICATION IPN:
-
 CONDENSATEUR CÉRAMIQUE/FILM:
 ${get('rule-capacitor')}
-
 CONDENSATEUR TANTALE:
 ${get('rule-tantalum')}
-
 RÉSISTANCE:
 ${get('rule-resistor')}
-
 AUTRES COMPOSANTS:
 ${get('rule-other')}
-
 SUFFIXES CONDITIONNEMENT À SUPPRIMER: ${get('rule-suffixes')}${extraRules}`;
 }
 
-// ===================== TABS =====================
+let bomData = [];
+let csvBuffer = "";
+let stockByIPN = {}, stockByMPN = {};
+let clientsList = [];
+let activeClient = { nom:'Standard', mpn_strict:false, notes:'' };
+let sourceStatus = { clients:'none', stock:'none', rules:'none' };
+let apiKey = "";
+let mouserKey = "";
+let farnellKey = "";
+let proxyUrl = "";
+let writerUrl = "";
+
 function switchTab(name) {
-  ['analyse','rules'].forEach((n,i) => {
-    document.querySelectorAll('.tab')[i].classList.toggle('active', n===name);
-    document.querySelectorAll('.panel')[i].classList.toggle('active', n===name);
+  const names = ['bom','codif','config'];
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', names[i]===name));
+  document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', names[i]===name));
+}
+
+function showSetup() {
+  document.getElementById('setup-screen').style.display = 'block';
+  document.getElementById('main-screen').style.display = 'none';
+  document.getElementById('btn-reconfig').style.display = 'none';
+  // Pre-fill saved URLs
+  const savedRulesUrl = localStorage.getItem('bom_rules_url');
+  if (savedRulesUrl) document.getElementById('setup-rules-url').value = savedRulesUrl;
+}
+
+function showMain() {
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('main-screen').style.display = 'block';
+  document.getElementById('btn-reconfig').style.display = 'flex';
+  renderTopbar();
+  // Init upload zone after main screen is visible
+  setTimeout(initUploadZone, 50);
+}
+
+function skipSetup() { showMain(); }
+
+function setDot(id, state, msg) {
+  document.getElementById(id+'-dot').className = 'status-dot ' + state;
+  document.getElementById(id+'-status-msg').textContent = msg;
+}
+
+function renderTopbar() {
+  const bar = document.getElementById('topbar-status');
+  const items = [
+    { key:'clients', icon:'ti-users', label:'Clients' },
+    { key:'stock', icon:'ti-package', label:'Stock' },
+    { key:'rules', icon:'ti-book', label:'Règles' }
+  ];
+  bar.innerHTML = items.map(c => {
+    const s = sourceStatus[c.key];
+    const cls = s==='ok'?'ok':s==='err'?'err':'';
+    const icon2 = s==='ok'?'ti-check':s==='err'?'ti-x':'ti-clock';
+    return `<span class="chip ${cls}"><i class="ti ${c.icon}" aria-hidden="true"></i><i class="ti ${icon2}" aria-hidden="true"></i> ${c.label}</span>`;
+  }).join('');
+}
+
+function parseCSV(text) {
+  const raw = text.trim();
+  const firstLine = raw.split(/\r?\n/)[0];
+  const isTSV = firstLine.includes('\t');
+
+  if (isTSV) {
+    // TSV: simple split, no quoting issues, each physical line = one row
+    const lines = raw.split(/\r?\n/);
+    const headers = lines[0].split('\t').map(h => h.trim());
+    return lines.slice(1).map(line => {
+      const cells = line.split('\t').map(c => c.trim());
+      const obj = {};
+      headers.forEach((h,j) => obj[h] = cells[j]||'');
+      return obj;
+    });
+  }
+
+  // CSV: handle quoted multiline fields
+  function parseLogicalRows(raw) {
+    const rows = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < raw.length; i++) {
+      const ch = raw[i];
+      if (ch === '"') {
+        if (inQ && raw[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+        cur += ch;
+      } else if ((ch === '\n' || (ch === '\r' && raw[i+1] === '\n')) && !inQ) {
+        if (ch === '\r') i++;
+        rows.push(cur); cur = '';
+      } else cur += ch;
+    }
+    if (cur.trim()) rows.push(cur);
+    return rows;
+  }
+
+  function splitCSVLine(line) {
+    const result = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) {
+        result.push(cur); cur = '';
+      } else cur += ch;
+    }
+    result.push(cur);
+    return result.map(c => c.replace(/^"|"$/g,'').trim());
+  }
+
+  const logicalRows = parseLogicalRows(raw);
+  if (logicalRows.length < 2) return [];
+  const headers = splitCSVLine(logicalRows[0]);
+  return logicalRows.slice(1).map(line => {
+    const cells = splitCSVLine(line);
+    const obj = {};
+    headers.forEach((h,j) => obj[h] = (cells[j]||'').trim());
+    return obj;
+  }).filter(r => Object.values(r).some(v => v));
+}
+
+function filterBOMRows(rows) {
+  return rows.filter(r => {
+    const mpn = (r['MPN']||r['mpn']||'').trim();
+    const desig = (r['Designator']||r['designator']||r['Reference']||r['reference']||'').trim();
+    const ipn = (r['Approved internal part number']||r['IPN']||r['ipn']||'').trim();
+    return desig !== '' && (mpn !== '' || ipn !== '');
   });
 }
 
-// ===================== UPLOAD =====================
-function initUploadZone() {
-  const zone = document.getElementById('upload-zone');
-  if (!zone) return;
-  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
-  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
-  zone.addEventListener('drop', e => {
-    e.preventDefault(); zone.classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file) { const inp = document.getElementById('client-file-input'); const dt = new DataTransfer(); dt.items.add(file); inp.files = dt.files; handleUpload(inp); }
-  });
-  zone.addEventListener('click', () => document.getElementById('client-file-input').click());
+function findCol(row, candidates) {
+  for (const k of candidates) {
+    const found = Object.keys(row).find(rk => rk.toLowerCase().includes(k.toLowerCase()));
+    if (found !== undefined) return row[found];
+  }
+  return '';
 }
 
-async function handleUpload(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const ext = file.name.split('.').pop().toLowerCase();
-  const zone = document.getElementById('upload-zone');
-  const lbl = document.getElementById('upload-label');
+async function fetchCSV(url) {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  return resp.text();
+}
 
-  workbook = null;
-
-  if (ext === 'xlsx' || ext === 'xls') {
-    if (typeof XLSX === 'undefined') { lbl.innerHTML = '<span style="color:var(--red)">XLSX non chargé</span>'; return; }
-    const buf = await file.arrayBuffer();
-    workbook = XLSX.read(buf, { type:'array' });
-    // Populate sheet selector
-    const sel = document.getElementById('sheet-select');
-    sel.innerHTML = workbook.SheetNames.map((n,i) => `<option value="${i}">${n}</option>`).join('');
-    activeSheetIdx = 0;
-    parseSheet();
+async function loadAll() {
+  const btn = document.getElementById('btn-load-all');
+  btn.disabled = true;
+  document.getElementById('setup-error').style.display = 'none';
+  apiKey = document.getElementById("setup-api-key").value.trim();
+  mouserKey = document.getElementById("setup-mouser-key").value.trim();
+  farnellKey = document.getElementById("setup-farnell-key").value.trim();
+  proxyUrl = document.getElementById("setup-proxy-url").value.trim();
+  writerUrl = document.getElementById("setup-writer-url")?.value.trim() || "https://script.google.com/macros/s/AKfycbxHOVSS4nDASlpYPFvjW8ZkNH2inWCG5VO9HoeTILx2R9f-aOi0Wf62JVWW7ZIfm-U_fQ/exec";
+  const rulesUrl = document.getElementById("setup-rules-url").value.trim();
+  if (rulesUrl) {
+    setDot('rules','loading','Chargement règles…');
+    try {
+      const rulesText = await fetchCSV(rulesUrl);
+      const rulesRows = parseCSV(rulesText);
+      const rulesObj = {};
+      rulesRows.forEach(r => {
+        const k = (r['Clé']||r['cle']||r['key']||r['Cle']||'').trim();
+        const v = (r['Valeur']||r['valeur']||r['value']||'').trim().replace(/\\n/g,'\n');
+        if (k) rulesObj[k] = v;
+      });
+      if (Object.keys(rulesObj).length > 0) {
+        localStorage.setItem('bom_coding_rules', JSON.stringify(rulesObj));
+        localStorage.setItem('bom_rules_url', rulesUrl);
+        loadRules();
+        renderExtraRules(rulesObj);
+        setDot('rules','ok', Object.keys(rulesObj).length + ' règles chargées');
+        sourceStatus.rules = 'ok';
+      } else throw new Error('Aucune règle trouvée — vérifiez les colonnes Clé/Valeur');
+    } catch(e) {
+      setDot('rules','err', e.message);
+      sourceStatus.rules = 'err';
+    }
   } else {
-    const text = await file.text();
-    parseRawText(text);
+    // Pre-fill URL if saved
+    const savedUrl = localStorage.getItem('bom_rules_url');
+    if (savedUrl) document.getElementById('setup-rules-url').value = savedUrl;
   }
-
-  zone.className = 'upload-zone loaded';
-  lbl.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i> ' + file.name + ' chargé';
-
-  document.getElementById('mapping-card').style.display = 'block';
-  document.getElementById('step3-bar').style.display = 'block';
-  await detectColumns();
-}
-
-function onSheetChange() {
-  activeSheetIdx = parseInt(document.getElementById('sheet-select').value);
-  parseSheet();
-  detectColumns();
-}
-
-function getStartRow() {
-  return Math.max(1, parseInt(document.getElementById('start-row')?.value || '1'));
-}
-
-function parseSheet() {
-  if (!workbook) return;
-  const ws = workbook.Sheets[workbook.SheetNames[activeSheetIdx]];
-  const data = XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
-  const startRow = getStartRow();
-  document.getElementById('total-rows-hint').textContent = data.length;
-  if (data.length < startRow) { rawData = []; headers = []; return; }
-  headers = data[startRow - 1].map(h => String(h||'').trim());
-  rawData = data.slice(startRow).map(row => {
-    const obj = {};
-    headers.forEach((h,i) => obj[h] = String(row[i]||'').trim());
-    return obj;
-  }).filter(r => Object.values(r).some(v => v));
-}
-
-function onStartRowChange() {
-  if (workbook) {
-    parseSheet();
-    detectColumns();
-  } else if (rawData.length) {
-    parseRawText(document.getElementById('start-row')._rawText || '');
-  }
-}
-
-function parseRawText(text) {
-  const startRow = getStartRow();
-  const lines = text.trim().split(/\r?\n/);
-  document.getElementById('total-rows-hint').textContent = lines.length;
-  const sep = lines[startRow-1]?.includes('\t') ? '\t' : ',';
-  const headerLine = lines[startRow - 1] || lines[0];
-  headers = headerLine.split(sep).map(h => h.replace(/"/g,'').trim());
-  rawData = lines.slice(startRow).map(line => {
-    const cells = line.split(sep).map(c => c.replace(/"/g,'').trim());
-    const obj = {};
-    headers.forEach((h,i) => obj[h] = cells[i]||'');
-    return obj;
-  }).filter(r => Object.values(r).some(v => v));
-  // Store for re-parse on row change
-  const inp = document.getElementById('start-row');
-  if (inp) inp._rawText = text;
-}
-
-// ===================== COLUMN DETECTION =====================
-async function detectColumns() {
-  const loadEl = document.getElementById('mapping-loading');
-  loadEl.style.display = 'flex';
-  document.getElementById('mapping-tbody').innerHTML = '';
-  document.getElementById('mapping-confidence-badge').textContent = '';
-
-  if (!rawData.length) { loadEl.style.display = 'none'; return; }
-
-  const key = document.getElementById('cfg-api-key').value.trim() || apiKey;
-  if (!key) {
-    // Fallback: basic keyword matching
-    columnMapping = autoDetectColumns(headers);
-    renderMappingTable();
-    loadEl.style.display = 'none';
+  if (!apiKey) {
+    document.getElementById("setup-error").textContent = "Clé API Anthropic obligatoire.";
+    document.getElementById("setup-error").style.display = "block";
+    btn.disabled = false;
     return;
   }
-
-  const sample = rawData.slice(0,3).map(r => {
-    const obj = {};
-    headers.forEach(h => obj[h] = r[h]||'');
-    return obj;
-  });
-
-  const prompt = `Tu es expert en analyse de BOM électronique. Voici les colonnes d'une BOM client et des exemples de données.
-
-Colonnes disponibles: ${JSON.stringify(headers)}
-Exemples de données (3 premières lignes): ${JSON.stringify(sample, null, 2)}
-
-Mappe chaque champ requis vers la colonne la plus appropriée. Si non trouvée, retourne null.
-
-Champs à mapper:
-- designator: référence du composant sur le PCB (ex: R1, C2, U3...)
-- mpn: référence fabricant du composant
-- description: description ou valeur du composant
-- notes: notes, specs techniques supplémentaires
-- manufacturer: nom du fabricant
-- qty: quantité
-- mfr_free: autorisation d'utiliser un équivalent (oui/non/yes/no/free/equiv...)
-- ipn: IPN ou code interne déjà assigné
-
-RÉPONSE JSON uniquement:
-{"mapping":{"designator":"colonne","mpn":"colonne","description":"colonne","notes":"colonne","manufacturer":"colonne","qty":"colonne","mfr_free":"colonne","ipn":"colonne"},"confidence":"high|medium|low","notes":"remarques courtes"}`;
-
-  try {
-    const resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-      body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:500, messages:[{role:"user",content:prompt}] })
-    });
-    const data = await resp.json();
-    const text = data.content.map(c=>c.text||'').join('');
-    const result = JSON.parse(text.replace(/```json|```/g,'').trim());
-    columnMapping = result.mapping || autoDetectColumns(headers);
-    const conf = result.confidence || 'medium';
-    const badge = document.getElementById('mapping-confidence-badge');
-    badge.className = 'badge ' + (conf==='high'?'b-ok':conf==='medium'?'b-info':'b-warn');
-    badge.textContent = conf==='high'?'Détection fiable':conf==='medium'?'Détection probable':'Vérifier le mapping';
-  } catch(e) {
-    columnMapping = autoDetectColumns(headers);
+  const clientsUrl = document.getElementById('setup-clients-url').value.trim();
+  const stockUrl = document.getElementById('setup-stock-url').value.trim();
+  if (!clientsUrl && !stockUrl) {
+    document.getElementById('setup-error').textContent = 'Renseigne au moins une URL.';
+    document.getElementById('setup-error').style.display = 'block';
+    btn.disabled = false;
+    return;
   }
-
-  // Try to load saved mapping for this client (overrides AI detection if match)
-  loadMappingForClient();
-  renderMappingTable();
-  loadEl.style.display = 'none';
-}
-
-function autoDetectColumns(hdrs) {
-  const map = {};
-  const patterns = {
-    designator: ['designator','reference','ref','repere','désignateur','position','refdes'],
-    mpn: ['mpn','manufacturer part','part number','ref fabricant','mfr part'],
-    description: ['description','desc','value','valeur','component'],
-    notes: ['notes','note','comment','specs','specification'],
-    manufacturer: ['manufacturer','fabricant','mfr','brand','marque'],
-    qty: ['qty','quantity','quantité','qté','nb','nombre'],
-    mfr_free: ['manufacturer free','mfr free','equiv','equivalent','free','autorisé'],
-    ipn: ['ipn','internal part','code interne','approved internal'],
-    dist_code: ['digikey','mouser','farnell','rs ','distributor','dist part','order code','supplier part','numéro commande','ref commande']
-  };
-  Object.entries(patterns).forEach(([field, keywords]) => {
-    const found = hdrs.find(h => keywords.some(k => h.toLowerCase().includes(k)));
-    map[field] = found || null;
-  });
-  return map;
-}
-
-function remapColumns() { detectColumns(); }
-
-function renderMappingTable() {
-  const tbody = document.getElementById('mapping-tbody');
-  tbody.innerHTML = '';
-  REQUIRED_FIELDS.forEach(field => {
-    const detected = columnMapping[field.key];
-    const isArray = Array.isArray(detected);
-    const cols = isArray ? detected : (detected ? [detected] : []);
-    const previewVal = cols.length && rawData[0]
-      ? cols.map(c => String(rawData[0][c]||'')).filter(Boolean).join(' | ').slice(0,50)
-      : '—';
-    const statusIcon = cols.length ? '✅' : (field.required ? '❌' : '⚪');
-
-    const selectors = cols.length
-      ? cols.map((c,i) => `
-          <div style="display:flex;gap:4px;align-items:center;margin-bottom:4px">
-            <select onchange="updateMappingCol('${field.key}',${i},this.value)" style="font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);font-family:var(--sans);flex:1">
-              <option value="">— Supprimer —</option>
-              ${headers.map(h=>`<option value="${h}" ${h===c?'selected':''}>${h}</option>`).join('')}
-            </select>
-            ${i>0?`<button onclick="removeMappingCol('${field.key}',${i})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:0 2px" title="Supprimer">×</button>`:''}
-          </div>`).join('')
-      : `<select onchange="updateMappingCol('${field.key}',0,this.value)" style="font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);font-family:var(--sans);width:100%">
-          <option value="">— Non mappé —</option>
-          ${headers.map(h=>`<option value="${h}">${h}</option>`).join('')}
-        </select>`;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="col-status">${statusIcon}</td>
-      <td style="font-weight:500;font-size:12px">${field.label}${field.required?'<span style="color:var(--red)">*</span>':''}</td>
-      <td class="col-detected" style="font-size:10px">${isArray?cols.join(' + '):(detected||'—')}</td>
-      <td style="min-width:200px">
-        ${selectors}
-        <button onclick="addMappingCol('${field.key}')" style="font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;padding:2px 0;display:flex;align-items:center;gap:3px;font-family:var(--sans)"><i class="ti ti-plus" aria-hidden="true"></i> Ajouter colonne</button>
-      </td>
-      <td style="font-size:11px;color:var(--text3);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${previewVal}</td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-function updateMappingCol(field, idx, value) {
-  let cols = Array.isArray(columnMapping[field]) ? [...columnMapping[field]] : (columnMapping[field] ? [columnMapping[field]] : []);
-  if (!value) { cols.splice(idx, 1); }
-  else { cols[idx] = value; }
-  columnMapping[field] = cols.length === 0 ? null : cols.length === 1 ? cols[0] : cols;
-  renderMappingTable();
-}
-
-function addMappingCol(field) {
-  let cols = Array.isArray(columnMapping[field]) ? [...columnMapping[field]] : (columnMapping[field] ? [columnMapping[field]] : []);
-  cols.push(headers[0] || '');
-  columnMapping[field] = cols;
-  renderMappingTable();
-}
-
-function removeMappingCol(field, idx) {
-  let cols = Array.isArray(columnMapping[field]) ? [...columnMapping[field]] : (columnMapping[field] ? [columnMapping[field]] : []);
-  cols.splice(idx, 1);
-  columnMapping[field] = cols.length === 0 ? null : cols.length === 1 ? cols[0] : cols;
-  renderMappingTable();
-}
-
-function updateMapping(field, value) {
-  columnMapping[field] = value || null;
-  renderMappingTable();
-}
-
-function getVal(row, field) {
-  const col = columnMapping[field];
-  if (!col) return '';
-  if (Array.isArray(col)) {
-    return col.map(c => String(row[c]||'').trim()).filter(Boolean).join(' | ');
-  }
-  return String(row[col]||'').trim();
-}
-
-// ===================== ANALYSIS =====================
-// ============================================================
-// ENRICHISSEMENT : code distributeur → MPN → IPN
-// ============================================================
-async function resolveDistCode(code, proxyUrl) {
-  if (!code || !proxyUrl) return null;
-  try {
-    const resp = await fetch(`${proxyUrl}?code=${encodeURIComponent(code)}`);
-    const data = await resp.json();
-    if (data && !data.error && data.mpn) return data;
-  } catch(e) {}
-  return null;
-}
-
-async function enrichWithProxy(mpn, proxyUrl) {
-  if (!mpn || !proxyUrl) return null;
-  try {
-    const resp = await fetch(`${proxyUrl}?mpn=${encodeURIComponent(mpn)}&source=mouser`);
-    const data = await resp.json();
-    if (data && !data.error) return data;
-    // Fallback Farnell
-    const resp2 = await fetch(`${proxyUrl}?mpn=${encodeURIComponent(mpn)}&source=farnell`);
-    const data2 = await resp2.json();
-    if (data2 && !data2.error) return data2;
-  } catch(e) {}
-  return null;
-}
-// ============================================================
-
-async function analyseClientBOM() {
-  if (!rawData.length) { alert("Chargez une BOM d'abord."); return; }
-  const key = document.getElementById('cfg-api-key').value.trim() || apiKey;
-  if (!key) { alert("Clé API Anthropic requise. Configurez-la dans l'onglet Règles & Config."); return; }
-
-  document.getElementById('analysis-loading').style.display = 'flex';
-  document.getElementById('results-section').style.display = 'none';
-  document.getElementById('btn-export').style.display = 'none';
-
-  const rulesPrompt = getRulesPrompt();
-  const batchSize = 8;
-  analysisResults = [];
-
-  // Determine default mfr_free based on client
-  const defaultMfrFree = activeClientAnalysis.mpn_strict ? 'No' : 'Yes';
-
-  for (let i = 0; i < rawData.length; i += batchSize) {
-    document.getElementById('analysis-msg').textContent = `Analyse IA : ${Math.min(i+batchSize,rawData.length)}/${rawData.length} composants…`;
-
-    const batch = rawData.slice(i, i+batchSize).map((row,j) => ({
-      idx: i+j,
-      designator: getVal(row,'designator'),
-      mpn: getVal(row,'mpn'),
-      description: getVal(row,'description'),
-      notes: getVal(row,'notes'),
-      manufacturer: getVal(row,'manufacturer'),
-      qty: getVal(row,'qty'),
-      mfr_free: getVal(row,'mfr_free') || defaultMfrFree,
-      ipn_existing: getVal(row,'ipn'),
-      dist_code: getVal(row,'dist_code'),
-    }));
-
-    // Pre-resolve distributor codes before sending to AI
-    const px = document.getElementById('cfg-proxy-url').value.trim() || proxyUrl;
-    for (const item of batch) {
-      if (!item.mpn && item.dist_code && px) {
-        document.getElementById('analysis-msg').textContent = `Résolution code distributeur: ${item.dist_code}…`;
-        const resolved = await resolveDistCode(item.dist_code, px);
-        if (resolved && resolved.mpn) {
-          item.mpn = resolved.mpn;
-          item.description = item.description || resolved.description || '';
-          item.manufacturer = item.manufacturer || resolved.manufacturer || '';
-          item.notes = [item.notes, resolved.specs].filter(Boolean).join(' | ');
-          item._enriched_source = resolved.source;
-        }
-      }
+  if (clientsUrl) {
+    setDot('clients','loading','Chargement…');
+    try {
+      const text = await fetchCSV(clientsUrl);
+      const rows = parseCSV(text);
+      clientsList = rows.map(r => ({
+        nom: findCol(r,['nom','name','client'])||'',
+        mpn_strict: (findCol(r,['mpn_strict','mpn strict','strict'])||'').toLowerCase().trim()==='oui',
+        notes: findCol(r,['notes','note','commentaire'])||''
+      })).filter(c=>c.nom);
+      if (!clientsList.length) throw new Error('Aucun client trouvé — vérifiez les colonnes');
+      setDot('clients','ok',`${clientsList.length} client(s) chargé(s)`);
+      sourceStatus.clients = 'ok';
+      populateClientSelect();
+      renderClientsPreview();
+    } catch(e) {
+      setDot('clients','err',e.message);
+      sourceStatus.clients = 'err';
     }
+  }
+  if (stockUrl) {
+    setDot('stock','loading','Chargement…');
+    try {
+      const text = await fetchCSV(stockUrl);
+      loadStockData(text);
+      const nI = Object.keys(stockByIPN).length, nM = Object.keys(stockByMPN).length;
+      setDot('stock','ok',`${nI} IPN · ${nM} MPN chargés`);
+      sourceStatus.stock = 'ok';
+    } catch(e) {
+      setDot('stock','err',e.message);
+      sourceStatus.stock = 'err';
+    }
+  }
+  btn.disabled = false;
+  // Sync config to localStorage for bom-client.html
+  try {
+    localStorage.setItem('bom_api_key', apiKey);
+    localStorage.setItem('bom_proxy_url', proxyUrl);
+    if (clientsList.length) localStorage.setItem('bom_clients_list', JSON.stringify(clientsList));
+  } catch(e) {}
+  showMain();
+}
 
-    const systemPrompt = `Tu es un ingénieur hardware expert en codification de composants électroniques pour BOM.
+function loadStockData(csvText) {
+  const cI = document.getElementById('scol-ipn').value||'IPN';
+  const cM = document.getElementById('scol-mpn').value||'MPN';
+  const cQ = document.getElementById('scol-qty').value||'Stock';
+  const rows = parseCSV(csvText);
+  stockByIPN = {}; stockByMPN = {};
+  rows.forEach(row => {
+    const ipn = (findCol(row,[cI])||'').trim().toUpperCase();
+    const mpn = (findCol(row,[cM])||'').trim().toUpperCase();
+    const qty = parseInt(findCol(row,[cQ]))||0;
+    if (ipn) stockByIPN[ipn] = qty;
+    if (mpn) stockByMPN[mpn] = qty;
+  });
+}
 
-${rulesPrompt}
+function populateClientSelect() {
+  const sel = document.getElementById('client-select');
+  sel.innerHTML = '<option value="__standard__">Standard (pas de contrainte MPN)</option>';
+  clientsList.forEach(c => {
+    if (c.nom.toLowerCase()==='standard') return;
+    const opt = document.createElement('option');
+    opt.value = c.nom;
+    opt.textContent = c.nom + (c.mpn_strict?' 🔒':'');
+    sel.appendChild(opt);
+  });
+  onClientChange();
+}
 
-DÉTECTION COMPOSANTS SENSIBLES:
-- sensor: si le composant est un capteur (${document.getElementById('rule-sensors').value})
-- battery: pile ou batterie (${document.getElementById('rule-batteries').value})
-- not-sealed: composant non étanche (${document.getElementById('rule-sealed').value})
-- msl4+: niveau MSL >= ${document.getElementById('rule-msl').value}
+function renderClientsPreview() {
+  const el = document.getElementById('config-clients-preview');
+  if (!clientsList.length) { el.innerHTML='<p style="font-size:13px;color:var(--text2)">Aucun client chargé.</p>'; return; }
+  el.innerHTML = `<div class="clients-table-wrap"><table>
+    <thead><tr><th>Nom</th><th>MPN strict</th><th>Notes</th></tr></thead>
+    <tbody>${clientsList.map(c=>`<tr>
+      <td style="font-weight:600">${c.nom}</td>
+      <td>${c.mpn_strict?'<span class="badge b-strict"><i class="ti ti-lock" aria-hidden="true"></i> oui</span>':'<span class="badge b-ok">non</span>'}</td>
+      <td style="color:var(--text2);font-size:12px">${c.notes}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
 
-INSTRUCTIONS:
-1. Si ipn_existing est renseigné: CONSERVER cet IPN, vérifier cohérence avec MPN/description/notes
-2. Si mpn est absent mais description/notes contiennent des specs techniques: GÉNÉRER l'IPN depuis ces specs
-3. Si mpn présent: générer IPN selon les règles
-4. Le MPN peut contenir plusieurs références séparées par ; ou / — utiliser la première comme référence principale
-5. Si confidence=low ou medium: indiquer dans note que vérification recommandée
-6. VÉRIFICATION COHÉRENCE MPN/DESCRIPTION: Si un MPN ET une description/specs sont fournis, vérifier qu'ils sont cohérents.
-   - Ex: MPN="RC0603FR-0710KL" avec description="47uF 16V" → INCOHÉRENCE (résistance vs condensateur) → status="warn", note="Incohérence MPN/description: MPN est une résistance mais description suggère un condensateur"
-   - Ex: MPN="GRM188R61E106KA73J" avec description="10uF 25V 0603 X5R" → COHÉRENT → ok
-   - Si MPN absent: pas de vérification possible
+function onClientChange() {
+  const val = document.getElementById('client-select').value;
+  activeClient = val==='__standard__'
+    ? {nom:'Standard',mpn_strict:false,notes:''}
+    : (clientsList.find(c=>c.nom===val)||{nom:'Standard',mpn_strict:false,notes:''});
+  document.getElementById('client-badge').innerHTML = activeClient.mpn_strict
+    ? `<span class="badge b-strict"><i class="ti ti-lock" aria-hidden="true"></i> MPN strict</span>`
+    : `<span class="badge b-ok"><i class="ti ti-check" aria-hidden="true"></i> Standard</span>`;
+  document.getElementById('client-note-text').textContent = activeClient.notes||'';
+}
+
+async function loadBOM() {
+  const url = document.getElementById('bom-url').value.trim();
+  const statusEl = document.getElementById('bom-url-status');
+  if (!url) { statusEl.innerHTML='<span style="color:var(--red)">URL manquante</span>'; return; }
+  statusEl.innerHTML='<div class="spinner" style="width:13px;height:13px;border-width:2px"></div> Chargement…';
+  try {
+    const text = await fetchCSV(url);
+    csvBuffer = text;
+    const rows = parseCSV(text);
+    statusEl.innerHTML=`<span style="color:var(--green)"><i class="ti ti-check"></i> ${rows.length} ligne(s)</span>`;
+  } catch(e) {
+    statusEl.innerHTML=`<span style="color:var(--red)"><i class="ti ti-x"></i> ${e.message}</span>`;
+  }
+}
+
+// ---- BOM SOURCE SWITCHER ----
+function setBOMSource(src) {
+  ['upload','url','paste'].forEach(s => {
+    document.getElementById('bom-src-' + s).style.display = s === src ? 'block' : 'none';
+    document.getElementById('src-btn-' + s).classList.toggle('active', s === src);
+  });
+}
+
+function handleFileUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const zone = document.getElementById('upload-drop-zone');
+  const label = document.getElementById('upload-label-text');
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  const reader = new FileReader();
+
+  if (ext === 'xlsx' || ext === 'xls') {
+    if (typeof XLSX === 'undefined') {
+      zone.className = 'upload-drop-zone';
+      label.innerHTML = '<span style="color:var(--red)">Bibliothèque XLSX non chargée — vérifiez votre connexion internet.</span>';
+      return;
+    }
+    reader.onload = function(e) {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        // Convert to TSV to preserve our parser
+        const tsv = XLSX.utils.sheet_to_csv(ws, { FS: '\t', RS: '\n' });
+        csvBuffer = tsv;
+        const rows = filterBOMRows(parseCSV(tsv));
+        zone.className = 'upload-drop-zone loaded';
+        label.innerHTML = `<i class="ti ti-check" aria-hidden="true"></i> ${file.name} — ${rows.length} composant(s) détecté(s)`;
+        document.getElementById('bom-url-status').innerHTML = '';
+      } catch(e) {
+        zone.className = 'upload-drop-zone';
+        label.innerHTML = `<span style="color:var(--red)">Erreur lecture : ${e.message}</span>`;
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    // CSV / TSV
+    reader.onload = function(e) {
+      const text = e.target.result;
+      csvBuffer = text;
+      const rows = filterBOMRows(parseCSV(text));
+      zone.className = 'upload-drop-zone loaded';
+      label.innerHTML = `<i class="ti ti-check" aria-hidden="true"></i> ${file.name} — ${rows.length} composant(s) détecté(s)`;
+      document.getElementById('bom-url-status').innerHTML = '';
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+}
+
+// Drag & drop support
+function initUploadZone() {
+  try {
+    const zone = document.getElementById('upload-drop-zone');
+    if (!zone) return;
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        const input = document.getElementById('bom-file-input');
+        if (input) { const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files; handleFileUpload(input); }
+      }
+    });
+    zone.addEventListener('click', () => { const inp = document.getElementById('bom-file-input'); if(inp) inp.click(); });
+  } catch(e) { console.warn('Upload zone init error:', e); }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  initUploadZone();
+  loadRules();
+  onClientChange();
+  // Auto-load fixed sources
+  setTimeout(() => {
+    const url = document.getElementById('setup-clients-url')?.value.trim();
+    if (url) loadAll();
+  }, 400);
+});
+// ---- END BOM SOURCE SWITCHER ----
+
+// ---- ENRICHISSEMENT MPN VIA APIs FOURNISSEURS ----
+async function enrichMPN(mpn) {
+  // Essai Mouser en premier — via proxy Apps Script (CORS)
+  if (proxyUrl && mpn) {
+    try {
+      const resp = await fetch(`${proxyUrl}?mpn=${encodeURIComponent(mpn)}&source=mouser`);
+      const data = await resp.json();
+      if (data && !data.error) return data;
+    } catch(e) { console.warn('Mouser proxy error:', e.message); }
+  }
+
+  // Fallback Farnell — via proxy Apps Script (CORS)
+  if (proxyUrl && mpn) {
+    try {
+      const resp = await fetch(`${proxyUrl}?mpn=${encodeURIComponent(mpn)}&source=farnell`);
+      const data = await resp.json();
+      if (data && !data.error) return data;
+    } catch(e) { console.warn('Farnell proxy error:', e.message); }
+  }
+
+  return null;
+}
+// ---- FIN ENRICHISSEMENT ----
+
+async function callClaude(prompt, sys) {
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+    body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:1000, system:sys, messages:[{role:"user",content:prompt}] })
+  });
+  const data = await resp.json();
+  return data.content.map(c=>c.text||'').join('');
+}
+
+function getIPN_SYS() {
+  return `Tu es un ingénieur hardware expert en codification de composants électroniques.
+${getRulesPrompt()}
+RÉPONSE JSON uniquement:
+{"ipn":"...","type":"C|CT|R|OTHER","explanation":"...","confidence":"high|medium|low","warnings":["..."]}`;
+}
+
+function getBOM_SYS() { return `Tu es un ingénieur hardware expert. Pour chaque ligne BOM:
+
+${getRulesPrompt()}
+
+TRAITEMENT:
+1. Si ipn déjà renseigné: CONSERVER, vérifier cohérence MPN/notes. Incohérence → status="warn"
+2. Si ipn vide: MPN peut avoir plusieurs refs séparées par ";", utiliser la première. Générer IPN selon règles.
+3. Détecter: sensor (capteurs), battery (piles/batteries), not-sealed (relais non étanche), msl4+ (MSL≥4)
 
 RÉPONSE JSON tableau uniquement:
 [{
-  "idx":0,"ipn":"...","mfr_free":"Yes|No",
-  "status":"ok|warn|error","confidence":"high|medium|low",
+  "idx":0,
+  "ipn":"...",
+  "status":"ok|warn|error",
+  "confidence":"high|medium|low",
   "warnings":["sensor|battery|not-sealed|msl4+"],
   "note":"remarque courte si problème",
-  "rule_key":"clé_courte (ex: panasonic_erjp_power, eia_cap_3digit) — UNIQUEMENT si convention spéciale détectée",
-  "rule_value":"règle explicite à ajouter — UNIQUEMENT si rule_key présent"
-}]`;
+  "rule_key":"clé_courte_sans_espace (ex: panasonic_erjp_power, eia_cap_3digit) — UNIQUEMENT si convention spéciale détectée",
+  "rule_value":"règle explicite à ajouter (ex: Panasonic ERJP: P06=0.5W, P08=0.25W...) — UNIQUEMENT si rule_key présent"
+}]`; }
 
-    try {
-      const resp = await fetch("https://api.anthropic.com/v1/messages", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-        body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:1500, system:systemPrompt, messages:[{role:"user",content:`Analyse:\n${JSON.stringify(batch,null,2)}`}] })
-      });
-      const data = await resp.json();
-      const text = data.content.map(c=>c.text||'').join('');
-      const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
-
-      // Mark items enriched via distributor code
-      parsed.forEach(r => {
-        const origRow = batch.find(b => b.idx === r.idx);
-        if (origRow?._enriched_source) {
-          r.note = (r.note ? r.note + ' | ' : '') + `MPN résolu via ${origRow._enriched_source} (code: ${origRow.dist_code})`;
-        }
-      });
-
-      // Enrich low-confidence via proxy
-      const toEnrich = parsed.filter(r => r.confidence === 'low');
-      for (const r of toEnrich) {
-        const origRow = batch.find(b => b.idx === r.idx);
-        if (!origRow || !origRow.mpn) continue;
-        const px = document.getElementById('cfg-proxy-url').value.trim() || proxyUrl;
-        if (!px) continue;
-        try {
-          const er = await fetch(`${px}?mpn=${encodeURIComponent(origRow.mpn)}&source=mouser`);
-          const ed = await er.json();
-          if (ed && !ed.error) {
-            const re2 = await fetch("https://api.anthropic.com/v1/messages", {
-              method:"POST",
-              headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-              body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:300, system:systemPrompt,
-                messages:[{role:"user",content:`MPN: ${origRow.mpn}\nDonnées ${ed.source}: ${ed.description}\nFabricant: ${ed.manufacturer}\nSpecs: ${ed.specs}\nDescription BOM: ${origRow.description}\nNotes: ${origRow.notes}\n\nGénère l'IPN. Réponds JSON: {"ipn":"...","confidence":"...","note":"..."}`}]
-              })
-            });
-            const rd2 = await re2.json();
-            const enriched = JSON.parse(rd2.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim());
-            r.ipn = enriched.ipn || r.ipn;
-            r.confidence = enriched.confidence || 'medium';
-            r.note = (r.note ? r.note+' | ' : '') + `Enrichi via ${ed.source}`;
-          }
-        } catch(e) { /* keep original */ }
-      }
-
-      analysisResults = analysisResults.concat(parsed);
-    } catch(e) {
-      analysisResults = analysisResults.concat(batch.map((_,j) => ({idx:i+j,ipn:'—',mfr_free:defaultMfrFree,status:'error',confidence:'low',warnings:[],note:'Erreur analyse'})));
-    }
-  }
-
-  renderResults();
-  document.getElementById('analysis-loading').style.display = 'none';
-  document.getElementById('results-section').style.display = 'block';
-  document.getElementById('btn-export').style.display = 'inline-flex';
+async function generateIPN() {
+  const mpn = document.getElementById('mpn-input').value.trim();
+  const notes = document.getElementById('notes-input').value.trim();
+  const type = document.getElementById('comp-type').value;
+  if (!mpn) { alert("Saisir un MPN."); return; }
+  document.getElementById('codif-loading').style.display='flex';
+  document.getElementById('codif-result').style.display='none';
+  try {
+    const raw = await callClaude(`MPN: ${mpn}${notes?'\nNotes: '+notes:''}${type!=='auto'?'\nType: '+type:''}`, getIPN_SYS());
+    const r = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    document.getElementById('ipn-output').textContent = r.ipn||'—';
+    document.getElementById('ipn-explain').textContent = r.explanation||'';
+    const wDiv = document.getElementById('ipn-warnings');
+    wDiv.innerHTML = (r.warnings&&r.warnings.length)
+      ? r.warnings.map(w=>`<div class="warn-item"><i class="ti ti-alert-triangle" aria-hidden="true"></i><span>${w}</span></div>`).join('')
+      : `<span class="badge b-ok"><i class="ti ti-check" aria-hidden="true"></i> Codification validée</span>`;
+    document.getElementById('codif-result').style.display='block';
+  } catch(e) { alert("Erreur IA. Vérifiez votre connexion."); }
+  document.getElementById('codif-loading').style.display='none';
 }
 
-// ===================== RENDER RESULTS =====================
+function clearCodif() {
+  ['mpn-input','notes-input'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('comp-type').value='auto';
+  document.getElementById('codif-result').style.display='none';
+}
+function copyIPN() { navigator.clipboard.writeText(document.getElementById('ipn-output').textContent); }
+
+function getStockInfo(ipn, mpn, manufacturerFree) {
+  const clientLabel = activeClient.nom;
+  const byMPN = mpn ? stockByMPN[mpn.toUpperCase()] : undefined;
+  const byIPN = (ipn&&ipn!=='—') ? stockByIPN[ipn.toUpperCase()] : undefined;
+
+  // MPN strict sauf si Manufacturer free = Yes sur cette ligne
+  const isFree = (manufacturerFree||'').toLowerCase().trim() === 'yes';
+  const strict = activeClient.mpn_strict && !isFree;
+
+  if (strict) {
+    if (byMPN!==undefined) return {qty:byMPN,source:'MPN',status:byMPN>0?'ok':'zero',mpnWarn:false};
+    if (byIPN!==undefined) return {qty:null,source:null,status:'mpnwarn',mpnWarn:true,clientLabel};
+    return {qty:null,source:null,status:'na',mpnWarn:false};
+  } else {
+    if (byIPN!==undefined) return {qty:byIPN,source:'IPN',status:byIPN>0?'ok':'zero',mpnWarn:false};
+    if (byMPN!==undefined) return {qty:byMPN,source:'MPN',status:byMPN>0?'ok':'zero',mpnWarn:false};
+    return {qty:null,source:null,status:'na',mpnWarn:false};
+  }
+}
+
+function renderStockCell(si) {
+  if (si.status==='na') return `<div class="stock-cell"><span class="s-na">—</span></div>`;
+  if (si.status==='mpnwarn') return `<div class="stock-cell">
+    <span class="stock-line" style="color:var(--pink);font-size:11px"><i class="ti ti-lock" aria-hidden="true"></i> MPN imposé</span>
+  </div>`;
+  return `<div class="stock-cell"><span class="stock-line"><span class="slbl">${si.source}</span><span class="${si.status==='ok'?'s-ok':'s-zero'}">${si.qty}</span></span></div>`;
+}
+
+async function analyzeBOM() {
+  const csvText = csvBuffer.trim();
+  if (!csvText) { alert("Chargez une BOM ou collez des données CSV."); return; }
+  const rows = filterBOMRows(parseCSV(csvText));
+  if (!rows.length) { alert("Format non reconnu ou aucun composant valide trouvé."); return; }
+  bomData = rows;
+  document.getElementById('bom-loading').style.display='flex';
+  document.getElementById('bom-result').style.display='none';
+  const batchSize=10; let allResults=[];
+  for (let i=0; i<rows.length; i+=batchSize) {
+    document.getElementById('bom-loading-msg').textContent=`Analyse IA : ${Math.min(i+batchSize,rows.length)}/${rows.length} composants…`;
+    const batch=rows.slice(i,i+batchSize).map((row,j)=>({
+      idx:i+j,
+      qty:findCol(row,['aggregated qty','qty','quantity','qté']),
+      ref:findCol(row,['designator','reference','ref']),
+      mpn:findCol(row,['mpn','manufacturer part','part number']),
+      ipn:findCol(row,['approved internal part number','approved internal','ipn','internal part']),
+      description:findCol(row,['approved parts','description','desc','value']),
+      notes:findCol(row,['notes','note','comment'])
+    }));
+    try {
+      // First pass: analyse batch
+      const raw=await callClaude(`Analyse:\n${JSON.stringify(batch,null,2)}`,getBOM_SYS());
+      const batchResults = JSON.parse(raw.replace(/```json|```/g,'').trim());
+
+      // Enrich low/medium confidence items via Mouser/Farnell
+      const toEnrich = batchResults.filter(r => r.confidence === 'low' || r.confidence === 'medium');
+      if (toEnrich.length > 0 && (mouserKey || farnellKey)) {
+        document.getElementById('bom-loading-msg').textContent = `Enrichissement fournisseur : ${toEnrich.length} MPN à vérifier…`;
+        for (const r of toEnrich) {
+          const origRow = batch.find(b => b.idx === r.idx);
+          if (!origRow || !origRow.mpn) continue;
+          const enriched = await enrichMPN(origRow.mpn);
+          if (enriched) {
+            // Re-ask Claude with enriched data
+            const enrichPrompt = `MPN: ${origRow.mpn}
+Données fournisseur (${enriched.source}): ${enriched.description}
+Fabricant: ${enriched.manufacturer}
+Catégorie: ${enriched.category}
+Specs: ${enriched.specs}
+Notes BOM: ${origRow.notes || ''}
+IPN existant: ${origRow.ipn || '—'}
+
+Génère ou vérifie l'IPN avec ces informations enrichies.`;
+            try {
+              const enrichedRaw = await callClaude(enrichPrompt, getIPN_SYS());
+              const enrichedResult = JSON.parse(enrichedRaw.replace(/```json|```/g,'').trim());
+              r.ipn = enrichedResult.ipn || r.ipn;
+              r.note = (r.note ? r.note + ' | ' : '') + `Enrichi via ${enriched.source}`;
+              r.confidence = enrichedResult.confidence;
+            } catch(e) { /* keep original */ }
+          }
+        }
+      }
+
+      allResults=allResults.concat(batchResults);
+    } catch(e) {
+      allResults=allResults.concat(batch.map((_,j)=>({idx:i+j,ipn:'—',status:'error',warnings:[],note:'Erreur analyse'})));
+    }
+  }
+  renderBOMTable(rows,allResults);
+  document.getElementById('bom-loading').style.display='none';
+  document.getElementById('bom-result').style.display='block';
+  // Show GSheet write bar if writer configured
+  const fileInput = document.getElementById('bom-file-input');
+  const filename = fileInput?.files?.[0]?.name || '';
+  showGSheetBar(filename);
+}
+
+// ============================================================
+// AUTO-ENRICHISSEMENT RÈGLES
+// ============================================================
 async function pushRuleToSheet(key, value) {
   const url = 'https://script.google.com/macros/s/AKfycbwWqEWTLh8EVPq9tnTIbqyoa9gdKlKimAs74iMVobZfI7WlGxWOSJqmlujBbCFcl5H-eg/exec';
   try {
-    const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key,value}) });
-    return await resp.json();
-  } catch(e) { return {success:false, error:e.message}; }
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({key, value})
+    });
+    const data = await resp.json();
+    return data;
+  } catch(e) {
+    return {success: false, error: e.message};
+  }
 }
 
 function renderRuleSuggestion(res, rowIdx) {
   if (!res.rule_key || !res.rule_value) return '';
-  const div = document.createElement('div');
-  div.className = 'rule-suggestion';
-  div.id = 'rule-sug-cli-' + rowIdx;
-  div.dataset.key = res.rule_key;
-  div.dataset.val = res.rule_value;
-  div.innerHTML =
-    '<span style="font-size:14px">&#x1F4A1;</span>' +
-    '<span class="rule-suggestion-text"><strong>' + res.rule_key + '</strong> &mdash; ' +
-      res.rule_value.slice(0,100) + (res.rule_value.length>100?'&hellip;':'') + '</span>' +
-    '<div class="rule-suggestion-actions">' +
-    '<button class="btn-rule-add" onclick="acceptRuleCliById(this)">Ajouter au sheet</button>' +
-    '<button class="btn-rule-skip" onclick="skipRuleCli(' + rowIdx + ')">Ignorer</button>' +
-    '</div>';
-  return div.outerHTML;
+  const escaped_key = res.rule_key.replace(/'/g, "\'");
+  const escaped_val = res.rule_value.replace(/'/g, "\'").replace(/"/g, '\"');
+  return `<div class="rule-suggestion" id="rule-sug-${rowIdx}">
+    <span style="font-size:14px">💡</span>
+    <span class="rule-suggestion-text"><strong>${res.rule_key}</strong> — ${res.rule_value.slice(0,120)}${res.rule_value.length>120?'…':''}</span>
+    <div class="rule-suggestion-actions">
+      <button class="btn-rule-add" onclick="acceptRule('${escaped_key}','${escaped_val}',${rowIdx})">Ajouter au sheet</button>
+      <button class="btn-rule-skip" onclick="skipRule(${rowIdx})">Ignorer</button>
+    </div>
+  </div>`;
 }
 
-async function acceptRuleCliById(btn) {
-  const sug = btn.closest('.rule-suggestion');
-  if (!sug) return;
-  const key = sug.dataset.key;
-  const value = sug.dataset.val;
-  btn.disabled = true; btn.textContent = 'Envoi…';
+async function acceptRule(key, value, rowIdx) {
+  const btn = document.querySelector(`#rule-sug-${rowIdx} .btn-rule-add`);
+  if (btn) { btn.disabled=true; btn.textContent='Envoi…'; }
   const result = await pushRuleToSheet(key, value);
-  sug.innerHTML = result.success
-    ? '<span class="rule-added-badge">✓ Règle ajoutée</span>'
-    : result.existing
-      ? '<span class="rule-added-badge" style="background:var(--amber-bg);color:var(--amber)">⚠ Clé déjà existante</span>'
-      : '<span style="color:var(--red);font-size:11px">Erreur: ' + result.error + '</span>';
+  const sug = document.getElementById('rule-sug-'+rowIdx);
+  if (!sug) return;
+  if (result.success) {
+    sug.innerHTML = '<span class="rule-added-badge">✓ Règle ajoutée au sheet</span>';
+  } else if (result.existing) {
+    sug.innerHTML = '<span class="rule-added-badge" style="background:#FAEEDA;color:#854F0B">⚠ Clé déjà existante dans le sheet</span>';
+  } else {
+    sug.innerHTML = '<span style="color:#A32D2D;font-size:11px">Erreur: ' + result.error + '</span>';
+  }
 }
 
-function skipRuleCli(rowIdx) {
-  const sug = document.getElementById('rule-sug-cli-'+rowIdx);
+function skipRule(rowIdx) {
+  const sug = document.getElementById('rule-sug-'+rowIdx);
   if (sug) sug.style.display='none';
 }
+// ============================================================
 
-function renderResults() {
-  resultMeta = [];
-  const thead = document.getElementById('result-thead').querySelector('tr');
-  const tbody = document.getElementById('result-tbody');
-  thead.innerHTML = '';
-  tbody.innerHTML = '';
-
-  // Build visible columns: always show key mapped fields + IPN + Mfr free + Alertes
-  const visibleCols = ['designator','mpn','description','notes'].filter(f => columnMapping[f]);
-  const extraCols = headers.filter(h => !Object.values(columnMapping).includes(h) && h);
-
-  // Header
-  ['Qty','Désignateur','MPN','Description / Notes','IPN (éditable)','Mfr Free','Alertes'].forEach(h => {
-    const th = document.createElement('th');
-    th.textContent = h;
-    thead.appendChild(th);
-  });
-
-  let cntOk=0,cntWarn=0,cntErr=0;
+function renderBOMTable(rows,results) {
+  const tbody=document.getElementById('bom-tbody');
+  tbody.innerHTML='';
+  let cntOk=0,cntWarn=0,cntErr=0,cntMpnWarn=0;
   const warnSummary={sensor:[],battery:[],'not-sealed':[],'msl4+':[]};
   const icons={sensor:'ti-radar',battery:'ti-battery','not-sealed':'ti-droplet-off','msl4+':'ti-moisture'};
   const labels={sensor:'Capteur',battery:'Batterie','not-sealed':'Non étanche','msl4+':'MSL≥4'};
   const wlabels={sensor:'Capteurs',battery:'Piles / batteries','not-sealed':'Composants non étanches','msl4+':'MSL niveau ≥ 4'};
 
-  analysisResults.forEach((res,i) => {
-    const row = rawData[res.idx] || rawData[i] || {};
-    const qty = getVal(row,'qty');
-    const desig = getVal(row,'designator');
-    const mpn = getVal(row,'mpn');
-    const desc = getVal(row,'description');
-    const notes = getVal(row,'notes');
-    const ipn = res.ipn || '—';
-    const mfrFree = res.mfr_free || (activeClientAnalysis.mpn_strict ? 'No' : 'Yes');
-    const status = res.status || 'ok';
-    const warns = res.warnings || [];
-
-    if(status==='ok'&&!warns.length) cntOk++;
+  rowMeta = [];
+  results.forEach((res,i)=>{
+    const row=rows[res.idx]??rows[i]??{};
+    const qty=findCol(row,['aggregated qty','qty','quantity','qté']);
+    const ref=findCol(row,['designator','reference','ref']);
+    const mpn=findCol(row,['mpn','manufacturer part','part number']);
+    const notes=findCol(row,['notes','note','approved parts','description','desc','value']);
+    const mfrFree=findCol(row,['manufacturer free','manufacturer_free','mfr free','free']);
+    const ipn=res.ipn||'—';
+    const status=res.status||'ok';
+    const warns=res.warnings||[];
+    const si=getStockInfo(ipn,mpn,mfrFree);
+    if(si.mpnWarn) cntMpnWarn++;
+    if(status==='ok'&&!warns.length&&!si.mpnWarn) cntOk++;
     else if(status==='error') cntErr++;
     else cntWarn++;
-    warns.forEach(w => { if(warnSummary[w]) warnSummary[w].push(desig||mpn); });
-
-    const warnBadges = warns.map(w =>
-      `<span class="badge b-warn" style="margin-bottom:2px"><i class="ti ${icons[w]||'ti-alert-triangle'}" aria-hidden="true"></i> ${labels[w]||w}</span>`
-    ).join(' ');
-    const statusBadge = status==='ok'&&!warns.length
-      ? `<span class="badge b-ok"><i class="ti ti-check" aria-hidden="true"></i></span>`
-      : status==='error'
-      ? `<span class="badge b-err"><i class="ti ti-x" aria-hidden="true"></i></span>`
-      : '';
-    const confBadge = res.confidence === 'low' ? `<span class="badge b-warn" style="font-size:10px">⚠ à vérifier</span>` : '';
-
-    const mfrFreeClass = mfrFree.toLowerCase() === 'yes' ? 'yes' : 'no';
-    const rowClass = status==='error' ? 'row-err' : warns.length ? 'row-warn' : '';
-
-    const tr = document.createElement('tr');
-    tr.className = rowClass;
-    tr.innerHTML = `
-      <td style="font-size:11px; color:var(--text3)">${qty}</td>
-      <td style="font-size:11px; font-weight:500">${desig}</td>
-      <td style="font-size:11px; font-family:var(--mono)">${mpn}</td>
-      <td style="font-size:11px">${desc}${notes&&notes!==desc?`<br><span style="color:var(--text3)">${notes.slice(0,60)}</span>`:''}${res.note?`<br><span style="color:var(--amber);font-size:10px">${res.note}</span>`:''}</td>
+    warns.forEach(w=>{if(warnSummary[w]) warnSummary[w].push(ref||mpn);});
+    const warnBadges=warns.map(w=>`<span class="badge b-warn" style="margin-bottom:2px"><i class="ti ${icons[w]||'ti-alert-triangle'}" aria-hidden="true"></i> ${labels[w]||w}</span>`).join(' ');
+    const isFreeRow = (mfrFree||'').toLowerCase().trim() === 'yes';
+    const mpnBadge=si.mpnWarn
+      ?`<span class="badge b-strict" style="margin-bottom:2px"><i class="ti ti-lock" aria-hidden="true"></i> MPN strict</span>`
+      :(activeClient.mpn_strict && isFreeRow)
+        ?`<span class="badge b-ok" style="margin-bottom:2px"><i class="ti ti-check" aria-hidden="true"></i> IPN autorisé</span>`
+        :'';
+    const statusBadge=status==='ok'&&!warns.length&&!si.mpnWarn
+      ?`<span class="badge b-ok"><i class="ti ti-check" aria-hidden="true"></i></span>`
+      :status==='error'?`<span class="badge b-err"><i class="ti ti-x" aria-hidden="true"></i></span>`:'';
+    const rowClass=status==='error'?'row-err':si.mpnWarn?'row-mpnwarn':warns.length?'row-warn':'';
+    const tr=document.createElement('tr');
+    tr.className=rowClass;
+    tr.innerHTML=`
+      <td>${qty}</td>
+      <td style="font-size:11px">${ref}</td>
+      <td style="font-size:11px;font-family:var(--mono)">${mpn}</td>
       <td>
-        <input class="editable-ipn" value="${ipn}" data-idx="${i}" />
+        <input class="editable-ipn" value="${ipn}" data-idx="${i}" onchange="updateIPN(this)"/>
         <span class="${res.confidence==='high'?'conf-high':res.confidence==='medium'?'conf-med':'conf-low'}" title="Confiance IA">
           ${res.confidence==='high'?'🟢':res.confidence==='medium'?'🟡':'🔴'} ${res.confidence||'?'}
         </span>
         ${renderRuleSuggestion(res, i)}
       </td>
-      <td>
-        <select class="mfr-free-select ${mfrFreeClass}" data-idx="${i}" onchange="updateMfrFree(this)">
-          <option value="Yes" ${mfrFree.toLowerCase()==='yes'?'selected':''}>Yes — IPN autorisé</option>
-          <option value="No" ${mfrFree.toLowerCase()==='no'?'selected':''}>No — MPN strict</option>
-        </select>
-      </td>
-      <td style="vertical-align:top">${statusBadge}${warnBadges}</td>`;
+      <td style="font-size:12px">${notes}${res.note?`<br><span style="color:var(--amber);font-size:11px">${res.note}</span>`:''}</td>
+      <td style="vertical-align:top">${statusBadge}${mpnBadge}${warnBadges}</td>
+      <td>${renderStockCell(si)}</td>`;
     tbody.appendChild(tr);
-    resultMeta.push({ status, warnings:warns, mpnWarn:false });
+    rowMeta.push({ status, warnings: warns, mpnWarn: si.mpnWarn });
   });
 
-  // Counters
-  document.getElementById('result-counters').innerHTML = `
-    <div class="counter"><div class="counter-val">${rawData.length}</div><div class="counter-lbl">Composants</div></div>
+  const cl=activeClient.nom!=='Standard'?` — ${activeClient.nom}`:'';
+  document.getElementById('bom-counters').innerHTML=`
+    <div class="counter"><div class="counter-val">${rows.length}</div><div class="counter-lbl">Composants</div></div>
     <div class="counter"><div class="counter-val" style="color:var(--green)">${cntOk}</div><div class="counter-lbl">OK</div></div>
     <div class="counter"><div class="counter-val" style="color:var(--amber)">${cntWarn}</div><div class="counter-lbl">Warnings</div></div>
+    ${activeClient.mpn_strict?`<div class="counter"><div class="counter-val" style="color:var(--pink)">${cntMpnWarn}</div><div class="counter-lbl">MPN non conf.${cl}</div></div>`:''}
     <div class="counter"><div class="counter-val" style="color:var(--red)">${cntErr}</div><div class="counter-lbl">Erreurs</div></div>`;
 
-  // Warn summary
-  const warnItems = Object.entries(warnSummary).filter(([,v])=>v.length);
-  document.getElementById('result-warnings').innerHTML = warnItems.length ? `<div class="warn-box">
-    <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Composants sensibles détectés</div>
+  updateFilterCounts();
+  currentFilter = 'all';
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.classList.contains('f-all')));
+
+  const warnItems=Object.entries(warnSummary).filter(([,v])=>v.length);
+  document.getElementById('bom-warnings-section').innerHTML=warnItems.length?`<div class="warn-box">
+    <div class="section-label" style="margin-top:0">Composants sensibles détectés</div>
     ${warnItems.map(([k,v])=>`<div class="warn-item"><i class="ti ${icons[k]}" aria-hidden="true"></i><div><strong>${wlabels[k]}</strong><br><span style="font-size:12px;color:var(--text2)">${v.join(', ')}</span></div></div>`).join('')}
-  </div>` : '';
-
-  // Filter counts
-  const counts={all:rawData.length,error:cntErr,warn:cntWarn,sensor:warnSummary.sensor.length,battery:warnSummary.battery.length,'not-sealed':warnSummary['not-sealed'].length,'msl4+':warnSummary['msl4+'].length};
-  const fcMap={all:'rfc-all',error:'rfc-err',warn:'rfc-warn',sensor:'rfc-sensor',battery:'rfc-battery','not-sealed':'rfc-sealed','msl4+':'rfc-msl'};
-  const fbMap={error:'.f-err',warn:'.f-warn'};
-  Object.entries(counts).forEach(([k,v]) => {
-    const el = document.getElementById(fcMap[k]);
-    if (el) el.textContent = v;
-  });
-  ['error','warn','sensor','battery','not-sealed','msl4+'].forEach(k => {
-    const btn = document.querySelector(`.filter-btn[onclick*="${k}"]`);
-    if (btn) btn.style.display = counts[k]>0 ? '' : 'none';
-  });
+  </div>`:'';
 }
 
-function updateMfrFree(sel) {
-  sel.className = 'mfr-free-select ' + (sel.value==='Yes'?'yes':'no');
-}
+// ---- FILTER SYSTEM ----
+let currentFilter = 'all';
+let rowMeta = []; // stores {status, warnings, mpnWarn} per row
 
-// ===================== FILTER =====================
-function setResultFilter(filter, btn) {
-  currentResultFilter = filter;
+function setFilter(filter, btn) {
+  currentFilter = filter;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  const rows = document.querySelectorAll('#result-tbody tr');
-  rows.forEach((tr,i) => {
-    const meta = resultMeta[i];
-    if (!meta) { tr.style.display=''; return; }
-    let show = false;
-    if (filter==='all') show=true;
-    else if (filter==='error') show=meta.status==='error';
-    else if (filter==='warn') show=meta.status==='warn'||meta.warnings?.length>0;
-    else show=meta.warnings?.includes(filter);
-    tr.style.display = show?'':'none';
-  });
+  applyFilter();
 }
 
-// ===================== EXPORT XLS =====================
-function exportClientXLS() {
-  if (!rawData.length || !analysisResults.length) { alert("Rien à exporter."); return; }
-  if (typeof XLSX === 'undefined') { alert("Bibliothèque XLSX non chargée."); return; }
-
-  // Collect edited values
-  const ipnInputs = document.querySelectorAll('.editable-ipn');
-  const mfrSelects = document.querySelectorAll('.mfr-free-select');
-
-  // Build output rows: original data + IPN column + Manufacturer free column + warnings
-  const ipnColName = 'Approved internal part number';
-  const mfrFreeColName = 'Manufacturer free';
-
-  // Determine IPN column index in original headers
-  const ipnColExisting = columnMapping['ipn'] || null;
-  const mfrFreeColExisting = columnMapping['mfr_free'] || null;
-
-  // Build enriched headers
-  const outHeaders = [...headers];
-  if (!outHeaders.includes(ipnColName)) outHeaders.push(ipnColName);
-  if (!outHeaders.includes(mfrFreeColName)) outHeaders.push(mfrFreeColName);
-
-  const outRows = rawData.map((row, i) => {
-    const res = analysisResults[i];
-    const newRow = {...row};
-    // Set IPN
-    const ipnVal = ipnInputs[i] ? ipnInputs[i].value : (res?.ipn||'');
-    if (ipnColExisting) newRow[ipnColExisting] = ipnVal;
-    else newRow[ipnColName] = ipnVal;
-    // Set Mfr free
-    const mfrVal = mfrSelects[i] ? mfrSelects[i].value : (res?.mfr_free || (activeClientAnalysis.mpn_strict?'No':'Yes'));
-    if (mfrFreeColExisting) newRow[mfrFreeColExisting] = mfrVal;
-    else newRow[mfrFreeColName] = mfrVal;
-    return newRow;
+function applyFilter() {
+  const rows = document.querySelectorAll('#bom-tbody tr:not(.no-results-row)');
+  let visible = 0;
+  rows.forEach((tr, i) => {
+    const meta = rowMeta[i];
+    if (!meta) { tr.style.display = ''; return; }
+    let show = false;
+    if (currentFilter === 'all') show = true;
+    else if (currentFilter === 'error') show = meta.status === 'error';
+    else if (currentFilter === 'warn') show = meta.status === 'warn' || (meta.warnings && meta.warnings.length > 0);
+    else if (currentFilter === 'mpn') show = meta.mpnWarn;
+    else show = meta.warnings && meta.warnings.includes(currentFilter);
+    tr.style.display = show ? '' : 'none';
+    if (show) visible++;
   });
+
+  // Show/hide no-results row
+  let noRes = document.querySelector('.no-results-row');
+  if (visible === 0) {
+    if (!noRes) {
+      const tr = document.createElement('tr');
+      tr.className = 'no-results-row';
+      tr.innerHTML = '<td colspan="7">Aucun composant pour ce filtre</td>';
+      document.getElementById('bom-tbody').appendChild(tr);
+    }
+  } else if (noRes) {
+    noRes.remove();
+  }
+}
+
+function updateFilterCounts() {
+  const counts = { all:0, error:0, warn:0, mpn:0, sensor:0, battery:0, 'not-sealed':0, 'msl4+':0 };
+  rowMeta.forEach(m => {
+    counts.all++;
+    if (m.status === 'error') counts.error++;
+    if (m.status === 'warn' || (m.warnings && m.warnings.length)) counts.warn++;
+    if (m.mpnWarn) counts.mpn++;
+    if (m.warnings) m.warnings.forEach(w => { if (counts[w] !== undefined) counts[w]++; });
+  });
+  document.getElementById('fc-all').textContent = counts.all;
+  document.getElementById('fc-err').textContent = counts.error;
+  document.getElementById('fc-warn').textContent = counts.warn;
+  document.getElementById('fc-mpn').textContent = counts.mpn;
+  document.getElementById('fc-sensor').textContent = counts.sensor;
+  document.getElementById('fc-battery').textContent = counts.battery;
+  document.getElementById('fc-sealed').textContent = counts['not-sealed'];
+  document.getElementById('fc-msl').textContent = counts['msl4+'];
+
+  // Hide filter buttons with 0 results (except "Tous" and active filters)
+  const map = {error:'fc-err',warn:'fc-warn',mpn:'fc-mpn',sensor:'fc-sensor',battery:'fc-battery','not-sealed':'fc-sealed','msl4+':'fc-msl'};
+  const filterMap = {'error':'.f-err','warn':'.f-warn','mpn':'.f-mpn','sensor':'.f-sensor','battery':'.f-battery','not-sealed':'.f-sealed','msl4+':'.f-msl'};
+  Object.entries(counts).forEach(([k,v]) => {
+    if (k === 'all') return;
+    const btn = document.querySelector('.filter-btn' + (filterMap[k]||''));
+    if (btn) btn.style.display = v > 0 ? '' : 'none';
+  });
+
+  // Show filter bar only if there's something to filter
+  const hasIssues = counts.error > 0 || counts.warn > 0 || counts.mpn > 0;
+  document.getElementById('filter-bar').style.display = hasIssues ? 'flex' : 'none';
+}
+// ---- END FILTER SYSTEM ----
+
+function updateIPN(input) {
+  const idx=parseInt(input.dataset.idx);
+  if(bomData[idx]){
+    const key=Object.keys(bomData[idx]).find(k=>k.toLowerCase().includes('ipn')||k.toLowerCase().includes('internal'))||'IPN';
+    bomData[idx][key]=input.value;
+  }
+}
+
+function exportCSV() {
+  if(!bomData.length){alert("Aucune donnée.");return;}
+
+  // 1. Mettre à jour les IPN éditables
+  document.querySelectorAll('.editable-ipn').forEach((inp,i)=>{
+    if(bomData[i]){
+      const key=Object.keys(bomData[i]).find(k=>k.toLowerCase().includes('ipn')||k.toLowerCase().includes('internal'))||'IPN';
+      bomData[i][key]=inp.value;
+    }
+  });
+
+  // 2. Ajouter/mettre à jour colonne Stock (Reçus si existant, sinon nouvelle colonne)
+  const headers0 = Object.keys(bomData[0]);
+  const recusKey = headers0.find(k => k.toLowerCase().includes('reçus') || k.toLowerCase().includes('recus'));
+  const stockColKey = recusKey || 'Stock';
+  bomData.forEach(row => {
+    const ipn = (row['Approved internal part number']||row['IPN']||row['ipn']||'').trim().toUpperCase();
+    const mpn = (row['MPN']||row['mpn']||'').trim().toUpperCase();
+    const si = getStockInfo(ipn, mpn, row['Manufacturer free']||'');
+    row[stockColKey] = si.qty !== null ? String(si.qty) : '';
+  });
+
+  // 3. Construire les headers avec colonne Stock si nouvelle
+  const headers = Object.keys(bomData[0]);
+  if (!headers.includes(stockColKey)) headers.push(stockColKey);
+
+  // 4. Export XLS avec SheetJS
+  if (typeof XLSX === 'undefined') { alert('Bibliothèque XLSX non chargée.'); return; }
 
   const wb = XLSX.utils.book_new();
 
-  // Main sheet
-  const wsData = [outHeaders, ...outRows.map(r => outHeaders.map(h => r[h]||''))];
+  // Feuille principale BOM
+  const wsData = [headers, ...bomData.map(r => headers.map(h => r[h]||''))];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   XLSX.utils.book_append_sheet(wb, ws, 'BOM Codifiée');
 
-  // Warnings sheet
-  const warnData = [['Type', 'Désignateurs', 'Description']];
-  const warnTypes = {sensor:'Capteurs',battery:'Piles/Batteries','not-sealed':'Non étanches','msl4+':'MSL≥4'};
-  const warnCollect = {sensor:[],battery:[],'not-sealed':[],'msl4+':[],error:[]};
-  resultMeta.forEach((meta,i) => {
-    const row = rawData[i]||{};
-    const ref = getVal(row,'designator') || getVal(row,'mpn') || '';
-    meta.warnings?.forEach(w => { if(warnCollect[w]) warnCollect[w].push(ref); });
-    if (meta.status==='error') warnCollect.error.push(ref);
-  });
-  Object.entries(warnCollect).forEach(([k,v]) => {
-    if (!v.length) return;
-    const label = warnTypes[k] || k;
-    warnData.push([label, v.join(', '), k==='error'?'IPN non codifié — vérification manuelle requise':'']);
-  });
-  if (warnData.length > 1) {
-    warnData.push([]);
-    warnData.push(['Client', activeClientAnalysis.nom]);
-    warnData.push(['Date', new Date().toLocaleString('fr-FR')]);
-    const wsWarn = XLSX.utils.aoa_to_sheet(warnData);
-    XLSX.utils.book_append_sheet(wb, wsWarn, 'Warnings');
+  // Feuille warnings si nécessaire
+  if (rowMeta && rowMeta.length > 0) {
+    const warnTypes = {
+      'sensor':    'Capteurs (pression/humidité/température)',
+      'battery':   'Piles / Batteries',
+      'not-sealed':'Composants non étanches',
+      'msl4+':     'Composants MSL ≥ 4'
+    };
+    const found = {};
+    const mpnWarnRefs = [];
+    const uncodified = [];
+
+    rowMeta.forEach((meta, i) => {
+      const row = bomData[i] || {};
+      const ref = findCol(row, ['designator','reference','ref']) || '';
+      (meta.warnings||[]).forEach(w => { if (!found[w]) found[w]=[]; found[w].push(ref); });
+      if (meta.mpnWarn) mpnWarnRefs.push(ref);
+    });
+    document.querySelectorAll('.editable-ipn').forEach((inp, i) => {
+      if (inp.value === '—' || inp.value === '') {
+        const row = bomData[i] || {};
+        uncodified.push(findCol(row, ['designator','reference','ref']) || '');
+      }
+    });
+
+    if (Object.keys(found).length || mpnWarnRefs.length || uncodified.length) {
+      // Ajouter les warnings en bas de la feuille BOM, bien séparés
+      const lastRow = wsData.length;
+      const sep = ['', '', '', '', '', '', ''];
+      const warnHeader = ['--- RAPPORT WARNINGS ---', '', '', '', '', '', ''];
+      const dateRow = ['Date', new Date().toLocaleString('fr-FR'), '', '', '', '', ''];
+      const clientRow = ['Client', activeClient ? activeClient.nom : 'Standard', '', '', '', '', ''];
+
+      const extraRows = [sep, warnHeader, dateRow, clientRow, sep];
+      Object.entries(found).forEach(([type, refs]) => {
+        extraRows.push(['⚠ ' + (warnTypes[type]||type), refs.join(', '), '', '', '', '', '']);
+      });
+      if (mpnWarnRefs.length) extraRows.push(['🔒 MPN strict non conforme', mpnWarnRefs.join(', '), '', '', '', '', '']);
+      if (uncodified.length) extraRows.push(['❓ IPN à vérifier manuellement', uncodified.join(', '), '', '', '', '', '']);
+      extraRows.push(sep);
+      extraRows.push(['--- FIN RAPPORT ---', '', '', '', '', '', '']);
+
+      // Append to the sheet
+      extraRows.forEach((row, i) => {
+        XLSX.utils.sheet_add_aoa(ws, [row], { origin: lastRow + i });
+      });
+    }
   }
 
-  XLSX.writeFile(wb, `BOM_client_codifiee_${new Date().toISOString().slice(0,10)}.xlsx`);
+  const date = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, 'BOM_codifiee_' + date + '.xlsx');
 }
 
-// ===================== RESET =====================
-function resetAll() {
-  rawData = []; headers = []; workbook = null; analysisResults = []; resultMeta = [];
-  document.getElementById('upload-zone').className = 'upload-zone';
-  document.getElementById('upload-label').innerHTML = 'Glisser-déposer un fichier XLS, XLSX, CSV ou TSV<br><small style="color:var(--text3)">ou cliquer pour parcourir</small>';
-  document.getElementById('client-file-input').value = '';
-  document.getElementById('mapping-card').style.display = 'none';
-  document.getElementById('step3-bar').style.display = 'none';
-  document.getElementById('results-section').style.display = 'none';
-  document.getElementById('btn-export').style.display = 'none';
+function parseLuminovoFilename(filename) {
+  // Format: Luminovo-Sourcing_CLIENT_CARTE_ref__REF_DATE_TIME.xlsx
+  const match = filename.match(/Luminovo-Sourcing_(.+?)_ref__([^_]+)_(\d{4}-\d{2}-\d{2})/i);
+  if (!match) return null;
+  return {
+    fullName: match[1],        // CLIENT_CARTE
+    client: match[1].split('_')[0],
+    carte: match[1].split('_').slice(1).join('_'),
+    ref: match[2],             // U000021
+    date: match[3]
+  };
+}
+
+
+
+function showGSheetBar(filename) {
+  const bar = document.getElementById('gsheet-write-bar');
+  if (!bar || !writerUrl) return;
+  bar.style.display = 'block';
+  const parsed = filename ? parseLuminovoFilename(filename) : null;
+  const infoEl = document.getElementById('gsheet-file-info');
+  if (parsed && infoEl) {
+    infoEl.textContent = parsed.client + ' — ' + parsed.carte + ' — ' + parsed.date;
+  }
+}
+
+async function writeToGSheet() {
+  if (!bomData.length) { alert('Aucune donnée à écrire.'); return; }
+  const so = (document.getElementById('so-reference').value || '').trim();
+  const statusEl = document.getElementById('gsheet-write-status');
+
+  if (!writerUrl) {
+    statusEl.innerHTML = '<span style="color:var(--red)">URL Apps Script writer non configurée dans le Setup</span>';
+    return;
+  }
+
+  // Get ref from parsed filename
+  const fileInput = document.getElementById('bom-file-input');
+  const filename = fileInput?.files?.[0]?.name || '';
+  const parsed = parseLuminovoFilename(filename);
+  const ref = parsed?.ref || '';
+
+  if (!so && !ref) {
+    statusEl.innerHTML = '<span style="color:var(--red)">Saisissez le numéro SO pour identifier la GSheet achat</span>';
+    return;
+  }
+
+  statusEl.innerHTML = '<div class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle"></div> Recherche de la GSheet dans Drive…';
+
+  // Sync edited IPNs
+  document.querySelectorAll('.editable-ipn').forEach((inp,i) => {
+    if (bomData[i]) {
+      const key = Object.keys(bomData[i]).find(k=>k.toLowerCase().includes('ipn')||k.toLowerCase().includes('internal'))||'IPN';
+      bomData[i][key] = inp.value;
+    }
+  });
+
+  // Add/update Stock column
+  const headers0 = Object.keys(bomData[0]);
+  const stockColKey = headers0.find(k=>k.toLowerCase().includes('reçus')||k.toLowerCase().includes('recus')) || 'Stock';
+  bomData.forEach(row => {
+    const ipn = (row['Approved internal part number']||row['IPN']||'').trim().toUpperCase();
+    const mpn = (row['MPN']||'').trim().toUpperCase();
+    const si = getStockInfo(ipn, mpn, row['Manufacturer free']||'');
+    row[stockColKey] = si.qty !== null ? String(si.qty) : '';
+  });
+
+  const headers = Object.keys(bomData[0]);
+  const rows = bomData.map(r => headers.map(h => String(r[h]||'')));
+
+  try {
+    const resp = await fetch(writerUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ so, ref, headers, rows })
+    });
+    const result = await resp.json();
+    if (result.success) {
+      statusEl.innerHTML = '<span style="color:var(--green)"><i class="ti ti-check"></i> ' +
+        result.rows + ' lignes écrites dans "' + result.sheetName + '" — ' +
+        '<a href="' + result.sheetUrl + '" target="_blank" style="color:var(--green);font-weight:600">Ouvrir la GSheet</a></span>';
+    } else {
+      statusEl.innerHTML = '<span style="color:var(--red)">Introuvable : ' + result.error +
+        '<br><span style="font-size:11px">Termes recherchés : ' + (result.searched||[]).join(', ') + '</span></span>';
+    }
+  } catch(e) {
+    statusEl.innerHTML = '<span style="color:var(--red)">Erreur connexion : ' + e.message + '</span>';
+  }
+}
+
+function clearBOM() {
+  csvBuffer='';
+  const pasteEl = document.getElementById('csv-paste-input');
+  if (pasteEl) pasteEl.value='';
+  const urlEl = document.getElementById('bom-url');
+  if (urlEl) urlEl.value='';
+  document.getElementById('bom-url-status').innerHTML='';
+  document.getElementById('bom-result').style.display='none';
+  const bar = document.getElementById('gsheet-write-bar');
+  if (bar) bar.style.display='none';
+  const zone = document.getElementById('upload-drop-zone');
+  if (zone) {
+    zone.className = 'upload-drop-zone';
+    document.getElementById('upload-label-text').innerHTML = 'Glisser-déposer un fichier XLS, XLSX, CSV ou TSV<br><span style="font-size:11px; color:var(--text3)">ou cliquer pour parcourir</span>';
+    document.getElementById('bom-file-input').value = '';
+  }
+  bomData=[];
 }
 </script>
 
-<!-- CHAT -->
-<button class="chat-fab" onclick="toggleClientChat()" title="Assistant IA">
-  <i class="ti ti-message-circle" id="chat-fab-icon-c" aria-hidden="true"></i>
+<!-- CHAT WIDGET -->
+<style>
+.chat-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--text);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+  z-index: 1000;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.chat-fab:hover { transform: scale(1.08); }
+.chat-fab .badge-notif {
+  position: absolute;
+  top: -2px; right: -2px;
+  width: 14px; height: 14px;
+  background: #993556;
+  border-radius: 50%;
+  border: 2px solid white;
+  display: none;
+}
+.chat-fab .badge-notif.visible { display: block; }
+
+.chat-panel {
+  position: fixed;
+  bottom: 90px;
+  right: 28px;
+  width: 380px;
+  max-width: calc(100vw - 40px);
+  height: 520px;
+  max-height: calc(100vh - 120px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+  z-index: 999;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+.chat-panel.open { display: flex; }
+
+.chat-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface2);
+  flex-shrink: 0;
+}
+.chat-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.chat-header-title i { color: var(--text2); }
+.chat-context-badge {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: var(--green-bg);
+  color: var(--green);
+  font-weight: 500;
+}
+.chat-context-badge.empty {
+  background: var(--surface2);
+  color: var(--text3);
+}
+.chat-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text2);
+  font-size: 16px;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+.chat-close:hover { color: var(--text); }
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chat-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 88%;
+}
+.chat-msg.user { align-self: flex-end; }
+.chat-msg.assistant { align-self: flex-start; }
+
+.chat-bubble {
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+  word-break: break-word;
+}
+.chat-msg.user .chat-bubble {
+  background: var(--text);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+.chat-msg.assistant .chat-bubble {
+  background: var(--surface2);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+  border: 1px solid var(--border);
+}
+.chat-msg-time {
+  font-size: 10px;
+  color: var(--text3);
+  padding: 0 4px;
+}
+.chat-msg.user .chat-msg-time { text-align: right; }
+
+.chat-typing {
+  align-self: flex-start;
+  padding: 9px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  border-bottom-left-radius: 4px;
+  display: none;
+  gap: 4px;
+  align-items: center;
+}
+.chat-typing.visible { display: flex; }
+.dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); animation: bounce 1.2s infinite; }
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+
+.chat-source {
+  font-size: 10px;
+  color: var(--blue);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 3px;
+  padding: 0 4px;
+}
+
+.chat-footer {
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  flex-shrink: 0;
+  background: var(--surface);
+}
+.chat-input {
+  flex: 1;
+  padding: 8px 11px;
+  font-size: 13px;
+  font-family: var(--sans);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  resize: none;
+  max-height: 100px;
+  min-height: 36px;
+  line-height: 1.5;
+  outline: none;
+}
+.chat-input:focus { border-color: var(--text); }
+.chat-send {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius);
+  background: var(--text);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.chat-send:hover { opacity: 0.8; }
+.chat-send:disabled { opacity: 0.3; cursor: default; }
+
+.chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px 0;
+  flex-shrink: 0;
+}
+.chat-suggestion {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+  font-family: var(--sans);
+  white-space: nowrap;
+}
+.chat-suggestion:hover { background: var(--border); color: var(--text); }
+</style>
+
+<!-- FAB button -->
+<button class="chat-fab" onclick="toggleChat()" title="Assistant IA">
+  <i class="ti ti-message-circle" id="chat-fab-icon" aria-hidden="true"></i>
+  <span class="badge-notif" id="chat-notif"></span>
 </button>
 
-<div class="chat-panel" id="chat-panel-c">
+<!-- Chat panel -->
+<div class="chat-panel" id="chat-panel">
   <div class="chat-header">
-    <div style="display:flex;align-items:center;gap:8px">
-      <i class="ti ti-sparkles" aria-hidden="true" style="color:var(--pink)"></i>
-      Assistant BOM Client
-      <span class="chat-ctx b-info" id="chat-ctx-c" style="background:var(--pink-bg);color:var(--pink);border:1px solid var(--pink-border)">Aucune BOM</span>
+    <div class="chat-header-title">
+      <i class="ti ti-sparkles" aria-hidden="true"></i>
+      Assistant BOM
+      <span class="chat-context-badge empty" id="chat-ctx-badge">Aucune BOM</span>
     </div>
-    <button onclick="toggleClientChat()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:16px"><i class="ti ti-x" aria-hidden="true"></i></button>
+    <button class="chat-close" onclick="toggleChat()"><i class="ti ti-x" aria-hidden="true"></i></button>
   </div>
-  <div class="chat-messages" id="chat-msgs-c">
+
+  <div class="chat-suggestions" id="chat-suggestions">
+    <button class="chat-suggestion" onclick="sendSuggestion(this)">Composants critiques en stock ?</button>
+    <button class="chat-suggestion" onclick="sendSuggestion(this)">Composants sensibles détectés ?</button>
+    <button class="chat-suggestion" onclick="sendSuggestion(this)">Vérifier les IPN condensateurs</button>
+    <button class="chat-suggestion" onclick="sendSuggestion(this)">Alternatives pour un composant ?</button>
+  </div>
+
+  <div class="chat-messages" id="chat-messages">
     <div class="chat-msg assistant">
-      <div class="chat-bubble">Bonjour ! Je suis votre assistant BOM Client. Je peux analyser les composants, vérifier les IPN, rechercher des datasheets ou détecter des anomalies. Chargez une BOM pour commencer.</div>
+      <div class="chat-bubble">Bonjour ! Je suis votre assistant BOM. Je peux analyser les composants chargés, rechercher des datasheets, trouver des alternatives, ou répondre à toute question technique. Chargez une BOM pour commencer.</div>
       <div class="chat-msg-time">Maintenant</div>
     </div>
   </div>
-  <div class="chat-typing" id="chat-typing-c"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+
+  <div class="chat-typing" id="chat-typing">
+    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+  </div>
+
   <div class="chat-footer">
-    <textarea class="chat-input" id="chat-input-c" placeholder="Question sur la BOM client…" rows="1"
-      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();event.stopPropagation();sendClientChat();return false;}"
+    <textarea class="chat-input" id="chat-input" placeholder="Posez une question sur votre BOM…" rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"
       oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
-    <button class="chat-send" id="chat-send-c" onclick="sendClientChat()"><i class="ti ti-send" aria-hidden="true"></i></button>
+    <button class="chat-send" id="chat-send-btn" onclick="sendChat()"><i class="ti ti-send" aria-hidden="true"></i></button>
   </div>
 </div>
 
 <script>
-let chatHistoryC = [];
-let chatOpenC = false;
+let chatHistory = [];
+let chatOpen = false;
 
-function toggleClientChat() {
-  chatOpenC = !chatOpenC;
-  document.getElementById('chat-panel-c').classList.toggle('open', chatOpenC);
-  document.getElementById('chat-fab-icon-c').className = chatOpenC ? 'ti ti-x' : 'ti ti-message-circle';
-  if (chatOpenC) {
-    const badge = document.getElementById('chat-ctx-c');
-    badge.textContent = rawData.length ? rawData.length + ' composants' : 'Aucune BOM';
-    document.getElementById('chat-input-c').focus();
+function toggleChat() {
+  chatOpen = !chatOpen;
+  const panel = document.getElementById('chat-panel');
+  const icon = document.getElementById('chat-fab-icon');
+  panel.classList.toggle('open', chatOpen);
+  icon.className = chatOpen ? 'ti ti-x' : 'ti ti-message-circle';
+  document.getElementById('chat-notif').classList.remove('visible');
+  if (chatOpen) {
+    updateChatContext();
+    document.getElementById('chat-input').focus();
   }
 }
 
-function addClientMsg(role, text) {
+function updateChatContext() {
+  const badge = document.getElementById('chat-ctx-badge');
+  if (bomData && bomData.length > 0) {
+    badge.textContent = bomData.length + ' composants';
+    badge.className = 'chat-context-badge';
+    // Hide suggestions after first real interaction
+    if (chatHistory.length === 0) {
+      document.getElementById('chat-suggestions').style.display = 'flex';
+    }
+  } else {
+    badge.textContent = 'Aucune BOM';
+    badge.className = 'chat-context-badge empty';
+  }
+}
+
+function sendSuggestion(btn) {
+  document.getElementById('chat-input').value = btn.textContent;
+  document.getElementById('chat-suggestions').style.display = 'none';
+  sendChat();
+}
+
+function getBOMContext() {
+  if (!bomData || !bomData.length) return "Aucune BOM chargée.";
+  const rows = bomData.map(r => {
+    const qty   = findCol(r,['aggregated qty','qty','quantity','qté']);
+    const ref   = findCol(r,['designator','reference','ref']);
+    const mpn   = findCol(r,['mpn','manufacturer part','part number']);
+    const ipn   = findCol(r,['approved internal part number','approved internal','ipn','internal part']);
+    const notes = findCol(r,['approved parts','notes','note','description']);
+    const stock = findCol(r,['reçus','recus','stock']);
+    return `${ref} | QTY:${qty} | MPN:${mpn} | IPN:${ipn} | Stock:${stock} | Notes:${notes}`;
+  }).join('\n');
+
+  const clientInfo = activeClient ? `Client: ${activeClient.nom} (MPN strict: ${activeClient.mpn_strict?'oui':'non'})` : '';
+  const stockInfo  = (Object.keys(stockByIPN).length > 0)
+    ? `Fichier stock chargé: ${Object.keys(stockByIPN).length} IPN, ${Object.keys(stockByMPN).length} MPN`
+    : 'Fichier stock non chargé';
+
+  return `${clientInfo}\n${stockInfo}\n\nBOM (${bomData.length} composants):\nRef | Qty | MPN | IPN | Stock | Notes\n${rows}`;
+}
+
+function addMessage(role, text, source) {
   const div = document.createElement('div');
   div.className = 'chat-msg ' + role;
-  const now = new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const now = new Date().toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'});
   const bubble = text.replace(/\n/g,'<br>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
-  div.innerHTML = '<div class="chat-bubble">' + bubble + '</div><div class="chat-msg-time">' + now + '</div>';
-  const msgs = document.getElementById('chat-msgs-c');
+  div.innerHTML = '<div class="chat-bubble">' + bubble + '</div>' +
+    (source ? '<div class="chat-source"><i class="ti ti-world" aria-hidden="true"></i> ' + source + '</div>' : '') +
+    '<div class="chat-msg-time">' + now + '</div>';
+  const msgs = document.getElementById('chat-messages');
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
+  return div;
 }
 
-function getClientBOMContext() {
-  if (!rawData.length) return "Aucune BOM chargée.";
-  const rows = rawData.slice(0,30).map(r => {
-    const desig = getVal(r,'designator');
-    const mpn = getVal(r,'mpn');
-    const desc = getVal(r,'description');
-    const notes = getVal(r,'notes');
-    const res = analysisResults.find(a => rawData[a.idx]===r);
-    const ipn = res?.ipn || '';
-    return (desig+'|'+mpn+'|'+ipn+'|'+desc+'|'+notes).slice(0,100);
-  }).join('\n');
-  return 'BOM client (' + rawData.length + ' composants):\nDesig|MPN|IPN|Desc|Notes\n' + rows + '\nClient: ' + activeClientAnalysis.nom + ' (MPN strict: ' + (activeClientAnalysis.mpn_strict?'oui':'non') + ')';
-}
-
-async function sendClientChat() {
-  const input = document.getElementById('chat-input-c');
+async function sendChat() {
+  const input = document.getElementById('chat-input');
   const text = input.value.trim();
   if (!text) return;
-  const key = document.getElementById('cfg-api-key').value.trim() || apiKey;
-  if (!key) { addClientMsg('assistant','⚠️ Clé API non configurée dans Règles & Config.'); return; }
+  if (!apiKey) { addMessage('assistant', '⚠️ Clé API non configurée. Veuillez relancer la configuration.'); return; }
 
-  input.value = ''; input.style.height='auto';
-  document.getElementById('chat-send-c').disabled = true;
-  addClientMsg('user', text);
-  chatHistoryC.push({role:'user', content:text});
+  input.value = '';
+  input.style.height = 'auto';
+  document.getElementById('chat-send-btn').disabled = true;
+  document.getElementById('chat-suggestions').style.display = 'none';
 
-  document.getElementById('chat-typing-c').classList.add('visible');
-  document.getElementById('chat-msgs-c').scrollTop = 99999;
+  addMessage('user', text);
+  chatHistory.push({ role:'user', content: text });
 
-  const sys = "Tu es un assistant expert en electronique et BOM client. Tu aides a analyser, verifier et codifier des BOM clients heterogenes.\n\n" +
-    (typeof getRulesPrompt === 'function' ? getRulesPrompt() + "\n\n" : '') +
-    "CONTEXTE BOM ACTUEL:\n" + getClientBOMContext() + "\n\n" +
-    "Reponds en francais, de maniere concise et technique. Tu peux faire des recherches web.";
+  document.getElementById('chat-typing').classList.add('visible');
+  const msgs = document.getElementById('chat-messages');
+  msgs.scrollTop = msgs.scrollHeight;
+
+  const systemPrompt = "Tu es un assistant expert en electronique et gestion de composants BOM.\n" +
+    "Tu as acces au contexte complet de la BOM chargee et tu peux faire des recherches web.\n\n" +
+    "CONTEXTE BOM ACTUEL:\n" + getBOMContext() + "\n\n" +
+    getRulesPrompt() + "\n\n" +
+    "Reponds en francais, de maniere concise et technique. Pour les recherches, utilise web_search.";
 
   try {
     const resp = await fetch("https://api.anthropic.com/v1/messages", {
-      method:"POST",
-      headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
       body: JSON.stringify({
-        model:"claude-sonnet-4-5", max_tokens:1024, system:sys,
-        tools:[{type:"web_search_20250305",name:"web_search"}],
-        messages: chatHistoryC
+        model: "claude-sonnet-4-5",
+        max_tokens: 1024,
+        system: systemPrompt,
+        tools: [{
+          type: "web_search_20250305",
+          name: "web_search"
+        }],
+        messages: chatHistory
       })
     });
+
     const data = await resp.json();
-    document.getElementById('chat-typing-c').classList.remove('visible');
-    if (data.error) { addClientMsg('assistant','⚠️ Erreur: '+data.error.message); chatHistoryC.pop(); }
-    else {
-      const fullText = data.content.map(b=>b.type==='text'?b.text:'').join('');
-      addClientMsg('assistant', fullText || '(Pas de réponse)');
-      chatHistoryC.push({role:'assistant', content:data.content});
+    document.getElementById('chat-typing').classList.remove('visible');
+
+    if (data.error) {
+      addMessage('assistant', '⚠️ Erreur API : ' + data.error.message);
+      chatHistory.pop();
+    } else {
+      // Extract text and search sources from response
+      let fullText = '';
+      let sources = [];
+      data.content.forEach(block => {
+        if (block.type === 'text') fullText += block.text;
+        if (block.type === 'tool_result') {
+          try {
+            const res = JSON.parse(block.content);
+            if (res.results) sources = res.results.slice(0,2).map(r => r.url || r.title).filter(Boolean);
+          } catch(e) {}
+        }
+      });
+
+      // Also check for web search results in tool_use blocks
+      data.content.forEach(block => {
+        if (block.type === 'tool_use' && block.name === 'web_search') {
+          sources.push('Recherche: ' + (block.input.query || ''));
+        }
+      });
+
+      const sourceText = sources.length ? sources.join(' · ') : '';
+      addMessage('assistant', fullText || '(Pas de réponse)', sourceText);
+      chatHistory.push({ role:'assistant', content: data.content });
+
+      // Notify if panel closed
+      if (!chatOpen) {
+        document.getElementById('chat-notif').classList.add('visible');
+      }
     }
   } catch(e) {
-    document.getElementById('chat-typing-c').classList.remove('visible');
-    addClientMsg('assistant','⚠️ Erreur connexion: '+e.message);
-    chatHistoryC.pop();
+    document.getElementById('chat-typing').classList.remove('visible');
+    addMessage('assistant', '⚠️ Erreur de connexion : ' + e.message);
+    chatHistory.pop();
   }
-  document.getElementById('chat-send-c').disabled = false;
+
+  document.getElementById('chat-send-btn').disabled = false;
   input.focus();
 }
 </script>
@@ -1601,45 +2413,61 @@ async function sendClientChat() {
 <div id="help-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:2000; align-items:center; justify-content:center;">
   <div style="background:var(--surface); border-radius:var(--radius-lg); padding:2rem; max-width:700px; width:calc(100vw - 40px); max-height:80vh; overflow-y:auto; position:relative; box-shadow:0 16px 48px rgba(0,0,0,0.2);">
     <button onclick="document.getElementById('help-overlay').style.display='none'" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button>
-    <h2 style="font-size:18px;font-weight:600;margin-bottom:4px">BOM Client — Guide rapide</h2>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:1.5rem">Analyse et codification des BOM reçues des clients, avant import dans Luminovo</p>
+    <h2 style="font-size:18px;font-weight:600;margin-bottom:4px">BOM Analyzer — Guide rapide</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:1.5rem">Outil de codification et d'analyse des BOM Luminovo pour la production</p>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:1.5rem">
       <div style="background:var(--surface2);border-radius:var(--radius);padding:1rem">
         <div style="font-weight:600;font-size:13px;margin-bottom:8px"><i class="ti ti-upload" style="margin-right:4px"></i>Entrée</div>
         <ul style="font-size:12px;color:var(--text2);line-height:2;padding-left:16px">
-          <li>BOM client XLS/CSV/TSV (format libre)</li>
-          <li>Colonnes détectées automatiquement par IA</li>
-          <li>Mapping sauvegardé par client</li>
+          <li>Fichier XLS exporté depuis Luminovo</li>
+          <li>Ou URL Google Sheet BOM</li>
+          <li>Ou CSV/TSV collé directement</li>
         </ul>
       </div>
       <div style="background:var(--surface2);border-radius:var(--radius);padding:1rem">
         <div style="font-weight:600;font-size:13px;margin-bottom:8px"><i class="ti ti-download" style="margin-right:4px"></i>Sortie</div>
         <ul style="font-size:12px;color:var(--text2);line-height:2;padding-left:16px">
-          <li>BOM enrichie avec IPN codifiés</li>
-          <li>Colonne Manufacturer free ajoutée</li>
+          <li>IPN codifiés automatiquement</li>
+          <li>Stock vérifié (IPN + MPN)</li>
           <li>Warnings composants sensibles</li>
-          <li>Export XLS prêt pour Luminovo</li>
+          <li>Export XLS ou écriture GSheet achat</li>
         </ul>
       </div>
     </div>
 
     <div style="font-weight:600;font-size:13px;margin-bottom:10px">Workflow</div>
     <div style="font-size:12px;color:var(--text2);line-height:2;margin-bottom:1.5rem">
-      <span style="background:var(--pink-bg);color:var(--pink);padding:2px 8px;border-radius:4px;font-weight:500">1</span> Uploader la BOM client &nbsp;→&nbsp;
-      <span style="background:var(--pink-bg);color:var(--pink);padding:2px 8px;border-radius:4px;font-weight:500">2</span> Vérifier le mapping colonnes &nbsp;→&nbsp;
-      <span style="background:var(--pink-bg);color:var(--pink);padding:2px 8px;border-radius:4px;font-weight:500">3</span> Sélectionner le client &nbsp;→&nbsp;
-      <span style="background:var(--pink-bg);color:var(--pink);padding:2px 8px;border-radius:4px;font-weight:500">4</span> Analyser & Codifier &nbsp;→&nbsp;
-      <span style="background:var(--pink-bg);color:var(--pink);padding:2px 8px;border-radius:4px;font-weight:500">5</span> Exporter XLS pour Luminovo
+      <span style="background:var(--blue-bg);color:var(--blue);padding:2px 8px;border-radius:4px;font-weight:500">1</span> Uploader le XLS Luminovo &nbsp;→&nbsp;
+      <span style="background:var(--blue-bg);color:var(--blue);padding:2px 8px;border-radius:4px;font-weight:500">2</span> Sélectionner le client &nbsp;→&nbsp;
+      <span style="background:var(--blue-bg);color:var(--blue);padding:2px 8px;border-radius:4px;font-weight:500">3</span> Analyser BOM (IA) &nbsp;→&nbsp;
+      <span style="background:var(--blue-bg);color:var(--blue);padding:2px 8px;border-radius:4px;font-weight:500">4</span> Corriger les IPN si besoin &nbsp;→&nbsp;
+      <span style="background:var(--blue-bg);color:var(--blue);padding:2px 8px;border-radius:4px;font-weight:500">5</span> Saisir le N° SO &nbsp;→&nbsp;
+      <span style="background:var(--blue-bg);color:var(--blue);padding:2px 8px;border-radius:4px;font-weight:500">6</span> Écrire dans GSheet achat
     </div>
 
-    <div style="font-weight:600;font-size:13px;margin-bottom:10px">Fonctionnalités clés</div>
-    <div style="font-size:12px;color:var(--text2);line-height:2;margin-bottom:1.5rem">
-      <strong>Concaténation de colonnes</strong> — si le client éclatent les specs (Valeur + Boîtier + Diélectrique…), fusionnez-les en une seule colonne Description dans le mapping<br>
-      <strong>Codes distributeurs</strong> — si pas de MPN mais un code DigiKey/Mouser/Farnell, l'outil résout automatiquement le MPN avant codification<br>
-      <strong>Cohérence MPN/Description</strong> — l'IA détecte les incohérences (ex: MPN résistance avec description condensateur)<br>
-      <strong>Score de confiance</strong> — 🟢 fiable / 🟡 à vérifier / 🔴 incertain<br>
-      <strong>Auto-enrichissement</strong> — règles nouvelles proposées automatiquement et ajoutables en 1 clic dans le Google Sheet
+    <div style="font-weight:600;font-size:13px;margin-bottom:10px">Règles de codification IPN</div>
+    <div style="font-size:12px;font-family:var(--font-mono,monospace);background:var(--surface2);padding:1rem;border-radius:var(--radius);line-height:2;color:var(--text2);margin-bottom:1.5rem">
+      Condensateur : <strong>C10U-0603-16V-10P-X5R</strong><br>
+      Tantale : <strong>CT10U-A-20V-20P-5R</strong><br>
+      Résistance : <strong>R10K-0603</strong> | <strong>R0R-0603</strong> | <strong>R40K2-0603-0W33</strong> | <strong>R30K-0603-10PPM</strong><br>
+      Autre : MPN sans suffixes conditionnement (#PBF, #TRPBF, TR, -T…)
+    </div>
+
+    <div style="font-weight:600;font-size:13px;margin-bottom:10px">Warnings détectés automatiquement</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.5rem">
+      <span class="badge b-warn"><i class="ti ti-radar"></i> Capteurs</span>
+      <span class="badge b-warn"><i class="ti ti-battery"></i> Piles / Batteries</span>
+      <span class="badge b-warn"><i class="ti ti-droplet-off"></i> Non étanches</span>
+      <span class="badge b-warn"><i class="ti ti-moisture"></i> MSL ≥ 4</span>
+    </div>
+
+    <div style="font-weight:600;font-size:13px;margin-bottom:10px">Mode client MPN strict</div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.8">
+      Certains clients imposent le MPN exact (pas de substitution IPN). Quand ce mode est actif :<br>
+      — Stock cherché sur le MPN en priorité<br>
+      — Si MPN absent du stock : warning orange "MPN non conforme"<br>
+      — Exception ligne par ligne : colonne <strong>Manufacturer free = Yes</strong> autorise l'IPN pour ce composant
     </div>
   </div>
 </div>
