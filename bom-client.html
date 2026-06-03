@@ -9,186 +9,132 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
-  --bg: #F5F4F0;
-  --surface: #FFFFFF;
-  --surface2: #EFEFEB;
-  --border: #E0DED8;
-  --border2: #D0CEC8;
-  --text: #1A1916;
-  --text2: #6B6960;
-  --text3: #9A9890;
-  --blue: #185FA5;
-  --blue-bg: #E6F1FB;
-  --green: #3B6D11;
-  --green-bg: #EAF3DE;
-  --amber: #854F0B;
-  --amber-bg: #FAEEDA;
-  --red: #A32D2D;
-  --red-bg: #FCEBEB;
-  --pink: #993556;
-  --pink-bg: #FBEAF0;
-  --pink-border: #ED93B1;
-  --radius: 8px;
-  --radius-lg: 12px;
-  --mono: 'DM Mono', monospace;
-  --sans: 'DM Sans', sans-serif;
+  --bg:#F5F4F0;--surface:#FFFFFF;--surface2:#EFEFEB;--border:#E0DED8;--border2:#D0CEC8;
+  --text:#1A1916;--text2:#6B6960;--text3:#9A9890;
+  --blue:#185FA5;--blue-bg:#E6F1FB;--green:#3B6D11;--green-bg:#EAF3DE;
+  --amber:#854F0B;--amber-bg:#FAEEDA;--red:#A32D2D;--red-bg:#FCEBEB;
+  --pink:#993556;--pink-bg:#FBEAF0;--pink-border:#ED93B1;
+  --radius:8px;--radius-lg:12px;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;
 }
-* { box-sizing:border-box; margin:0; padding:0; }
-body { font-family:var(--sans); font-size:14px; color:var(--text); background:var(--bg); min-height:100vh; }
-
-header { background:var(--surface); border-bottom:1px solid var(--border); padding:0 2rem; display:flex; align-items:center; justify-content:space-between; height:56px; position:sticky; top:0; z-index:100; }
-.logo { display:flex; align-items:center; gap:10px; font-size:15px; font-weight:600; }
-.logo-icon { width:30px; height:30px; background:var(--pink); border-radius:6px; display:flex; align-items:center; justify-content:center; color:white; font-size:15px; }
-.header-link { font-size:12px; color:var(--text2); text-decoration:none; display:flex; align-items:center; gap:4px; }
-.header-link:hover { color:var(--text); }
-
-.main { max-width:1200px; margin:0 auto; padding:2rem; }
-
-.tabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:1.5rem; }
-.tab { padding:10px 20px; font-size:13px; font-weight:500; cursor:pointer; border:none; background:none; color:var(--text2); border-bottom:2px solid transparent; font-family:var(--sans); }
-.tab.active { color:var(--text); border-bottom-color:var(--text); }
-.tab:hover:not(.active) { color:var(--text); }
-.panel { display:none; } .panel.active { display:block; }
-
-label { display:block; font-size:11px; font-weight:600; color:var(--text2); margin-bottom:5px; letter-spacing:0.3px; text-transform:uppercase; }
-input[type=text], textarea, select { width:100%; padding:8px 11px; font-size:13px; font-family:var(--sans); border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); color:var(--text); outline:none; transition:border-color 0.15s; }
-input[type=text]:focus, textarea:focus, select:focus { border-color:var(--text); box-shadow:0 0 0 3px rgba(26,25,22,0.06); }
-textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height:1.6; }
-.hint { font-size:11px; color:var(--text3); margin-top:5px; }
-.hint code { font-family:var(--mono); background:var(--surface2); padding:1px 5px; border-radius:4px; }
-
-.btn { padding:8px 16px; font-size:13px; font-weight:500; font-family:var(--sans); cursor:pointer; border-radius:var(--radius); border:1px solid var(--border); background:var(--surface); color:var(--text); display:inline-flex; align-items:center; gap:6px; transition:background 0.15s; }
-.btn:hover { background:var(--surface2); }
-.btn.primary { background:var(--text); color:white; border-color:transparent; }
-.btn.primary:hover { opacity:0.85; }
-.btn.pink { background:var(--pink); color:white; border-color:transparent; }
-.btn.pink:hover { opacity:0.85; }
-.btn.sm { padding:6px 12px; font-size:12px; }
-.btn:disabled { opacity:0.4; cursor:default; pointer-events:none; }
-
-.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:1.25rem; margin-bottom:12px; }
-.card-title { font-size:13px; font-weight:600; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
-.card-title i { color:var(--text2); font-size:16px; }
-
-.row2 { display:flex; gap:12px; margin-bottom:12px; }
-.row2 .col { flex:1; }
-.actions-bar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px; }
-
-.badge { display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:3px 9px; border-radius:20px; font-weight:600; white-space:nowrap; }
-.b-ok { background:var(--green-bg); color:var(--green); }
-.b-warn { background:var(--amber-bg); color:var(--amber); }
-.b-err { background:var(--red-bg); color:var(--red); }
-.b-info { background:var(--blue-bg); color:var(--blue); }
-.b-pink { background:var(--pink-bg); color:var(--pink); border:1px solid var(--pink-border); }
-
-.upload-zone { border:1.5px dashed var(--border2); border-radius:var(--radius-lg); padding:24px; text-align:center; cursor:pointer; transition:all 0.15s; color:var(--text2); font-size:13px; line-height:1.7; }
-.upload-zone:hover, .upload-zone.dragover { border-color:var(--text); background:var(--surface2); }
-.upload-zone.loaded { border-color:#97C459; background:var(--green-bg); color:var(--green); }
-.upload-zone i { font-size:28px; display:block; margin-bottom:6px; }
-.conf-high { color:#3B6D11; font-size:11px; font-weight:600; }
-.conf-med  { color:#854F0B; font-size:11px; font-weight:600; }
-.conf-low  { color:#A32D2D; font-size:11px; font-weight:600; }
-.rule-suggestion { background:#E6F1FB; border:1px solid #A8CBF0; border-radius:8px; padding:8px 12px; margin-top:4px; font-size:11px; color:#185FA5; display:flex; align-items:flex-start; gap:8px; flex-wrap:wrap; }
-.rule-suggestion-text { flex:1; font-family:var(--mono); line-height:1.5; }
-.rule-suggestion-actions { display:flex; gap:6px; flex-shrink:0; }
-.btn-rule-add { font-size:11px; padding:3px 10px; border-radius:5px; border:1px solid #185FA5; background:#185FA5; color:white; cursor:pointer; font-family:inherit; }
-.btn-rule-add:hover { opacity:0.85; }
-.btn-rule-skip { font-size:11px; padding:3px 10px; border-radius:5px; border:1px solid var(--border); background:transparent; color:var(--text2); cursor:pointer; font-family:inherit; }
-.rule-added-badge { font-size:10px; color:var(--green); background:var(--green-bg); padding:2px 7px; border-radius:10px; }
-
-.loading { display:flex; align-items:center; gap:10px; color:var(--text2); font-size:13px; padding:14px 0; }
-.spinner { width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--text2); border-radius:50%; animation:spin 0.8s linear infinite; flex-shrink:0; }
-@keyframes spin { to{transform:rotate(360deg);} }
-
-/* MAPPING TABLE */
-.mapping-table { width:100%; border-collapse:collapse; font-size:12px; }
-.mapping-table th { background:var(--surface2); padding:8px 10px; text-align:left; font-size:10px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); }
-.mapping-table td { padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
-.mapping-table tr:last-child td { border-bottom:none; }
-.mapping-table select { padding:4px 8px; font-size:12px; border-radius:5px; }
-.col-detected { font-family:var(--mono); font-size:11px; color:var(--blue); }
-.col-status { width:20px; text-align:center; font-size:14px; }
-
-/* RESULTS TABLE */
-.result-table-wrap { overflow-x:auto; max-height:480px; overflow-y:auto; border:1px solid var(--border); border-radius:var(--radius-lg); margin-top:1rem; }
-.result-table { width:100%; border-collapse:collapse; font-size:12px; }
-.result-table th { background:var(--surface2); padding:8px 10px; text-align:left; font-size:10px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; position:sticky; top:0; border-bottom:1px solid var(--border); white-space:nowrap; z-index:1; }
-.result-table td { padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:top; word-break:break-word; }
-.result-table tr:last-child td { border-bottom:none; }
-.result-table tr:hover td { background:var(--surface2); }
-.row-warn td { background:#FAEEDA10; }
-.row-err td { background:#FCEBEB10; }
-.editable-ipn { font-family:var(--mono); font-size:11px; width:100%; padding:3px 7px; border-radius:5px; border:1px solid var(--border); background:transparent; color:var(--blue); }
-.editable-ipn:focus { outline:none; border-color:var(--blue); background:var(--blue-bg); }
-.mfr-free-select { font-size:11px; padding:3px 6px; border-radius:5px; border:1px solid var(--border); background:transparent; font-family:var(--sans); }
-.mfr-free-select.yes { color:var(--green); background:var(--green-bg); border-color:#97C459; }
-.mfr-free-select.no { color:var(--red); background:var(--red-bg); border-color:#F09595; }
-
-/* COUNTERS */
-.counter-row { display:flex; gap:10px; margin:1rem 0; flex-wrap:wrap; }
-.counter { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:10px 16px; }
-.counter-val { font-size:22px; font-weight:600; font-family:var(--mono); }
-.counter-lbl { font-size:11px; color:var(--text2); margin-top:2px; }
-
-/* WARN BOX */
-.warn-box { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--amber); border-radius:var(--radius-lg); padding:1rem 1.25rem; margin-bottom:12px; }
-.warn-item { display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:13px; }
-.warn-item:last-child { border-bottom:none; }
-.warn-item i { font-size:17px; color:var(--amber); flex-shrink:0; margin-top:1px; }
-
-/* RULES EDITOR */
-.rules-section { margin-bottom:1.5rem; }
-.rules-section-title { font-size:12px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
-.rule-row { display:flex; gap:8px; align-items:flex-start; margin-bottom:8px; }
-.rule-row input { flex:1; }
-.rule-row .rule-example { width:200px; flex-shrink:0; }
-.rule-row .rule-del { flex-shrink:0; padding:6px 8px; }
-.rule-type-tag { font-size:10px; font-weight:700; padding:2px 8px; border-radius:4px; background:var(--surface2); color:var(--text2); white-space:nowrap; min-width:60px; text-align:center; }
-.rules-textarea { min-height:120px; }
-.save-indicator { font-size:11px; color:var(--green); display:none; }
-.save-indicator.visible { display:inline; }
-
-/* FILTER BAR */
-.filter-bar { display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:10px; }
-.filter-btn { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:500; padding:5px 12px; border-radius:20px; border:1px solid var(--border); background:var(--surface); color:var(--text2); cursor:pointer; font-family:var(--sans); white-space:nowrap; }
-.filter-btn.active { background:var(--text); color:white; border-color:transparent; }
-.filter-btn.active.f-warn { background:var(--amber); }
-.filter-btn.active.f-err { background:var(--red); }
-.filter-count { font-size:11px; padding:1px 6px; border-radius:10px; background:var(--surface2); color:var(--text2); }
-.filter-btn.active .filter-count { background:rgba(255,255,255,0.25); color:white; }
-
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);font-size:14px;color:var(--text);background:var(--bg);min-height:100vh;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;}
+.logo-icon{width:30px;height:30px;background:var(--pink);border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-size:15px;}
+.header-link{font-size:12px;color:var(--text2);text-decoration:none;display:flex;align-items:center;gap:4px;}
+.header-link:hover{color:var(--text);}
+.main{max-width:1200px;margin:0 auto;padding:2rem;}
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1.5rem;}
+.tab{padding:10px 20px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--text2);border-bottom:2px solid transparent;font-family:var(--sans);}
+.tab.active{color:var(--text);border-bottom-color:var(--text);}
+.tab:hover:not(.active){color:var(--text);}
+.panel{display:none;}.panel.active{display:block;}
+label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;letter-spacing:0.3px;text-transform:uppercase;}
+input[type=text],input[type=number],textarea,select{width:100%;padding:8px 11px;font-size:13px;font-family:var(--sans);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none;transition:border-color 0.15s;}
+input[type=text]:focus,textarea:focus,select:focus{border-color:var(--text);box-shadow:0 0 0 3px rgba(26,25,22,0.06);}
+textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6;}
+.hint{font-size:11px;color:var(--text3);margin-top:5px;}
+.hint code{font-family:var(--mono);background:var(--surface2);padding:1px 5px;border-radius:4px;}
+.btn{padding:8px 16px;font-size:13px;font-weight:500;font-family:var(--sans);cursor:pointer;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);display:inline-flex;align-items:center;gap:6px;transition:background 0.15s;}
+.btn:hover{background:var(--surface2);}
+.btn.primary{background:var(--text);color:white;border-color:transparent;}
+.btn.primary:hover{opacity:0.85;}
+.btn.pink{background:var(--pink);color:white;border-color:transparent;}
+.btn.pink:hover{opacity:0.85;}
+.btn.sm{padding:6px 12px;font-size:12px;}
+.btn:disabled{opacity:0.4;cursor:default;pointer-events:none;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:12px;}
+.row2{display:flex;gap:12px;margin-bottom:12px;}
+.row2 .col{flex:1;}
+.actions-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap;}
+.b-ok{background:var(--green-bg);color:var(--green);}
+.b-warn{background:var(--amber-bg);color:var(--amber);}
+.b-err{background:var(--red-bg);color:var(--red);}
+.b-info{background:var(--blue-bg);color:var(--blue);}
+.b-pink{background:var(--pink-bg);color:var(--pink);border:1px solid var(--pink-border);}
+.upload-zone{border:1.5px dashed var(--border2);border-radius:var(--radius-lg);padding:24px;text-align:center;cursor:pointer;transition:all 0.15s;color:var(--text2);font-size:13px;line-height:1.7;}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--text);background:var(--surface2);}
+.upload-zone.loaded{border-color:#97C459;background:var(--green-bg);color:var(--green);}
+.upload-zone i{font-size:28px;display:block;margin-bottom:6px;}
+.conf-high{color:var(--green);font-size:11px;font-weight:600;}
+.conf-med{color:var(--amber);font-size:11px;font-weight:600;}
+.conf-low{color:var(--red);font-size:11px;font-weight:600;}
+.rule-suggestion{background:var(--blue-bg);border:1px solid #A8CBF0;border-radius:8px;padding:8px 12px;margin-top:4px;font-size:11px;color:var(--blue);display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;}
+.rule-suggestion-text{flex:1;font-family:var(--mono);line-height:1.5;}
+.rule-suggestion-actions{display:flex;gap:6px;flex-shrink:0;}
+.btn-rule-add{font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--blue);background:var(--blue);color:white;cursor:pointer;font-family:inherit;}
+.btn-rule-add:hover{opacity:0.85;}
+.btn-rule-skip{font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-family:inherit;}
+.rule-added-badge{font-size:10px;color:var(--green);background:var(--green-bg);padding:2px 7px;border-radius:10px;}
+.loading{display:flex;align-items:center;gap:10px;color:var(--text2);font-size:13px;padding:14px 0;}
+.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--text2);border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.mapping-table{width:100%;border-collapse:collapse;font-size:12px;}
+.mapping-table th{background:var(--surface2);padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);}
+.mapping-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.mapping-table tr:last-child td{border-bottom:none;}
+.col-detected{font-family:var(--mono);font-size:11px;color:var(--blue);}
+.result-table-wrap{overflow-x:auto;max-height:480px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-lg);margin-top:1rem;}
+.result-table{width:100%;border-collapse:collapse;font-size:12px;}
+.result-table th{background:var(--surface2);padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;position:sticky;top:0;border-bottom:1px solid var(--border);white-space:nowrap;z-index:1;}
+.result-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top;word-break:break-word;}
+.result-table tr:last-child td{border-bottom:none;}
+.result-table tr:hover td{background:var(--surface2);}
+.row-warn td{background:#FAEEDA10;}.row-err td{background:#FCEBEB10;}
+.editable-ipn{font-family:var(--mono);font-size:11px;width:100%;padding:3px 7px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--blue);}
+.editable-ipn:focus{outline:none;border-color:var(--blue);background:var(--blue-bg);}
+.mfr-free-select{font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid var(--border);background:transparent;font-family:var(--sans);}
+.mfr-free-select.yes{color:var(--green);background:var(--green-bg);border-color:#97C459;}
+.mfr-free-select.no{color:var(--red);background:var(--red-bg);border-color:#F09595;}
+.counter-row{display:flex;gap:10px;margin:1rem 0;flex-wrap:wrap;}
+.counter{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;}
+.counter-val{font-size:22px;font-weight:600;font-family:var(--mono);}
+.counter-lbl{font-size:11px;color:var(--text2);margin-top:2px;}
+.warn-box{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:12px;}
+.warn-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.warn-item:last-child{border-bottom:none;}
+.warn-item i{font-size:17px;color:var(--amber);flex-shrink:0;margin-top:1px;}
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
+.filter-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);white-space:nowrap;}
+.filter-btn.active{background:var(--text);color:white;border-color:transparent;}
+.filter-btn.active.f-warn{background:var(--amber);}
+.filter-btn.active.f-err{background:var(--red);}
+.filter-count{font-size:11px;padding:1px 6px;border-radius:10px;background:var(--surface2);color:var(--text2);}
+.filter-btn.active .filter-count{background:rgba(255,255,255,0.25);color:white;}
+.rules-section{margin-bottom:1.5rem;}
+.rules-section-title{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.rules-textarea{min-height:100px;}
+.save-indicator{font-size:11px;color:var(--green);display:none;}
+.save-indicator.visible{display:inline;}
 /* CHAT */
-.chat-fab { position:fixed; bottom:28px; right:28px; width:52px; height:52px; border-radius:50%; background:var(--pink); color:white; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:22px; box-shadow:0 4px 16px rgba(0,0,0,0.18); z-index:1000; transition:transform 0.15s; }
-.chat-fab:hover { transform:scale(1.08); }
-.chat-panel { position:fixed; bottom:90px; right:28px; width:380px; max-width:calc(100vw - 40px); height:520px; max-height:calc(100vh - 120px); background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:0 8px 32px rgba(0,0,0,0.14); z-index:999; display:none; flex-direction:column; overflow:hidden; }
-.chat-panel.open { display:flex; }
-.chat-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--surface2); flex-shrink:0; font-size:13px; font-weight:600; }
-.chat-messages { flex:1; overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:10px; }
-.chat-msg { display:flex; flex-direction:column; gap:3px; max-width:88%; }
-.chat-msg.user { align-self:flex-end; }
-.chat-msg.assistant { align-self:flex-start; }
-.chat-bubble { padding:9px 12px; border-radius:12px; font-size:13px; line-height:1.6; word-break:break-word; }
-.chat-msg.user .chat-bubble { background:var(--pink); color:white; border-bottom-right-radius:4px; }
-.chat-msg.assistant .chat-bubble { background:var(--surface2); color:var(--text); border-bottom-left-radius:4px; border:1px solid var(--border); }
-.chat-msg-time { font-size:10px; color:var(--text3); padding:0 4px; }
-.chat-msg.user .chat-msg-time { text-align:right; }
-.chat-typing { align-self:flex-start; padding:9px 14px; background:var(--surface2); border:1px solid var(--border); border-radius:12px; border-bottom-left-radius:4px; display:none; gap:4px; align-items:center; }
-.chat-typing.visible { display:flex; }
-.dot { width:6px; height:6px; border-radius:50%; background:var(--text3); animation:bounce 1.2s infinite; }
-.dot:nth-child(2){animation-delay:0.2s;} .dot:nth-child(3){animation-delay:0.4s;}
+.chat-fab{position:fixed;bottom:28px;right:28px;width:52px;height:52px;border-radius:50%;background:var(--pink);color:white;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 16px rgba(0,0,0,0.18);z-index:1000;transition:transform 0.15s;}
+.chat-fab:hover{transform:scale(1.08);}
+.chat-panel{position:fixed;bottom:90px;right:28px;width:380px;max-width:calc(100vw - 40px);height:520px;max-height:calc(100vh - 120px);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:0 8px 32px rgba(0,0,0,0.14);z-index:999;display:none;flex-direction:column;overflow:hidden;}
+.chat-panel.open{display:flex;}
+.chat-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);flex-shrink:0;font-size:13px;font-weight:600;}
+.chat-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;}
+.chat-msg{display:flex;flex-direction:column;gap:3px;max-width:88%;}
+.chat-msg.user{align-self:flex-end;}.chat-msg.assistant{align-self:flex-start;}
+.chat-bubble{padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.6;word-break:break-word;}
+.chat-msg.user .chat-bubble{background:var(--pink);color:white;border-bottom-right-radius:4px;}
+.chat-msg.assistant .chat-bubble{background:var(--surface2);color:var(--text);border-bottom-left-radius:4px;border:1px solid var(--border);}
+.chat-msg-time{font-size:10px;color:var(--text3);padding:0 4px;}
+.chat-msg.user .chat-msg-time{text-align:right;}
+.chat-typing{align-self:flex-start;padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;border-bottom-left-radius:4px;display:none;gap:4px;align-items:center;}
+.chat-typing.visible{display:flex;}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:bounce 1.2s infinite;}
+.dot:nth-child(2){animation-delay:0.2s;}.dot:nth-child(3){animation-delay:0.4s;}
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
-.chat-footer { padding:10px 12px; border-top:1px solid var(--border); display:flex; gap:8px; align-items:flex-end; flex-shrink:0; }
-.chat-input { flex:1; padding:8px 11px; font-size:13px; font-family:var(--sans); border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); color:var(--text); resize:none; max-height:100px; min-height:36px; line-height:1.5; outline:none; }
-.chat-input:focus { border-color:var(--pink); }
-.chat-send { width:34px; height:34px; border-radius:var(--radius); background:var(--pink); color:white; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
-.chat-send:hover { opacity:0.85; }
-.chat-send:disabled { opacity:0.3; cursor:default; }
-.chat-ctx { font-size:10px; padding:2px 8px; border-radius:20px; font-weight:500; }
-
+.chat-footer{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;}
+.chat-input{flex:1;padding:8px 11px;font-size:13px;font-family:var(--sans);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);resize:none;max-height:100px;min-height:36px;line-height:1.5;outline:none;}
+.chat-input:focus{border-color:var(--pink);}
+.chat-send-btn{width:34px;height:34px;border-radius:var(--radius);background:var(--pink);color:white;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.chat-send-btn:hover{opacity:0.85;}
+.chat-send-btn:disabled{opacity:0.3;cursor:default;}
 </style>
 </head>
 <body>
-
 <header>
   <div class="logo">
     <div class="logo-icon"><i class="ti ti-users" aria-hidden="true"></i></div>
@@ -206,85 +152,64 @@ textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height
     <button class="tab" onclick="switchTab('rules')">Règles de codification</button>
   </div>
 
-  <!-- ===== ANALYSE ===== -->
+  <!-- ANALYSE TAB -->
   <div class="panel active" id="tab-analyse">
-
-    <!-- STEP 1: Upload -->
     <div class="card">
-      <div class="card-title"><i class="ti ti-upload" aria-hidden="true"></i> 1 — Charger la BOM client</div>
-      <label for="client-file-input" style="text-transform:none; font-size:12px; font-weight:600; letter-spacing:0; cursor:pointer">
+      <div style="font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><i class="ti ti-upload" style="color:var(--text2);font-size:16px;" aria-hidden="true"></i> 1 — Charger la BOM client</div>
+      <label for="client-file-input" style="text-transform:none;font-size:12px;font-weight:600;letter-spacing:0;cursor:pointer">
         <div class="upload-zone" id="upload-zone">
           <i class="ti ti-file-spreadsheet" aria-hidden="true"></i>
           <span id="upload-label">Glisser-déposer un fichier XLS, XLSX, CSV ou TSV<br><small style="color:var(--text3)">ou cliquer pour parcourir</small></span>
         </div>
       </label>
       <input type="file" id="client-file-input" accept=".xls,.xlsx,.csv,.tsv" style="display:none" onchange="handleUpload(this)" />
-      <div class="row2" style="margin-top:12px; margin-bottom:0">
+      <div class="row2" style="margin-top:12px;margin-bottom:0">
         <div class="col">
           <label>Client</label>
           <div style="display:flex;gap:8px;align-items:center;">
             <select id="client-select-analysis" onchange="onClientSelect()" style="flex:1">
               <option value="__standard__">Standard (IPN autorisé)</option>
             </select>
-            <button class="btn sm" onclick="showNewClientForm()" title="Ajouter un nouveau client" style="flex-shrink:0;white-space:nowrap">
-              <i class="ti ti-plus" aria-hidden="true"></i> Nouveau
-            </button>
+            <button class="btn sm" onclick="showNewClientForm()" title="Ajouter un nouveau client" style="flex-shrink:0;white-space:nowrap"><i class="ti ti-plus" aria-hidden="true"></i> Nouveau</button>
           </div>
         </div>
         <div class="col">
           <label>Feuille Excel (si XLSX multi-onglets)</label>
-          <select id="sheet-select" onchange="onSheetChange()">
-            <option value="0">Feuille 1</option>
-          </select>
+          <select id="sheet-select" onchange="onSheetChange()"><option value="0">Feuille 1</option></select>
         </div>
-        <div class="col" style="max-width:160px">
+        <div class="col" style="max-width:200px">
           <label>Ligne de début (en-têtes)</label>
-          <div style="display:flex; align-items:center; gap:8px;">
-            <input type="number" id="start-row" value="1" min="1" max="50"
-              style="width:70px; padding:7px 10px; font-size:13px; font-family:var(--sans); border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); color:var(--text); outline:none;"
-              onchange="onStartRowChange()" />
-            <span style="font-size:12px; color:var(--text2)">sur <span id="total-rows-hint">—</span> lignes</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="number" id="start-row" value="1" min="1" max="50" style="width:70px;padding:7px 10px;font-size:13px;font-family:var(--sans);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none;" onchange="onStartRowChange()" />
+            <span style="font-size:12px;color:var(--text2)">sur <span id="total-rows-hint">—</span> lignes</span>
           </div>
-          <p class="hint">Ligne contenant les en-têtes de colonnes</p>
+          <p class="hint">Ligne des en-têtes de colonnes</p>
         </div>
       </div>
     </div>
 
-    <!-- STEP 2: Column Mapping -->
     <div class="card" id="mapping-card" style="display:none">
-      <div class="card-title">
-        <i class="ti ti-columns" aria-hidden="true"></i> 2 — Mapping des colonnes
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+        <i class="ti ti-columns" style="color:var(--text2);font-size:16px;" aria-hidden="true"></i> 2 — Mapping des colonnes
         <span class="badge b-info" id="mapping-confidence-badge"></span>
         <button class="btn sm" style="margin-left:auto" onclick="remapColumns()"><i class="ti ti-refresh" aria-hidden="true"></i> Redétecter</button>
       </div>
-      <p class="hint" style="margin-bottom:8px">L'IA a détecté les colonnes ci-dessous. Corrige si nécessaire avant d'analyser.</p>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
         <span style="font-size:12px;color:var(--text2)">Mapping client :</span>
         <button class="btn sm" onclick="saveMappingForClient()"><i class="ti ti-device-floppy" aria-hidden="true"></i> Sauvegarder pour ce client</button>
         <span id="mapping-save-status" style="font-size:11px;color:var(--green);display:none"><i class="ti ti-check" aria-hidden="true"></i> Sauvegardé</span>
         <span id="mapping-loaded-badge" style="display:none" class="badge b-info"><i class="ti ti-history" aria-hidden="true"></i> Mapping client chargé</span>
       </div>
-
+      <p class="hint" style="margin-bottom:12px">L'IA a détecté les colonnes ci-dessous. Corrigez si nécessaire. Utilisez "+" pour concaténer plusieurs colonnes.</p>
       <div style="overflow-x:auto">
-        <table class="mapping-table" id="mapping-table">
-          <thead>
-            <tr>
-              <th style="width:28px"></th>
-              <th>Champ requis</th>
-              <th>Colonne(s) détectée(s)</th>
-              <th>Modifier / Concaténer</th>
-              <th>Aperçu</th>
-            </tr>
-          </thead>
+        <table class="mapping-table">
+          <thead><tr><th style="width:28px"></th><th>Champ requis</th><th>Colonne(s) détectée(s)</th><th>Modifier / Concaténer</th><th>Aperçu</th></tr></thead>
           <tbody id="mapping-tbody"></tbody>
         </table>
       </div>
-      <p class="hint" style="margin-top:8px"><i class="ti ti-plus" aria-hidden="true"></i> Pour concaténer plusieurs colonnes (ex: Valeur + Boitier + Diélectrique → Description), cliquez "+" à droite du sélecteur.</p>
-
       <div id="mapping-loading" class="loading" style="display:none"><div class="spinner"></div> Détection des colonnes en cours…</div>
     </div>
 
-    <!-- STEP 3: Analyse -->
     <div id="step3-bar" style="display:none">
       <div class="actions-bar">
         <button class="btn pink" onclick="analyseClientBOM()"><i class="ti ti-cpu" aria-hidden="true"></i> Analyser & Codifier (IA)</button>
@@ -294,12 +219,10 @@ textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height
       <div id="analysis-loading" class="loading" style="display:none"><div class="spinner"></div><span id="analysis-msg">Analyse en cours…</span></div>
     </div>
 
-    <!-- RESULTS -->
     <div id="results-section" style="display:none">
       <div id="result-counters" class="counter-row"></div>
       <div id="result-warnings"></div>
-
-      <div class="filter-bar" id="result-filter-bar">
+      <div class="filter-bar">
         <button class="filter-btn active f-all" onclick="setResultFilter('all',this)"><i class="ti ti-list" aria-hidden="true"></i> Tous <span class="filter-count" id="rfc-all">0</span></button>
         <button class="filter-btn f-err" onclick="setResultFilter('error',this)" style="display:none"><i class="ti ti-x" aria-hidden="true"></i> Erreurs <span class="filter-count" id="rfc-err">0</span></button>
         <button class="filter-btn f-warn" onclick="setResultFilter('warn',this)" style="display:none"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Warnings <span class="filter-count" id="rfc-warn">0</span></button>
@@ -308,25 +231,24 @@ textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height
         <button class="filter-btn" onclick="setResultFilter('not-sealed',this)" style="display:none"><i class="ti ti-droplet-off" aria-hidden="true"></i> Non étanches <span class="filter-count" id="rfc-sealed">0</span></button>
         <button class="filter-btn" onclick="setResultFilter('msl4+',this)" style="display:none"><i class="ti ti-moisture" aria-hidden="true"></i> MSL≥4 <span class="filter-count" id="rfc-msl">0</span></button>
       </div>
-
       <div class="result-table-wrap">
         <table class="result-table">
           <thead id="result-thead"><tr></tr></thead>
           <tbody id="result-tbody"></tbody>
         </table>
       </div>
-      <p style="font-size:11px; color:var(--text3); margin-top:8px">IPN et Manufacturer free éditables. Exportez en XLS pour import dans Luminovo.</p>
+      <p style="font-size:11px;color:var(--text3);margin-top:8px">IPN et Manufacturer free éditables. Exportez en XLS pour import dans Luminovo.</p>
     </div>
   </div>
 
-  <!-- ===== RULES ===== -->
+  <!-- RULES TAB -->
   <div class="panel" id="tab-rules">
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; flex-wrap:wrap; gap:8px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:8px;">
       <div>
-        <h2 style="font-size:18px; font-weight:600; margin-bottom:4px">Règles de codification IPN</h2>
-        <p style="font-size:13px; color:var(--text2)">Ces règles sont utilisées par l'IA dans tous les outils. Modifiez-les pour affiner la codification.</p>
+        <h2 style="font-size:18px;font-weight:600;margin-bottom:4px">Règles de codification IPN</h2>
+        <p style="font-size:13px;color:var(--text2)">Ces règles sont utilisées par l'IA dans tous les outils. Partagées via Google Sheet.</p>
       </div>
-      <div style="display:flex; gap:8px; align-items:center;">
+      <div style="display:flex;gap:8px;align-items:center;">
         <span class="save-indicator" id="save-indicator"><i class="ti ti-check" aria-hidden="true"></i> Sauvegardé</span>
         <button class="btn primary" onclick="saveRules()"><i class="ti ti-device-floppy" aria-hidden="true"></i> Sauvegarder</button>
         <button class="btn" onclick="resetRules()"><i class="ti ti-refresh" aria-hidden="true"></i> Réinitialiser</button>
@@ -334,81 +256,36 @@ textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height
     </div>
 
     <div class="rules-section">
-      <div class="rules-section-title">
-        <span>Condensateurs céramique / film</span>
-        <span style="font-family:var(--mono); font-size:11px; color:var(--text3)">C(val)-(boitier)-(V)-(tolP)-(diélec)</span>
-      </div>
-      <div class="card" style="margin-bottom:0">
-        <textarea id="rule-capacitor" class="rules-textarea" rows="6"></textarea>
-        <p class="hint">Format : règle sur la 1ère ligne, exemples ensuite. Ex: <code>C10U-0603-16V-10P-X5R</code></p>
-      </div>
+      <div class="rules-section-title"><span>Condensateur céramique / film</span><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">C(val)-(boitier)-(V)-(tolP)-(diélec)</span></div>
+      <div class="card" style="margin-bottom:0"><textarea id="rule-capacitor" class="rules-textarea" rows="5"></textarea></div>
     </div>
-
     <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title">
-        <span>Condensateurs tantale</span>
-        <span style="font-family:var(--mono); font-size:11px; color:var(--text3)">CT(val)-(boitier)-(V)-(tolP)-(ESR)</span>
-      </div>
-      <div class="card" style="margin-bottom:0">
-        <textarea id="rule-tantalum" class="rules-textarea" rows="4"></textarea>
-      </div>
+      <div class="rules-section-title"><span>Condensateur tantale</span><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">CT(val)-(boitier)-(V)-(tolP)-(ESR)</span></div>
+      <div class="card" style="margin-bottom:0"><textarea id="rule-tantalum" class="rules-textarea" rows="3"></textarea></div>
     </div>
-
     <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title">
-        <span>Résistances</span>
-        <span style="font-family:var(--mono); font-size:11px; color:var(--text3)">R(val)-(boitier)[-(PPM)][-(W)]</span>
-      </div>
-      <div class="card" style="margin-bottom:0">
-        <textarea id="rule-resistor" class="rules-textarea" rows="8"></textarea>
-      </div>
+      <div class="rules-section-title"><span>Résistances</span><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">R(val)-(boitier)[-(PPM)][-(W)]</span></div>
+      <div class="card" style="margin-bottom:0"><textarea id="rule-resistor" class="rules-textarea" rows="7"></textarea></div>
     </div>
-
     <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title">
-        <span>Autres composants</span>
-        <span style="font-family:var(--mono); font-size:11px; color:var(--text3)">MPN sans suffixes conditionnement</span>
-      </div>
-      <div class="card" style="margin-bottom:0">
-        <textarea id="rule-other" class="rules-textarea" rows="4"></textarea>
-      </div>
+      <div class="rules-section-title"><span>Autres composants</span></div>
+      <div class="card" style="margin-bottom:0"><textarea id="rule-other" class="rules-textarea" rows="3"></textarea></div>
     </div>
-
     <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title">
-        <span>Suffixes conditionnement à supprimer</span>
-      </div>
-      <div class="card" style="margin-bottom:0">
-        <input type="text" id="rule-suffixes" placeholder="#PBF, #TRPBF, TR, -T, /TR, REEL, TAPE, CT, -ND" />
-        <p class="hint">Séparés par des virgules</p>
-      </div>
+      <div class="rules-section-title"><span>Suffixes conditionnement à supprimer</span></div>
+      <div class="card" style="margin-bottom:0"><input type="text" id="rule-suffixes" /></div>
     </div>
-
     <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title"><span>Composants sensibles (critères de warning)</span></div>
+      <div class="rules-section-title"><span>Composants sensibles</span></div>
       <div class="card" style="margin-bottom:0">
         <div class="row2">
-          <div class="col">
-            <label>Capteurs — mots-clés à détecter</label>
-            <input type="text" id="rule-sensors" placeholder="pressure, humidity, temperature, sensor, transducer..." />
-          </div>
-          <div class="col">
-            <label>Énergie — mots-clés</label>
-            <input type="text" id="rule-batteries" placeholder="battery, pile, accumulator, lithium, LiPo..." />
-          </div>
+          <div class="col"><label>Capteurs</label><input type="text" id="rule-sensors" /></div>
+          <div class="col"><label>Énergie</label><input type="text" id="rule-batteries" /></div>
         </div>
         <div class="row2" style="margin-bottom:0">
-          <div class="col">
-            <label>Non étanches — mots-clés</label>
-            <input type="text" id="rule-sealed" placeholder="relay, relais, not sealed, non étanche..." />
-          </div>
-          <div class="col">
-            <label>Niveau MSL minimum pour warning</label>
-            <select id="rule-msl">
-              <option value="4">MSL ≥ 4</option>
-              <option value="3">MSL ≥ 3</option>
-              <option value="2">MSL ≥ 2</option>
-            </select>
+          <div class="col"><label>Non étanches</label><input type="text" id="rule-sealed" /></div>
+          <div class="col"><label>Niveau MSL minimum</label>
+            <select id="rule-msl"><option value="4">MSL ≥ 4</option><option value="3">MSL ≥ 3</option><option value="2">MSL ≥ 2</option></select>
           </div>
         </div>
       </div>
@@ -416,53 +293,110 @@ textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height
 
     <div id="extra-rules-container"></div>
 
-    <!-- API Keys -->
     <div class="rules-section" style="margin-top:1.5rem">
       <div class="rules-section-title"><span>Configuration API & Sources</span></div>
       <div class="card" style="margin-bottom:0">
         <div class="row2">
-          <div class="col">
-            <label>Clé API Anthropic</label>
-            <input type="text" id="cfg-api-key" placeholder="sk-ant-api03-…" autocomplete="off" />
-          </div>
-          <div class="col">
-            <label>URL Proxy fournisseurs (Mouser/Farnell)</label>
-            <input type="text" id="cfg-proxy-url" value="https://script.google.com/macros/s/AKfycbzRChDWNpze7feavQkcFmMYIMRB1lLf7ubnRv13AqyzI29p-dqUXZlPGDB2Bu7n2cX7iQ/exec" />
-          </div>
+          <div class="col"><label>Clé API Anthropic</label><input type="text" id="cfg-api-key" placeholder="sk-ant-api03-…" autocomplete="off" /></div>
+          <div class="col"><label>URL Proxy fournisseurs</label><input type="text" id="cfg-proxy-url" value="https://script.google.com/macros/s/AKfycbzRChDWNpze7feavQkcFmMYIMRB1lLf7ubnRv13AqyzI29p-dqUXZlPGDB2Bu7n2cX7iQ/exec" /></div>
         </div>
-        <div class="row2" style="margin-bottom:0">
+        <div class="row2">
           <div class="col">
-            <label>URL Google Sheet clients (Apps Script)</label>
+            <label>URL Google Sheet clients</label>
             <div style="display:flex;gap:8px;">
               <input type="text" id="cfg-clients-url" value="https://script.google.com/macros/s/AKfycbxa04R-ZDzXx0OWsz3kISwFcpnT2hgk4-8uMxdI4wPBcjQ8N52xHzu_sjMfpLkrQesg/exec" style="flex:1" />
               <button class="btn sm" onclick="loadClientsFromURL()"><i class="ti ti-refresh" aria-hidden="true"></i> Charger</button>
             </div>
             <div id="clients-load-status" style="font-size:12px;margin-top:6px;"></div>
           </div>
-        </div>
-        <div class="row2" style="margin-top:10px; margin-bottom:0">
           <div class="col">
             <label>URL Google Sheet règles partagées</label>
-            <div style="display:flex;gap:8px">
+            <div style="display:flex;gap:8px;">
               <input type="text" id="cfg-rules-url" value="https://script.google.com/macros/s/AKfycbwWqEWTLh8EVPq9tnTIbqyoa9gdKlKimAs74iMVobZfI7WlGxWOSJqmlujBbCFcl5H-eg/exec" style="flex:1" />
               <button class="btn sm" onclick="loadRulesFromURL()"><i class="ti ti-refresh" aria-hidden="true"></i> Charger</button>
             </div>
-            <div id="rules-url-status" style="font-size:12px;margin-top:4px;"></div>
+            <div id="rules-url-status" style="font-size:12px;margin-top:6px;"></div>
           </div>
         </div>
-        <p class="hint" style="margin-top:10px">Les règles partagées écrasent les règles locales pour tous les utilisateurs.</p>
+        <p class="hint">Sauvegardez après toute modification.</p>
       </div>
     </div>
   </div>
 </div>
 
+<!-- NEW CLIENT MODAL -->
+<div id="new-client-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:3000;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border-radius:var(--radius-lg);padding:1.5rem;width:420px;max-width:calc(100vw - 40px);box-shadow:0 16px 48px rgba(0,0,0,0.2);position:relative;">
+    <button onclick="hideNewClientForm()" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button>
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:4px">Nouveau client</h3>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:1rem">Ajouté dans le Google Sheet clients et disponible immédiatement.</p>
+    <div style="margin-bottom:12px"><label>Nom du client</label><input type="text" id="new-client-nom" placeholder="ex: Airbus, Thales, Client X..." /></div>
+    <div style="margin-bottom:12px">
+      <label>MPN strict</label>
+      <div style="display:flex;gap:12px;margin-top:4px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;text-transform:none;letter-spacing:0;font-weight:400;color:var(--text)"><input type="radio" name="new-client-mpn" value="non" checked /> Standard (IPN autorisé)</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;text-transform:none;letter-spacing:0;font-weight:400;color:var(--text)"><input type="radio" name="new-client-mpn" value="oui" /> MPN strict 🔒</label>
+      </div>
+      <p class="hint" style="margin-top:6px">Exception ligne par ligne via la colonne <strong>Manufacturer free</strong>.</p>
+    </div>
+    <div style="margin-bottom:16px"><label>Notes (optionnel)</label><input type="text" id="new-client-notes" placeholder="ex: MPN figé contractuellement..." /></div>
+    <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end">
+      <div id="new-client-status" style="font-size:12px;flex:1"></div>
+      <button class="btn" onclick="hideNewClientForm()">Annuler</button>
+      <button class="btn pink" id="btn-add-client" onclick="addNewClient()"><i class="ti ti-plus" aria-hidden="true"></i> Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<button class="chat-fab" onclick="toggleClientChat()" title="Assistant IA">
+  <i class="ti ti-message-circle" id="chat-fab-icon-c" aria-hidden="true"></i>
+</button>
+<div class="chat-panel" id="chat-panel-c">
+  <div class="chat-header">
+    <div style="display:flex;align-items:center;gap:8px;"><i class="ti ti-sparkles" style="color:var(--pink)" aria-hidden="true"></i> Assistant BOM Client <span id="chat-ctx-c" style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;background:var(--pink-bg);color:var(--pink);border:1px solid var(--pink-border)">Aucune BOM</span></div>
+    <button onclick="toggleClientChat()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:16px"><i class="ti ti-x" aria-hidden="true"></i></button>
+  </div>
+  <div class="chat-messages" id="chat-msgs-c">
+    <div class="chat-msg assistant"><div class="chat-bubble">Bonjour ! Assistant BOM Client. Chargez une BOM pour commencer.</div><div class="chat-msg-time">Maintenant</div></div>
+  </div>
+  <div class="chat-typing" id="chat-typing-c"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  <div class="chat-footer">
+    <textarea class="chat-input" id="chat-input-c" placeholder="Question sur la BOM client…" rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();event.stopPropagation();sendClientChat();return false;}"
+      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
+    <button class="chat-send-btn" id="chat-send-c" onclick="sendClientChat()"><i class="ti ti-send" aria-hidden="true"></i></button>
+  </div>
+</div>
+
+<!-- HELP MODAL -->
+<div id="help-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:2000;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border-radius:var(--radius-lg);padding:2rem;max-width:700px;width:calc(100vw - 40px);max-height:80vh;overflow-y:auto;position:relative;box-shadow:0 16px 48px rgba(0,0,0,0.2);">
+    <button onclick="document.getElementById('help-overlay').style.display='none'" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button>
+    <h2 style="font-size:18px;font-weight:600;margin-bottom:4px">BOM Client — Guide rapide</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:1.5rem">Analyse et codification des BOM reçues des clients, avant import dans Luminovo</p>
+    <div style="font-weight:600;font-size:13px;margin-bottom:10px">Workflow</div>
+    <div style="font-size:12px;color:var(--text2);line-height:2;margin-bottom:1rem">
+      <span style="background:var(--pink-bg);color:var(--pink);padding:2px 8px;border-radius:4px;font-weight:500">1</span> Upload BOM client &nbsp;→&nbsp;
+      <span style="background:var(--pink-bg);color:var(--pink);padding:2px 8px;border-radius:4px;font-weight:500">2</span> Vérifier le mapping &nbsp;→&nbsp;
+      <span style="background:var(--pink-bg);color:var(--pink);padding:2px 8px;border-radius:4px;font-weight:500">3</span> Sélectionner le client &nbsp;→&nbsp;
+      <span style="background:var(--pink-bg);color:var(--pink);padding:2px 8px;border-radius:4px;font-weight:500">4</span> Analyser & Codifier &nbsp;→&nbsp;
+      <span style="background:var(--pink-bg);color:var(--pink);padding:2px 8px;border-radius:4px;font-weight:500">5</span> Exporter XLS pour Luminovo
+    </div>
+  </div>
+</div>
+
 <script>
+// ===================== CONSTANTS =====================
+const CLIENTS_URL_WRITE = "https://script.google.com/macros/s/AKfycbxa04R-ZDzXx0OWsz3kISwFcpnT2hgk4-8uMxdI4wPBcjQ8N52xHzu_sjMfpLkrQesg/exec";
+const RULES_URL_WRITE   = "https://script.google.com/macros/s/AKfycbwWqEWTLh8EVPq9tnTIbqyoa9gdKlKimAs74iMVobZfI7WlGxWOSJqmlujBbCFcl5H-eg/exec";
+
 // ===================== STATE =====================
-let rawData = [];       // parsed rows from uploaded file
-let headers = [];       // original file headers
-let workbook = null;    // XLSX workbook
+let rawData = [];
+let headers = [];
+let workbook = null;
 let activeSheetIdx = 0;
-let columnMapping = {}; // field -> detected column name
+let columnMapping = {};
 let analysisResults = [];
 let resultMeta = [];
 let clientsList = [];
@@ -470,219 +404,136 @@ let activeClientAnalysis = { nom:'Standard', mpn_strict:false, notes:'' };
 let currentResultFilter = 'all';
 let apiKey = '';
 let proxyUrl = '';
+let chatHistoryC = [];
+let chatOpenC = false;
 
-// ===================== REQUIRED FIELDS FOR MAPPING =====================
 const REQUIRED_FIELDS = [
-  { key:'designator',    label:'Désignateur / Référence',       required:true  },
-  { key:'mpn',           label:'MPN (référence fabricant)',      required:false },
-  { key:'description',   label:'Description / Valeur',          required:false },
-  { key:'notes',         label:'Notes / Specs techniques',      required:false },
-  { key:'manufacturer',  label:'Fabricant(s)',                  required:false },
-  { key:'qty',           label:'Quantité',                      required:false },
-  { key:'mfr_free',      label:'Equivalent autorisé (Mfr free)',required:false },
-  { key:'ipn',           label:'IPN existant (si déjà codifié)',required:false },
-  { key:'dist_code',     label:'Code distributeur (DigiKey/Mouser/Farnell)',required:false },
+  { key:'designator',   label:'Désignateur / Référence',              required:true  },
+  { key:'mpn',          label:'MPN (référence fabricant)',             required:false },
+  { key:'description',  label:'Description / Valeur',                 required:false },
+  { key:'notes',        label:'Notes / Specs techniques',             required:false },
+  { key:'manufacturer', label:'Fabricant(s)',                         required:false },
+  { key:'qty',          label:'Quantité',                             required:false },
+  { key:'mfr_free',     label:'Equivalent autorisé (Mfr free)',       required:false },
+  { key:'ipn',          label:'IPN existant (si déjà codifié)',       required:false },
+  { key:'dist_code',    label:'Code distributeur (DigiKey/Mouser/Farnell)', required:false },
 ];
 
-// ===================== DEFAULT RULES =====================
 const DEFAULT_RULES = {
-  capacitor: `Format: C(valeur)-(boitier)-(tensionV)-(tolP)-(diélectrique)
-- Valeur: 10U=10µF, 1N5=1.5nF, 10P=10pF, 100N=100nF
-- Tension: 16V, 6V3 (pour 6.3V), 50V. Si >=1000V écrire en kV: 1KV, 1KV5
-- Tolérance: P remplace % — 10P=10%, 5P=5%, 20P=20%
-- Diélectrique: X5R, X7R, C0G, Y5V, etc.
-Exemples: C10U-0603-16V-10P-X5R | C1N5-0603-50V-20P-X7R | C100P-0805-1KV-5P-C0G`,
-
-  tantalum: `Format: CT(valeur)-(boitier A/B/C/D/E)-(tensionV)-(tolP)-(ESR)
-- Boitier: A=EIA3216, B=EIA3528, C=EIA6032, D=EIA7343, E=EIA7360
-- ESR: 5R=5Ω, 0R4=0.4Ω
-Exemples: CT10U-A-20V-20P-5R | CT100U-B-6V3-10P-0R4`,
-
-  resistor: `Format: R(valeur)-(boitier)[-(PPM si coeff <100PPM)][-(W si puissance non standard)]
-- Valeur: R100=0.1Ω, 1R=1Ω, 10R=10Ω, 1K=1kΩ, 10K=10kΩ, 40K2=40.2kΩ
-- Valeur 0 ohm: TOUJOURS écrire 0R → R0R-0603 (jamais R0-0603)
-- Tolérance >=1%: non codifiée (1% sous-entendu). Les >1% sont remplacées par 1%
-- Coefficient temp: écrire PPM en entier collé au nombre (25PPM, 10PPM). JAMAIS juste P
-- Puissance standard: 0201=50mW, 0402=62mW, 0603=100mW, 0805=125mW, 1206=250mW, 2512=1W
-- Puissance non standard: ajouter avec W comme virgule: 0W33, 0W25, 1W
-Exemples: R10K-0603 | R0R-0603 | R40K2-0603-0W33 | R30K-0603-10PPM | R10K-0805-25PPM`,
-
-  other: `Pour tout autre composant: utiliser le MPN sans suffixes de conditionnement.
-Exemples: LM317MBSTT3G (pas LM317MBSTT3G#TRPBF) | ISL43L210IHZ (pas ISL43L210IHZ-T)`,
-
-  suffixes: '#PBF, #TRPBF, TR, -T, /TR, REEL, TAPE, CT',
-  sensors: 'pressure, humidity, temperature, sensor, transducer, accelerometer, gyroscope, capteur, pression, humidité, température',
-  batteries: 'battery, pile, accumulator, lithium, LiPo, LiFe, LiIon, CR2032, AA, AAA',
-  sealed: 'relay, relais, not sealed, non étanche, unsealed',
-  msl: '4'
+  capacitor:`Format: C(valeur)-(boitier)-(tensionV)-(tolP)-(diélectrique)\n- Valeur: 10U=10µF, 1N5=1.5nF, 10P=10pF, 100N=100nF\n- Tension: 16V, 6V3. Si >=1000V écrire en kV: 1KV, 1KV5\n- Tolérance: P remplace % — 10P=10%, 5P=5%, 20P=20%\nExemples: C10U-0603-16V-10P-X5R | C1N5-0603-50V-20P-X7R | C100P-0805-1KV-5P-C0G`,
+  tantalum:`Format: CT(valeur)-(boitier A/B/C/D/E)-(tensionV)-(tolP)-(ESR)\nExemples: CT10U-A-20V-20P-5R | CT100U-B-6V3-10P-0R4`,
+  resistor:`Format: R(valeur)-(boitier)[-(PPM si coeff <100PPM)][-(W si puissance non standard)]\n- Valeur 0 ohm: TOUJOURS 0R → R0R-0603\n- Tolérance >=1%: non codifiée. PPM toujours en entier (25PPM pas 25P)\n- Puissance std: 0201=50mW,0402=62mW,0603=100mW,0805=125mW,1206=250mW,2512=1W\nExemples: R10K-0603 | R0R-0603 | R40K2-0603-0W33 | R30K-0603-10PPM`,
+  other:`Utiliser le MPN sans suffixes de conditionnement.\nExemples: LM317MBSTT3G | ISL43L210IHZ`,
+  suffixes:'#PBF, #TRPBF, TR, -T, /TR, REEL, TAPE, CT',
+  sensors:'pressure, humidity, temperature, sensor, transducer, capteur, pression, humidité',
+  batteries:'battery, pile, accumulator, lithium, LiPo, CR2032',
+  sealed:'relay, relais, not sealed, non étanche',
+  msl:'4'
 };
-
-async function loadRulesFromURL(silent) {
-  const url = document.getElementById('cfg-rules-url').value.trim();
-  const statusEl = document.getElementById('rules-url-status');
-  if (!url) { if(!silent) statusEl.innerHTML='<span style="color:var(--red)">URL manquante</span>'; return; }
-  if (!silent) statusEl.innerHTML='Chargement…';
-  try {
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const text = await resp.text();
-    const lines = text.trim().split(/\r?\n/);
-    const sep = lines[0].includes('	') ? '	' : ',';
-    const headers = lines[0].split(sep).map(h=>h.replace(/"/g,'').trim());
-    const rulesObj = {};
-    lines.slice(1).forEach(line => {
-      const cells = line.split(sep).map(c=>c.replace(/"/g,'').trim());
-      const obj = {};
-      headers.forEach((h,i) => obj[h]=cells[i]||'');
-      const k = (obj['Clé']||obj['cle']||obj['key']||obj['Cle']||'').trim();
-      const v = (obj['Valeur']||obj['valeur']||obj['value']||'').trim().replace(/\\n/g,'\n');
-      if (k) rulesObj[k] = v;
-    });
-    if (!Object.keys(rulesObj).length) throw new Error('Aucune règle — vérifiez colonnes Clé/Valeur');
-    localStorage.setItem('bom_coding_rules', JSON.stringify(rulesObj));
-    localStorage.setItem('bom_rules_url', url);
-    loadRules();
-    renderExtraRules(rulesObj);
-    if (!silent) statusEl.innerHTML=`<span style="color:var(--green)"><i class="ti ti-check"></i> ${Object.keys(rulesObj).length} règles chargées</span>`;
-  } catch(e) {
-    if (!silent) statusEl.innerHTML=`<span style="color:var(--red)">Erreur: ${e.message}</span>`;
-  }
-}
-
-function renderExtraRules(rules) {
-  const knownKeys = ['capacitor','tantalum','resistor','other','suffixes','sensors','batteries','sealed','msl'];
-  const extraKeys = Object.keys(rules).filter(k => !knownKeys.includes(k.toLowerCase()));
-  const container = document.getElementById('extra-rules-container');
-  if (!container) return;
-  if (!extraKeys.length) { container.innerHTML=''; return; }
-  container.innerHTML = `
-    <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title"><span>Règles supplémentaires (depuis Google Sheet)</span></div>
-      ${extraKeys.map(k=>`
-        <div class="card" style="margin-bottom:8px">
-          <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">${k}</div>
-          <div style="font-family:var(--mono);font-size:12px;white-space:pre-wrap;color:var(--text2);line-height:1.6">${rules[k]}</div>
-        </div>`).join('')}
-    </div>`;
-}
-
-// ===================== MAPPING PERSISTENCE =====================
-function getMappingStorageKey() {
-  const clientKey = activeClientAnalysis.nom || 'Standard';
-  return 'bom_mapping_' + clientKey.replace(/[^a-zA-Z0-9]/g,'_');
-}
-
-function saveMappingForClient() {
-  try {
-    localStorage.setItem(getMappingStorageKey(), JSON.stringify(columnMapping));
-    const status = document.getElementById('mapping-save-status');
-    status.style.display = 'inline';
-    setTimeout(() => status.style.display='none', 2000);
-  } catch(e) { alert('Erreur sauvegarde mapping: ' + e.message); }
-}
-
-function loadMappingForClient() {
-  try {
-    const saved = localStorage.getItem(getMappingStorageKey());
-    if (saved) {
-      const savedMapping = JSON.parse(saved);
-      // Only apply if headers match (at least 50% of mapped columns exist)
-      const savedCols = Object.values(savedMapping).filter(Boolean);
-      const matches = savedCols.filter(c => headers.includes(c)).length;
-      if (matches / Math.max(savedCols.length, 1) >= 0.5) {
-        columnMapping = savedMapping;
-        document.getElementById('mapping-loaded-badge').style.display = 'inline-flex';
-        return true;
-      }
-    }
-    document.getElementById('mapping-loaded-badge').style.display = 'none';
-  } catch(e) {}
-  return false;
-}
-// ===================== END MAPPING PERSISTENCE =====================
 
 // ===================== INIT =====================
 window.addEventListener('load', () => {
-  loadRules();
   loadConfig();
-  loadClientsList();
+  loadRules();
   initUploadZone();
+  loadClientsFromURL(true);
+  loadRulesFromURL(true);
 });
 
-const CLIENTS_URL_WRITE = "https://script.google.com/macros/s/AKfycbxa04R-ZDzXx0OWsz3kISwFcpnT2hgk4-8uMxdI4wPBcjQ8N52xHzu_sjMfpLkrQesg/exec";
-
-function showNewClientForm() {
-  document.getElementById('new-client-overlay').style.display = 'flex';
-  document.getElementById('new-client-nom').focus();
-  document.getElementById('new-client-status').innerHTML = '';
-  document.getElementById('new-client-nom').value = '';
-  document.getElementById('new-client-notes').value = '';
-  document.querySelector('input[name="new-client-mpn"][value="non"]').checked = true;
+// ===================== TABS =====================
+function switchTab(name) {
+  ['analyse','rules'].forEach((n,i) => {
+    document.querySelectorAll('.tab')[i].classList.toggle('active', n===name);
+    document.querySelectorAll('.panel')[i].classList.toggle('active', n===name);
+  });
 }
 
-function hideNewClientForm() {
-  document.getElementById('new-client-overlay').style.display = 'none';
-}
-
-async function addNewClient() {
-  const nom = document.getElementById('new-client-nom').value.trim();
-  const mpn_strict = document.querySelector('input[name="new-client-mpn"]:checked')?.value || 'non';
-  const notes = document.getElementById('new-client-notes').value.trim();
-  const statusEl = document.getElementById('new-client-status');
-  const btn = document.getElementById('btn-add-client');
-
-  if (!nom) { statusEl.innerHTML = '<span style="color:var(--red)">Nom obligatoire</span>'; return; }
-
-  btn.disabled = true; btn.textContent = 'Envoi…';
-  statusEl.innerHTML = '';
-
-  try {
-    const params = new URLSearchParams({
-      action: 'addClient',
-      nom, mpn_strict, notes
-    });
-    const resp = await fetch(CLIENTS_URL_WRITE + '?' + params.toString());
-    const result = await resp.json();
-    if (result.success) {
-      // Add to local list immediately
-      clientsList.push({ nom, mpn_strict: mpn_strict === 'oui', notes });
-      populateClientSelect();
-      // Select the new client
-      document.getElementById('client-select-analysis').value = nom;
-      onClientSelect();
-      statusEl.innerHTML = '<span style="color:var(--green)">✓ ' + result.message + '</span>';
-      setTimeout(() => hideNewClientForm(), 1200);
-    } else if (result.existing) {
-      statusEl.innerHTML = '<span style="color:var(--amber)">⚠ Client déjà existant — sélectionnez-le dans la liste</span>';
-    } else {
-      statusEl.innerHTML = '<span style="color:var(--red)">Erreur : ' + result.error + '</span>';
-    }
-  } catch(e) {
-    statusEl.innerHTML = '<span style="color:var(--red)">Erreur connexion : ' + e.message + '</span>';
-  }
-
-  btn.disabled = false;
-  btn.innerHTML = '<i class="ti ti-plus"></i> Ajouter';
-}
-
+// ===================== CONFIG =====================
 function loadConfig() {
   try {
     apiKey = localStorage.getItem('bom_api_key') || '';
-    proxyUrl = localStorage.getItem('bom_proxy_url') || '';
-    const clientsUrl = localStorage.getItem('bom_clients_url') || '';
-    const rulesUrl = localStorage.getItem('bom_rules_url') || '';
+    proxyUrl = localStorage.getItem('bom_proxy_url') || document.getElementById('cfg-proxy-url').value;
     document.getElementById('cfg-api-key').value = apiKey;
-    document.getElementById('cfg-proxy-url').value = proxyUrl;
-    document.getElementById('cfg-clients-url').value = clientsUrl;
-    document.getElementById('cfg-rules-url').value = rulesUrl;
-    // Always load from hardcoded URLs if fields have values
-    const cUrl = document.getElementById('cfg-clients-url')?.value.trim();
-    const rUrl = document.getElementById('cfg-rules-url')?.value.trim();
-    if (cUrl) loadClientsFromURL(true);
-    if (rUrl) loadRulesFromURL(true);
+    const savedClientsUrl = localStorage.getItem('bom_clients_url');
+    const savedRulesUrl = localStorage.getItem('bom_rules_url');
+    if (savedClientsUrl) document.getElementById('cfg-clients-url').value = savedClientsUrl;
+    if (savedRulesUrl) document.getElementById('cfg-rules-url').value = savedRulesUrl;
   } catch(e) {}
 }
 
+function saveRules() {
+  const rules = {};
+  ['capacitor','tantalum','resistor','other','suffixes','sensors','batteries','sealed','msl'].forEach(k => {
+    const el = document.getElementById('rule-'+k);
+    if (el) rules[k] = el.value;
+  });
+  try {
+    localStorage.setItem('bom_coding_rules', JSON.stringify(rules));
+    const ak = document.getElementById('cfg-api-key').value.trim();
+    const pu = document.getElementById('cfg-proxy-url').value.trim();
+    const cu = document.getElementById('cfg-clients-url').value.trim();
+    const ru = document.getElementById('cfg-rules-url').value.trim();
+    localStorage.setItem('bom_api_key', ak);
+    localStorage.setItem('bom_proxy_url', pu);
+    localStorage.setItem('bom_clients_url', cu);
+    localStorage.setItem('bom_rules_url', ru);
+    apiKey = ak; proxyUrl = pu;
+    const ind = document.getElementById('save-indicator');
+    ind.classList.add('visible');
+    setTimeout(() => ind.classList.remove('visible'), 2000);
+  } catch(e) { alert('Erreur: ' + e.message); }
+}
+
+function loadRules() {
+  try {
+    const saved = localStorage.getItem('bom_coding_rules');
+    const rules = saved ? JSON.parse(saved) : DEFAULT_RULES;
+    ['capacitor','tantalum','resistor','other','suffixes','sensors','batteries','sealed','msl'].forEach(k => {
+      const el = document.getElementById('rule-'+k);
+      if (el) el.value = rules[k] || DEFAULT_RULES[k] || '';
+    });
+    renderExtraRules(rules);
+  } catch(e) {
+    Object.entries(DEFAULT_RULES).forEach(([k,v]) => { const el = document.getElementById('rule-'+k); if(el) el.value = v; });
+  }
+}
+
+function resetRules() {
+  if (!confirm('Réinitialiser toutes les règles ?')) return;
+  Object.entries(DEFAULT_RULES).forEach(([k,v]) => { const el = document.getElementById('rule-'+k); if(el) el.value = v; });
+}
+
+function getRulesPrompt() {
+  const get = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  let extra = '';
+  try {
+    const saved = localStorage.getItem('bom_coding_rules');
+    if (saved) {
+      const rules = JSON.parse(saved);
+      const known = ['capacitor','tantalum','resistor','other','suffixes','sensors','batteries','sealed','msl'];
+      const extraKeys = Object.keys(rules).filter(k => !known.includes(k));
+      if (extraKeys.length) extra = '\n\n' + extraKeys.map(k => 'RÈGLE SUPPLÉMENTAIRE — ' + k.toUpperCase() + ':\n' + rules[k]).join('\n\n');
+    }
+  } catch(e) {}
+  return 'RÈGLES DE CODIFICATION IPN:\n\nCONDENSATEUR:\n' + get('rule-capacitor') +
+    '\n\nTANTALE:\n' + get('rule-tantalum') +
+    '\n\nRÉSISTANCE:\n' + get('rule-resistor') +
+    '\n\nAUTRES:\n' + get('rule-other') +
+    '\n\nSUFFIXES À SUPPRIMER: ' + get('rule-suffixes') + extra;
+}
+
+function renderExtraRules(rules) {
+  const known = ['capacitor','tantalum','resistor','other','suffixes','sensors','batteries','sealed','msl'];
+  const extraKeys = Object.keys(rules).filter(k => !known.includes(k.toLowerCase()));
+  const container = document.getElementById('extra-rules-container');
+  if (!container) return;
+  if (!extraKeys.length) { container.innerHTML=''; return; }
+  container.innerHTML = '<div class="rules-section" style="margin-top:1.5rem"><div class="rules-section-title"><span>Règles supplémentaires (depuis Google Sheet)</span></div>' +
+    extraKeys.map(k => '<div class="card" style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:6px">'+k+'</div><div style="font-family:var(--mono);font-size:12px;white-space:pre-wrap;color:var(--text2);line-height:1.6">'+rules[k]+'</div></div>').join('') +
+    '</div>';
+}
+
+// ===================== CLIENTS =====================
 async function loadClientsFromURL(silent) {
   const url = document.getElementById('cfg-clients-url').value.trim();
   const statusEl = document.getElementById('clients-load-status');
@@ -694,42 +545,56 @@ async function loadClientsFromURL(silent) {
     const text = await resp.text();
     const lines = text.trim().split(/\r?\n/);
     const sep = lines[0].includes('\t') ? '\t' : ',';
-    const headers = lines[0].split(sep).map(h=>h.replace(/"/g,'').trim());
+    const hdrs = lines[0].split(sep).map(h=>h.replace(/"/g,'').trim());
     clientsList = lines.slice(1).map(line => {
       const cells = line.split(sep).map(c=>c.replace(/"/g,'').trim());
       const obj = {};
-      headers.forEach((h,i) => obj[h]=cells[i]||'');
-      return {
-        nom: obj['Nom']||obj['nom']||obj['name']||'',
-        mpn_strict: (obj['MPN_strict']||obj['mpn_strict']||'').toLowerCase()==='oui',
-        notes: obj['Notes']||obj['notes']||''
-      };
+      hdrs.forEach((h,i) => obj[h]=cells[i]||'');
+      return { nom:obj['Nom']||obj['nom']||obj['name']||'', mpn_strict:(obj['MPN_strict']||obj['mpn_strict']||'').toLowerCase()==='oui', notes:obj['Notes']||obj['notes']||'' };
     }).filter(c=>c.nom);
     localStorage.setItem('bom_clients_url', url);
     localStorage.setItem('bom_clients_list', JSON.stringify(clientsList));
     populateClientSelect();
-    if (!silent) statusEl.innerHTML=`<span style="color:var(--green)"><i class="ti ti-check"></i> ${clientsList.length} client(s) chargé(s)</span>`;
+    if (!silent) statusEl.innerHTML='<span style="color:var(--green)"><i class="ti ti-check"></i> '+clientsList.length+' client(s)</span>';
   } catch(e) {
-    if (!silent) statusEl.innerHTML=`<span style="color:var(--red)">Erreur: ${e.message}</span>`;
+    if (!silent) statusEl.innerHTML='<span style="color:var(--red)">Erreur: '+e.message+'</span>';
   }
 }
 
-function loadClientsList() {
+async function loadRulesFromURL(silent) {
+  const url = document.getElementById('cfg-rules-url').value.trim();
+  const statusEl = document.getElementById('rules-url-status');
+  if (!url) return;
   try {
-    const saved = localStorage.getItem('bom_clients_list');
-    if (saved) {
-      clientsList = JSON.parse(saved);
-      populateClientSelect();
-    }
-  } catch(e) {}
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const text = await resp.text();
+    const lines = text.trim().split(/\r?\n/);
+    const sep = lines[0].includes('\t') ? '\t' : ',';
+    const hdrs = lines[0].split(sep).map(h=>h.replace(/"/g,'').trim());
+    const rulesObj = {};
+    lines.slice(1).forEach(line => {
+      const cells = line.split(sep).map(c=>c.replace(/"/g,'').trim());
+      const obj = {};
+      hdrs.forEach((h,i) => obj[h]=cells[i]||'');
+      const k = (obj['Clé']||obj['cle']||obj['key']||obj['Cle']||'').trim();
+      const v = (obj['Valeur']||obj['valeur']||obj['value']||'').trim().replace(/\\n/g,'\n');
+      if (k) rulesObj[k] = v;
+    });
+    if (!Object.keys(rulesObj).length) return;
+    localStorage.setItem('bom_coding_rules', JSON.stringify(rulesObj));
+    localStorage.setItem('bom_rules_url', url);
+    loadRules();
+    if (!silent) statusEl.innerHTML='<span style="color:var(--green)"><i class="ti ti-check"></i> '+Object.keys(rulesObj).length+' règles</span>';
+  } catch(e) {
+    if (!silent) statusEl.innerHTML='<span style="color:var(--red)">Erreur: '+e.message+'</span>';
+  }
 }
 
 function populateClientSelect() {
   const sel = document.getElementById('client-select-analysis');
   sel.innerHTML = '<option value="__standard__">Standard (IPN autorisé)</option>';
-  const sorted = [...clientsList]
-    .filter(c => c.nom.toLowerCase() !== 'standard')
-    .sort((a,b) => a.nom.localeCompare(b.nom, 'fr', {sensitivity:'base'}));
+  const sorted = [...clientsList].filter(c=>c.nom.toLowerCase()!=='standard').sort((a,b)=>a.nom.localeCompare(b.nom,'fr',{sensitivity:'base'}));
   sorted.forEach(c => {
     const opt = document.createElement('option');
     opt.value = c.nom;
@@ -737,3 +602,423 @@ function populateClientSelect() {
     sel.appendChild(opt);
   });
 }
+
+function onClientSelect() {
+  const val = document.getElementById('client-select-analysis').value;
+  activeClientAnalysis = val==='__standard__' ? {nom:'Standard',mpn_strict:false,notes:''} : (clientsList.find(c=>c.nom===val)||{nom:'Standard',mpn_strict:false,notes:''});
+  if (rawData.length > 0) { if (!loadMappingForClient()) document.getElementById('mapping-loaded-badge').style.display='none'; renderMappingTable(); }
+}
+
+// ===================== NEW CLIENT =====================
+function showNewClientForm() {
+  document.getElementById('new-client-overlay').style.display='flex';
+  document.getElementById('new-client-nom').focus();
+  document.getElementById('new-client-status').innerHTML='';
+  document.getElementById('new-client-nom').value='';
+  document.getElementById('new-client-notes').value='';
+  document.querySelector('input[name="new-client-mpn"][value="non"]').checked=true;
+}
+function hideNewClientForm() { document.getElementById('new-client-overlay').style.display='none'; }
+
+async function addNewClient() {
+  const nom = document.getElementById('new-client-nom').value.trim();
+  const mpn_strict = document.querySelector('input[name="new-client-mpn"]:checked')?.value||'non';
+  const notes = document.getElementById('new-client-notes').value.trim();
+  const statusEl = document.getElementById('new-client-status');
+  const btn = document.getElementById('btn-add-client');
+  if (!nom) { statusEl.innerHTML='<span style="color:var(--red)">Nom obligatoire</span>'; return; }
+  btn.disabled=true; btn.textContent='Envoi…';
+  try {
+    const params = new URLSearchParams({ action:'addClient', nom, mpn_strict, notes });
+    const resp = await fetch(CLIENTS_URL_WRITE+'?'+params.toString());
+    const result = await resp.json();
+    if (result.success) {
+      clientsList.push({nom,mpn_strict:mpn_strict==='oui',notes});
+      populateClientSelect();
+      document.getElementById('client-select-analysis').value=nom;
+      onClientSelect();
+      statusEl.innerHTML='<span style="color:var(--green)">✓ '+result.message+'</span>';
+      setTimeout(()=>hideNewClientForm(),1200);
+    } else if (result.existing) {
+      statusEl.innerHTML='<span style="color:var(--amber)">⚠ Client déjà existant</span>';
+    } else {
+      statusEl.innerHTML='<span style="color:var(--red)">Erreur: '+result.error+'</span>';
+    }
+  } catch(e) { statusEl.innerHTML='<span style="color:var(--red)">Erreur: '+e.message+'</span>'; }
+  btn.disabled=false; btn.innerHTML='<i class="ti ti-plus"></i> Ajouter';
+}
+
+// ===================== UPLOAD =====================
+function initUploadZone() {
+  const zone = document.getElementById('upload-zone');
+  if (!zone) return;
+  zone.addEventListener('dragover', e=>{e.preventDefault();zone.classList.add('dragover');});
+  zone.addEventListener('dragleave', ()=>zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e=>{
+    e.preventDefault();zone.classList.remove('dragover');
+    const file=e.dataTransfer.files[0];
+    if(file){const inp=document.getElementById('client-file-input');const dt=new DataTransfer();dt.items.add(file);inp.files=dt.files;handleUpload(inp);}
+  });
+  zone.addEventListener('click', ()=>document.getElementById('client-file-input').click());
+}
+
+async function handleUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const zone = document.getElementById('upload-zone');
+  const lbl = document.getElementById('upload-label');
+  workbook = null;
+  if (ext==='xlsx'||ext==='xls') {
+    if (typeof XLSX==='undefined') { lbl.innerHTML='<span style="color:var(--red)">XLSX non chargé</span>'; return; }
+    const buf = await file.arrayBuffer();
+    workbook = XLSX.read(buf, {type:'array'});
+    const sel = document.getElementById('sheet-select');
+    sel.innerHTML = workbook.SheetNames.map((n,i)=>'<option value="'+i+'">'+n+'</option>').join('');
+    activeSheetIdx = 0;
+    parseSheet();
+  } else {
+    const text = await file.text();
+    parseRawText(text);
+  }
+  zone.className='upload-zone loaded';
+  lbl.innerHTML='<i class="ti ti-check" aria-hidden="true"></i> '+file.name+' chargé';
+  document.getElementById('mapping-card').style.display='block';
+  document.getElementById('step3-bar').style.display='block';
+  await detectColumns();
+}
+
+function getStartRow() { return Math.max(1,parseInt(document.getElementById('start-row')?.value||'1')); }
+
+function parseSheet() {
+  if (!workbook) return;
+  const ws = workbook.Sheets[workbook.SheetNames[activeSheetIdx]];
+  const data = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+  const startRow = getStartRow();
+  document.getElementById('total-rows-hint').textContent = data.length;
+  if (data.length<startRow) { rawData=[]; headers=[]; return; }
+  headers = data[startRow-1].map(h=>String(h||'').trim());
+  rawData = data.slice(startRow).map(row=>{const obj={};headers.forEach((h,i)=>obj[h]=String(row[i]||'').trim());return obj;}).filter(r=>Object.values(r).some(v=>v));
+}
+
+function parseRawText(text) {
+  const startRow = getStartRow();
+  const lines = text.trim().split(/\r?\n/);
+  document.getElementById('total-rows-hint').textContent = lines.length;
+  const sep = lines[startRow-1]?.includes('\t')?'\t':',';
+  const headerLine = lines[startRow-1]||lines[0];
+  headers = headerLine.split(sep).map(h=>h.replace(/"/g,'').trim());
+  rawData = lines.slice(startRow).map(line=>{const cells=line.split(sep).map(c=>c.replace(/"/g,'').trim());const obj={};headers.forEach((h,i)=>obj[h]=cells[i]||'');return obj;}).filter(r=>Object.values(r).some(v=>v));
+  const inp=document.getElementById('start-row'); if(inp) inp._rawText=text;
+}
+
+function onSheetChange() { activeSheetIdx=parseInt(document.getElementById('sheet-select').value); parseSheet(); detectColumns(); }
+function onStartRowChange() { if(workbook){parseSheet();detectColumns();}else if(rawData.length){const t=document.getElementById('start-row')._rawText||'';if(t)parseRawText(t);} }
+
+// ===================== COLUMN DETECTION =====================
+function getVal(row, field) {
+  const col = columnMapping[field];
+  if (!col) return '';
+  if (Array.isArray(col)) return col.map(c=>String(row[c]||'').trim()).filter(Boolean).join(' | ');
+  return String(row[col]||'').trim();
+}
+
+async function detectColumns() {
+  const loadEl = document.getElementById('mapping-loading');
+  loadEl.style.display='flex';
+  document.getElementById('mapping-tbody').innerHTML='';
+  if (!rawData.length) { loadEl.style.display='none'; return; }
+  const key = document.getElementById('cfg-api-key').value.trim()||apiKey;
+  if (!key) { columnMapping=autoDetectColumns(headers); }
+  else {
+    const sample = rawData.slice(0,3).map(r=>{const o={};headers.forEach(h=>o[h]=r[h]||'');return o;});
+    const prompt = 'Colonnes disponibles: '+JSON.stringify(headers)+'\nExemples: '+JSON.stringify(sample,null,2)+'\nMappe chaque champ. RÉPONSE JSON uniquement:\n{"mapping":{"designator":"col","mpn":"col","description":"col","notes":"col","manufacturer":"col","qty":"col","mfr_free":"col","ipn":"col","dist_code":"col"},"confidence":"high|medium|low"}';
+    try {
+      const resp = await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:400,messages:[{role:"user",content:prompt}]})});
+      const data = await resp.json();
+      const text = data.content.map(c=>c.text||'').join('');
+      const result = JSON.parse(text.replace(/```json|```/g,'').trim());
+      columnMapping = result.mapping||autoDetectColumns(headers);
+      const conf = result.confidence||'medium';
+      const badge = document.getElementById('mapping-confidence-badge');
+      badge.className='badge '+(conf==='high'?'b-ok':conf==='medium'?'b-info':'b-warn');
+      badge.textContent=conf==='high'?'Détection fiable':conf==='medium'?'Probable':'Vérifier';
+    } catch(e) { columnMapping=autoDetectColumns(headers); }
+  }
+  if (!loadMappingForClient()) document.getElementById('mapping-loaded-badge').style.display='none';
+  renderMappingTable();
+  loadEl.style.display='none';
+}
+
+function autoDetectColumns(hdrs) {
+  const patterns = {
+    designator:['designator','reference','ref','repere','position','refdes'],
+    mpn:['mpn','manufacturer part','part number','ref fabricant','mfr part'],
+    description:['description','desc','value','valeur','component'],
+    notes:['notes','note','comment','specs'],
+    manufacturer:['manufacturer','fabricant','mfr','brand'],
+    qty:['qty','quantity','quantité','qté','nb'],
+    mfr_free:['manufacturer free','mfr free','equiv','equivalent','free','autorisé'],
+    ipn:['ipn','internal part','code interne','approved internal'],
+    dist_code:['digikey','mouser','farnell','distributor','order code','supplier part']
+  };
+  const map={};
+  Object.entries(patterns).forEach(([field,keywords])=>{
+    const found=hdrs.find(h=>keywords.some(k=>h.toLowerCase().includes(k)));
+    map[field]=found||null;
+  });
+  return map;
+}
+
+function remapColumns() { detectColumns(); }
+
+function renderMappingTable() {
+  const tbody=document.getElementById('mapping-tbody');
+  tbody.innerHTML='';
+  REQUIRED_FIELDS.forEach(field=>{
+    const detected=columnMapping[field.key];
+    const isArray=Array.isArray(detected);
+    const cols=isArray?detected:(detected?[detected]:[]);
+    const previewVal=cols.length&&rawData[0]?cols.map(c=>String(rawData[0][c]||'')).filter(Boolean).join(' | ').slice(0,50):'—';
+    const statusIcon=cols.length?'✅':(field.required?'❌':'⚪');
+    const selectors=cols.length?cols.map((c,i)=>'<div style="display:flex;gap:4px;align-items:center;margin-bottom:4px"><select onchange="updateMappingCol(\''+field.key+'\','+i+',this.value)" style="font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);font-family:var(--sans);flex:1"><option value="">— Supprimer —</option>'+headers.map(h=>'<option value="'+h+'"'+(h===c?' selected':'')+'>'+h+'</option>').join('')+'</select>'+(i>0?'<button onclick="removeMappingCol(\''+field.key+'\','+i+')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:0 2px">×</button>':'')+'</div>').join(''):'<select onchange="updateMappingCol(\''+field.key+'\',0,this.value)" style="font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);font-family:var(--sans);width:100%"><option value="">— Non mappé —</option>'+headers.map(h=>'<option value="'+h+'">'+h+'</option>').join('')+'</select>';
+    const tr=document.createElement('tr');
+    tr.innerHTML='<td style="text-align:center">'+statusIcon+'</td><td style="font-weight:500;font-size:12px">'+field.label+(field.required?'<span style="color:var(--red)">*</span>':'')+'</td><td style="font-family:var(--mono);font-size:10px;color:var(--blue)">'+(isArray?cols.join(' + '):(detected||'—'))+'</td><td style="min-width:200px">'+selectors+'<button onclick="addMappingCol(\''+field.key+'\')" style="font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;padding:2px 0;display:flex;align-items:center;gap:3px;font-family:var(--sans)"><i class="ti ti-plus" aria-hidden="true"></i> Ajouter colonne</button></td><td style="font-size:11px;color:var(--text3);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+previewVal+'</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+function updateMappingCol(field,idx,value){let cols=Array.isArray(columnMapping[field])?[...columnMapping[field]]:(columnMapping[field]?[columnMapping[field]]:[]);if(!value){cols.splice(idx,1);}else{cols[idx]=value;}columnMapping[field]=cols.length===0?null:cols.length===1?cols[0]:cols;renderMappingTable();}
+function addMappingCol(field){let cols=Array.isArray(columnMapping[field])?[...columnMapping[field]]:(columnMapping[field]?[columnMapping[field]]:[]);cols.push(headers[0]||'');columnMapping[field]=cols;renderMappingTable();}
+function removeMappingCol(field,idx){let cols=Array.isArray(columnMapping[field])?[...columnMapping[field]]:(columnMapping[field]?[columnMapping[field]]:[]);cols.splice(idx,1);columnMapping[field]=cols.length===0?null:cols.length===1?cols[0]:cols;renderMappingTable();}
+function updateMapping(field,value){columnMapping[field]=value||null;renderMappingTable();}
+
+// ===================== MAPPING PERSISTENCE =====================
+function getMappingStorageKey(){return 'bom_mapping_'+(activeClientAnalysis.nom||'Standard').replace(/[^a-zA-Z0-9]/g,'_');}
+function saveMappingForClient(){try{localStorage.setItem(getMappingStorageKey(),JSON.stringify(columnMapping));const s=document.getElementById('mapping-save-status');s.style.display='inline';setTimeout(()=>s.style.display='none',2000);}catch(e){alert('Erreur: '+e.message);}}
+function loadMappingForClient(){try{const saved=localStorage.getItem(getMappingStorageKey());if(saved){const m=JSON.parse(saved);const cols=Object.values(m).filter(Boolean).flat();const matches=cols.filter(c=>headers.includes(c)).length;if(matches/Math.max(cols.length,1)>=0.5){columnMapping=m;document.getElementById('mapping-loaded-badge').style.display='inline-flex';return true;}}document.getElementById('mapping-loaded-badge').style.display='none';}catch(e){}return false;}
+
+// ===================== ANALYSIS =====================
+async function pushRuleToSheet(key,value){try{const r=await fetch(RULES_URL_WRITE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value})});return await r.json();}catch(e){return{success:false,error:e.message};}}
+function renderRuleSuggestion(res,rowIdx){if(!res.rule_key||!res.rule_value)return'';const div=document.createElement('div');div.className='rule-suggestion';div.id='rule-sug-cli-'+rowIdx;div.dataset.key=res.rule_key;div.dataset.val=res.rule_value;div.innerHTML='<span style="font-size:14px">&#x1F4A1;</span><span class="rule-suggestion-text"><strong>'+res.rule_key+'</strong> — '+res.rule_value.slice(0,100)+(res.rule_value.length>100?'…':'')+'</span><div class="rule-suggestion-actions"><button class="btn-rule-add" onclick="acceptRuleCliById(this)">Ajouter au sheet</button><button class="btn-rule-skip" onclick="skipRuleCli('+rowIdx+')">Ignorer</button></div>';return div.outerHTML;}
+async function acceptRuleCliById(btn){const sug=btn.closest('.rule-suggestion');if(!sug)return;btn.disabled=true;btn.textContent='Envoi…';const r=await pushRuleToSheet(sug.dataset.key,sug.dataset.val);sug.innerHTML=r.success?'<span class="rule-added-badge">✓ Règle ajoutée</span>':r.existing?'<span class="rule-added-badge" style="background:var(--amber-bg);color:var(--amber)">⚠ Clé déjà existante</span>':'<span style="color:var(--red);font-size:11px">Erreur: '+r.error+'</span>';}
+function skipRuleCli(idx){const s=document.getElementById('rule-sug-cli-'+idx);if(s)s.style.display='none';}
+
+async function analyseClientBOM() {
+  if (!rawData.length) { alert("Chargez une BOM d'abord."); return; }
+  const key = document.getElementById('cfg-api-key').value.trim()||apiKey;
+  if (!key) { alert("Clé API Anthropic requise dans Règles & Config."); return; }
+  document.getElementById('analysis-loading').style.display='flex';
+  document.getElementById('results-section').style.display='none';
+  document.getElementById('btn-export').style.display='none';
+  const defaultMfrFree = activeClientAnalysis.mpn_strict?'No':'Yes';
+  const px = document.getElementById('cfg-proxy-url').value.trim()||proxyUrl;
+  analysisResults=[];
+  const batchSize=8;
+
+  for (let i=0;i<rawData.length;i+=batchSize) {
+    document.getElementById('analysis-msg').textContent='Analyse IA: '+Math.min(i+batchSize,rawData.length)+'/'+rawData.length+'…';
+    const batch=rawData.slice(i,i+batchSize).map((row,j)=>({idx:i+j,designator:getVal(row,'designator'),mpn:getVal(row,'mpn'),description:getVal(row,'description'),notes:getVal(row,'notes'),manufacturer:getVal(row,'manufacturer'),qty:getVal(row,'qty'),mfr_free:getVal(row,'mfr_free')||defaultMfrFree,ipn_existing:getVal(row,'ipn'),dist_code:getVal(row,'dist_code')}));
+
+    // Pre-resolve distributor codes
+    for (const item of batch) {
+      if (!item.mpn && item.dist_code && px) {
+        try { const r=await fetch(px+'?code='+encodeURIComponent(item.dist_code));const d=await r.json();if(d&&!d.error&&d.mpn){item.mpn=d.mpn;item.description=item.description||d.description||'';item._enriched_source=d.source;} } catch(e) {}
+      }
+    }
+
+    const sys = 'Tu es un ingénieur hardware expert.\n\n'+getRulesPrompt()+'\n\nTRAITEMENT:\n1. Si ipn_existing renseigné: CONSERVER, vérifier cohérence\n2. Si mpn absent: générer IPN depuis description/notes\n3. MPN peut contenir plusieurs refs séparées par ";": utiliser la première\n4. Vérifier cohérence MPN/description\n5. Détecter: sensor, battery, not-sealed, msl4+\n\nRÉPONSE JSON tableau uniquement:\n[{"idx":0,"ipn":"...","mfr_free":"Yes|No","status":"ok|warn|error","confidence":"high|medium|low","warnings":["sensor|battery|not-sealed|msl4+"],"note":"remarque","rule_key":"clé si convention spéciale","rule_value":"règle si rule_key"}]';
+
+    try {
+      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1500,system:sys,messages:[{role:"user",content:'Analyse:\n'+JSON.stringify(batch,null,2)}]})});
+      const d=await r.json();
+      const text=d.content.map(c=>c.text||'').join('');
+      const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
+      parsed.forEach(res=>{const orig=batch.find(b=>b.idx===res.idx);if(orig?._enriched_source)res.note=(res.note?res.note+' | ':'')+'MPN résolu via '+orig._enriched_source;});
+
+      // Enrich low confidence
+      const toEnrich=parsed.filter(r=>r.confidence==='low');
+      for (const res of toEnrich) {
+        const orig=batch.find(b=>b.idx===res.idx);
+        if(!orig||!orig.mpn||!px) continue;
+        try {
+          const er=await fetch(px+'?mpn='+encodeURIComponent(orig.mpn)+'&source=mouser');
+          const ed=await er.json();
+          if(ed&&!ed.error){
+            const r2=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:300,system:sys,messages:[{role:"user",content:'MPN: '+orig.mpn+'\nDonnées '+ed.source+': '+ed.description+'\nFabricant: '+ed.manufacturer+'\nSpecs: '+ed.specs+'\nGénère IPN. JSON: {"ipn":"...","confidence":"...","note":"..."}'}]})});
+            const d2=await r2.json();const e2=JSON.parse(d2.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim());
+            res.ipn=e2.ipn||res.ipn;res.confidence=e2.confidence||'medium';res.note=(res.note?res.note+' | ':'')+'Enrichi via '+ed.source;
+          }
+        } catch(e) {}
+      }
+      analysisResults=analysisResults.concat(parsed);
+    } catch(e) { analysisResults=analysisResults.concat(batch.map((_,j)=>({idx:i+j,ipn:'—',mfr_free:defaultMfrFree,status:'error',confidence:'low',warnings:[],note:'Erreur analyse'}))); }
+  }
+
+  renderResults();
+  document.getElementById('analysis-loading').style.display='none';
+  document.getElementById('results-section').style.display='block';
+  document.getElementById('btn-export').style.display='inline-flex';
+}
+
+// ===================== RENDER RESULTS =====================
+function renderResults() {
+  resultMeta=[];
+  const thead=document.getElementById('result-thead').querySelector('tr');
+  const tbody=document.getElementById('result-tbody');
+  thead.innerHTML=''; tbody.innerHTML='';
+  ['Qty','Désignateur','MPN','Description / Notes','IPN (éditable)','Mfr Free','Alertes'].forEach(h=>{const th=document.createElement('th');th.textContent=h;thead.appendChild(th);});
+  let cntOk=0,cntWarn=0,cntErr=0;
+  const warnSummary={sensor:[],battery:[],'not-sealed':[],'msl4+':[]};
+  const icons={sensor:'ti-radar',battery:'ti-battery','not-sealed':'ti-droplet-off','msl4+':'ti-moisture'};
+  const labels={sensor:'Capteur',battery:'Batterie','not-sealed':'Non étanche','msl4+':'MSL≥4'};
+  const wlabels={sensor:'Capteurs',battery:'Piles / batteries','not-sealed':'Non étanches','msl4+':'MSL ≥ 4'};
+
+  analysisResults.forEach((res,i)=>{
+    const row=rawData[res.idx]??rawData[i]??{};
+    const qty=getVal(row,'qty'); const desig=getVal(row,'designator'); const mpn=getVal(row,'mpn');
+    const desc=getVal(row,'description'); const notes=getVal(row,'notes');
+    const ipn=res.ipn||'—'; const mfrFree=res.mfr_free||(activeClientAnalysis.mpn_strict?'No':'Yes');
+    const status=res.status||'ok'; const warns=res.warnings||[];
+    if(status==='ok'&&!warns.length)cntOk++; else if(status==='error')cntErr++; else cntWarn++;
+    warns.forEach(w=>{if(warnSummary[w])warnSummary[w].push(desig||mpn);});
+    const warnBadges=warns.map(w=>'<span class="badge b-warn" style="margin-bottom:2px"><i class="ti '+icons[w]+'" aria-hidden="true"></i> '+labels[w]+'</span>').join(' ');
+    const statusBadge=status==='ok'&&!warns.length?'<span class="badge b-ok"><i class="ti ti-check" aria-hidden="true"></i></span>':status==='error'?'<span class="badge b-err"><i class="ti ti-x" aria-hidden="true"></i></span>':'';
+    const mfrClass=mfrFree.toLowerCase()==='yes'?'yes':'no';
+    const rowClass=status==='error'?'row-err':warns.length?'row-warn':'';
+    const confBadge='<span class="'+(res.confidence==='high'?'conf-high':res.confidence==='medium'?'conf-med':'conf-low')+'">'+(res.confidence==='high'?'🟢':res.confidence==='medium'?'🟡':'🔴')+' '+(res.confidence||'?')+'</span>';
+    const tr=document.createElement('tr'); tr.className=rowClass;
+    tr.innerHTML='<td style="font-size:11px;color:var(--text3)">'+qty+'</td><td style="font-size:11px;font-weight:500">'+desig+'</td><td style="font-size:11px;font-family:var(--mono)">'+mpn+'</td><td style="font-size:11px">'+desc+(notes&&notes!==desc?'<br><span style="color:var(--text3)">'+notes.slice(0,60)+'</span>':'')+(res.note?'<br><span style="color:var(--amber);font-size:10px">'+res.note+'</span>':'')+'</td><td><input class="editable-ipn" value="'+ipn+'" data-idx="'+i+'" />'+confBadge+renderRuleSuggestion(res,i)+'</td><td><select class="mfr-free-select '+mfrClass+'" data-idx="'+i+'" onchange="updateMfrFree(this)"><option value="Yes"'+(mfrFree.toLowerCase()==='yes'?' selected':'')+'>Yes — IPN autorisé</option><option value="No"'+(mfrFree.toLowerCase()==='no'?' selected':'')+'>No — MPN strict</option></select></td><td style="vertical-align:top">'+statusBadge+warnBadges+'</td>';
+    tbody.appendChild(tr);
+    resultMeta.push({status,warnings:warns,mpnWarn:false});
+  });
+
+  document.getElementById('result-counters').innerHTML='<div class="counter"><div class="counter-val">'+rawData.length+'</div><div class="counter-lbl">Composants</div></div><div class="counter"><div class="counter-val" style="color:var(--green)">'+cntOk+'</div><div class="counter-lbl">OK</div></div><div class="counter"><div class="counter-val" style="color:var(--amber)">'+cntWarn+'</div><div class="counter-lbl">Warnings</div></div><div class="counter"><div class="counter-val" style="color:var(--red)">'+cntErr+'</div><div class="counter-lbl">Erreurs</div></div>';
+
+  const warnItems=Object.entries(warnSummary).filter(([,v])=>v.length);
+  document.getElementById('result-warnings').innerHTML=warnItems.length?'<div class="warn-box"><div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Composants sensibles détectés</div>'+warnItems.map(([k,v])=>'<div class="warn-item"><i class="ti '+icons[k]+'" aria-hidden="true"></i><div><strong>'+wlabels[k]+'</strong><br><span style="font-size:12px;color:var(--text2)">'+v.join(', ')+'</span></div></div>').join('')+'</div>':'';
+
+  const counts={all:rawData.length,error:cntErr,warn:cntWarn,sensor:warnSummary.sensor.length,battery:warnSummary.battery.length,'not-sealed':warnSummary['not-sealed'].length,'msl4+':warnSummary['msl4+'].length};
+  const fcMap={all:'rfc-all',error:'rfc-err',warn:'rfc-warn',sensor:'rfc-sensor',battery:'rfc-battery','not-sealed':'rfc-sealed','msl4+':'rfc-msl'};
+  Object.entries(counts).forEach(([k,v])=>{const el=document.getElementById(fcMap[k]);if(el)el.textContent=v;});
+  ['error','warn','sensor','battery','not-sealed','msl4+'].forEach(k=>{const btn=document.querySelector('.filter-btn[onclick*="\''+k+'\'"]');if(btn)btn.style.display=counts[k]>0?'':'none';});
+}
+
+function updateMfrFree(sel){sel.className='mfr-free-select '+(sel.value==='Yes'?'yes':'no');}
+
+function setResultFilter(filter,btn) {
+  currentResultFilter=filter;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#result-tbody tr').forEach((tr,i)=>{
+    const meta=resultMeta[i];if(!meta){tr.style.display='';return;}
+    let show=false;
+    if(filter==='all')show=true;
+    else if(filter==='error')show=meta.status==='error';
+    else if(filter==='warn')show=meta.status==='warn'||meta.warnings?.length>0;
+    else show=meta.warnings?.includes(filter);
+    tr.style.display=show?'':'none';
+  });
+}
+
+// ===================== EXPORT XLS =====================
+function exportClientXLS() {
+  if (!rawData.length||!analysisResults.length) { alert("Rien à exporter."); return; }
+  if (typeof XLSX==='undefined') { alert("XLSX non chargé."); return; }
+  document.querySelectorAll('.editable-ipn').forEach((inp,i)=>{if(rawData[i]){const key=Object.keys(rawData[i]).find(k=>k.toLowerCase().includes('ipn')||k.toLowerCase().includes('internal'))||'IPN';rawData[i][key]=inp.value;}});
+  document.querySelectorAll('.mfr-free-select').forEach((sel,i)=>{if(rawData[i])rawData[i]['Manufacturer free']=sel.value;});
+
+  const ipnColExisting=columnMapping['ipn']||null;
+  const mfrFreeColExisting=columnMapping['mfr_free']||null;
+  const outHeaders=[...headers];
+  if(!outHeaders.includes('Approved internal part number'))outHeaders.push('Approved internal part number');
+  if(!outHeaders.includes('Manufacturer free'))outHeaders.push('Manufacturer free');
+
+  const outRows=rawData.map((row,i)=>{
+    const res=analysisResults[i];
+    const newRow={...row};
+    const ipnVal=document.querySelectorAll('.editable-ipn')[i]?.value||(res?.ipn||'');
+    if(ipnColExisting)newRow[ipnColExisting]=ipnVal; else newRow['Approved internal part number']=ipnVal;
+    const mfrVal=document.querySelectorAll('.mfr-free-select')[i]?.value||(res?.mfr_free||(activeClientAnalysis.mpn_strict?'No':'Yes'));
+    if(mfrFreeColExisting)newRow[mfrFreeColExisting]=mfrVal; else newRow['Manufacturer free']=mfrVal;
+    return newRow;
+  });
+
+  const wb=XLSX.utils.book_new();
+  const wsData=[outHeaders,...outRows.map(r=>outHeaders.map(h=>r[h]||''))];
+  const ws=XLSX.utils.aoa_to_sheet(wsData);
+  XLSX.utils.book_append_sheet(wb,ws,'BOM Codifiée');
+
+  // Warnings sheet
+  if(resultMeta.some(m=>m.warnings?.length||m.status==='error')){
+    const warnData=[['Type','Désignateurs']];
+    const wt={sensor:'Capteurs',battery:'Piles/Batteries','not-sealed':'Non étanches','msl4+':'MSL≥4'};
+    const wc={sensor:[],battery:[],'not-sealed':[],'msl4+':[]};
+    resultMeta.forEach((m,i)=>{const r=rawData[i]||{};const ref=getVal(r,'designator')||getVal(r,'mpn')||'';m.warnings?.forEach(w=>{if(wc[w])wc[w].push(ref);});});
+    Object.entries(wc).forEach(([k,v])=>{if(v.length)warnData.push([wt[k]||k,v.join(', ')]);});
+    warnData.push([]);
+    warnData.push(['Client',activeClientAnalysis.nom]);
+    warnData.push(['Date',new Date().toLocaleString('fr-FR')]);
+    const wsWarn=XLSX.utils.aoa_to_sheet(warnData);
+    XLSX.utils.book_append_sheet(wb,wsWarn,'Warnings');
+  }
+
+  XLSX.writeFile(wb,'BOM_client_codifiee_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ===================== RESET =====================
+function resetAll() {
+  rawData=[];headers=[];workbook=null;analysisResults=[];resultMeta=[];
+  document.getElementById('upload-zone').className='upload-zone';
+  document.getElementById('upload-label').innerHTML='Glisser-déposer un fichier XLS, XLSX, CSV ou TSV<br><small style="color:var(--text3)">ou cliquer pour parcourir</small>';
+  document.getElementById('client-file-input').value='';
+  document.getElementById('mapping-card').style.display='none';
+  document.getElementById('step3-bar').style.display='none';
+  document.getElementById('results-section').style.display='none';
+  document.getElementById('btn-export').style.display='none';
+}
+
+// ===================== CHAT =====================
+function toggleClientChat() {
+  chatOpenC=!chatOpenC;
+  document.getElementById('chat-panel-c').classList.toggle('open',chatOpenC);
+  document.getElementById('chat-fab-icon-c').className=chatOpenC?'ti ti-x':'ti ti-message-circle';
+  if(chatOpenC){document.getElementById('chat-ctx-c').textContent=rawData.length?rawData.length+' composants':'Aucune BOM';document.getElementById('chat-input-c').focus();}
+}
+
+function addClientMsg(role,text) {
+  const div=document.createElement('div'); div.className='chat-msg '+role;
+  const now=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  const bubble=text.replace(/\n/g,'<br>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  div.innerHTML='<div class="chat-bubble">'+bubble+'</div><div class="chat-msg-time">'+now+'</div>';
+  const msgs=document.getElementById('chat-msgs-c');
+  msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight;
+}
+
+async function sendClientChat() {
+  const input=document.getElementById('chat-input-c');
+  const text=input.value.trim();
+  if(!text)return;
+  const key=document.getElementById('cfg-api-key').value.trim()||apiKey;
+  if(!key){addClientMsg('assistant','⚠️ Clé API non configurée dans Règles & Config.');return;}
+  input.value=''; input.style.height='auto';
+  document.getElementById('chat-send-c').disabled=true;
+  addClientMsg('user',text);
+  chatHistoryC.push({role:'user',content:text});
+  document.getElementById('chat-typing-c').classList.add('visible');
+  document.getElementById('chat-msgs-c').scrollTop=99999;
+  const ctx=rawData.length?rawData.slice(0,20).map(r=>(getVal(r,'designator')+'|'+getVal(r,'mpn')+'|'+getVal(r,'description')).slice(0,80)).join('\n'):'Aucune BOM';
+  const sys="Tu es un assistant expert en electronique et BOM client.\n\n"+getRulesPrompt()+"\n\nCONTEXTE BOM:\n"+ctx+"\n\nClient: "+activeClientAnalysis.nom+" (MPN strict: "+(activeClientAnalysis.mpn_strict?'oui':'non')+")\n\nReponds en francais, de maniere concise et technique.";
+  try {
+    const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1024,system:sys,tools:[{type:"web_search_20250305",name:"web_search"}],messages:chatHistoryC})});
+    const data=await resp.json();
+    document.getElementById('chat-typing-c').classList.remove('visible');
+    if(data.error){addClientMsg('assistant','⚠️ Erreur: '+data.error.message);chatHistoryC.pop();}
+    else{const fullText=data.content.map(b=>b.type==='text'?b.text:'').join('');addClientMsg('assistant',fullText||'(Pas de réponse)');chatHistoryC.push({role:'assistant',content:data.content});}
+  } catch(e){document.getElementById('chat-typing-c').classList.remove('visible');addClientMsg('assistant','⚠️ Erreur: '+e.message);chatHistoryC.pop();}
+  document.getElementById('chat-send-c').disabled=false;
+  input.focus();
+}
+</script>
+</body>
+</html>
