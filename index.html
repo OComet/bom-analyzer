@@ -1901,6 +1901,23 @@ function showGSheetBar(filename) {
   if (parsed && infoEl) {
     infoEl.textContent = parsed.client + ' — ' + parsed.carte + ' — ' + parsed.date;
   }
+  // Auto-select client from filename
+  if (parsed && parsed.client) {
+    const sel = document.getElementById('client-select');
+    if (sel) {
+      // Find matching client (case-insensitive)
+      const opt = Array.from(sel.options).find(o =>
+        o.value.toLowerCase() === parsed.client.toLowerCase() ||
+        parsed.client.toLowerCase().includes(o.value.toLowerCase()) ||
+        o.value.toLowerCase().includes(parsed.client.toLowerCase())
+      );
+      if (opt) {
+        sel.value = opt.value;
+        onClientChange();
+        if (infoEl) infoEl.textContent += ' — client sélectionné automatiquement ✓';
+      }
+    }
+  }
 }
 
 async function writeToGSheet() {
@@ -1945,10 +1962,22 @@ async function writeToGSheet() {
   const rows = bomData.map(r => headers.map(h => String(r[h]||'')));
 
   try {
-    const resp = await fetch(writerUrl, {
+    // Route through proxy to avoid CORS issue with direct POST to Apps Script
+    const proxyWriteUrl = proxyUrl
+      ? proxyUrl + '?action=write'
+      : writerUrl;
+
+    const resp = await fetch(proxyWriteUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ so, ref, client: parsed?.client||'', carte: parsed?.carte||'', headers, rows })
+      body: JSON.stringify({
+        action: 'write',
+        writerUrl: writerUrl,
+        so, ref,
+        client: parsed?.client||'',
+        carte: parsed?.carte||'',
+        headers, rows
+      })
     });
     const result = await resp.json();
     if (result.success) {
