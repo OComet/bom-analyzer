@@ -1979,15 +1979,21 @@ async function writeToGSheet() {
 
   try {
     // Apps Script blocks CORS preflight on POST
-    // Solution: encode data as base64 in a GET parameter
-    const payload = JSON.stringify({
+    // Solution: send metadata via GET, data chunked to avoid URL limits
+    // For small BOM: use GET with JSON encoded params
+    const meta = {
       so, ref,
       client: parsed?.client||'',
-      carte: parsed?.carte||'',
-      headers, rows
+      carte: parsed?.carte||''
+    };
+    // Split: send metadata + row count first, then rows as separate params
+    const params = new URLSearchParams({
+      action: 'write',
+      meta: JSON.stringify(meta),
+      headers: JSON.stringify(headers),
+      rows: JSON.stringify(rows)
     });
-    const encoded = btoa(unescape(encodeURIComponent(payload)));
-    const url = writerUrl + '?action=write&data=' + encodeURIComponent(encoded);
+    const url = writerUrl + '?' + params.toString();
 
     const resp = await fetch(url);
     const result = await resp.json();
