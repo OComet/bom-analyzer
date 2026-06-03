@@ -576,6 +576,13 @@ tr:hover td { background: var(--surface2); }
       </div>
     </div>
 
+    <div class="card" style="margin-bottom:16px;">
+      <div class="setup-card-title" style="margin-bottom:10px"><i class="ti ti-table" aria-hidden="true"></i> Apps Script écriture GSheet achat <span class="fixed-tag">optionnel</span></div>
+      <label>URL Apps Script writer</label>
+      <input type="text" id="setup-writer-url" value="https://script.google.com/macros/s/AKfycbxHOVSS4nDASlpYPFvjW8ZkNH2inWCG5VO9HoeTILx2R9f-aOi0Wf62JVWW7ZIfm-U_fQ/exec" />
+      <p class="hint">Permet d'écrire directement dans la GSheet achat après analyse. Déployez <code>write_sheet_script.js</code> une seule fois.</p>
+    </div>
+
     <div class="setup-grid">
       <div class="setup-card">
         <div class="setup-card-title"><i class="ti ti-users" aria-hidden="true"></i> Google Sheet clients <span class="fixed-tag">fixe</span></div>
@@ -683,6 +690,26 @@ tr:hover td { background: var(--surface2); }
         </select>
         <div id="client-badge"></div>
         <span id="client-note-text" style="font-size:12px; color:var(--text2); font-style:italic;"></span>
+      </div>
+
+      <!-- GSheet achat writer bar -->
+      <div id="gsheet-write-bar" style="display:none; margin-bottom:10px;">
+        <div style="display:flex; gap:12px; align-items:center; padding:12px 16px; background:var(--green-bg); border:1px solid #97C459; border-radius:var(--radius-lg); flex-wrap:wrap;">
+          <i class="ti ti-table" style="font-size:20px; color:var(--green); flex-shrink:0;" aria-hidden="true"></i>
+          <div style="flex:1;">
+            <div style="font-size:13px; font-weight:600; color:var(--green);" id="gsheet-file-info">GSheet achat détectée</div>
+            <div style="font-size:11px; color:var(--green); opacity:0.8;">Le dossier Drive sera recherché automatiquement par SO + référence</div>
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
+            <label style="font-size:12px; color:var(--green); white-space:nowrap; margin:0; font-weight:600;">N° SO</label>
+            <input type="text" id="so-reference" placeholder="ex: 2605-254"
+              style="width:130px; border-color:#97C459; background:white; padding:6px 10px; font-size:13px; border-radius:6px; border:1px solid #97C459;" />
+          </div>
+          <button class="btn" onclick="writeToGSheet()" style="background:var(--green); color:white; border-color:transparent; flex-shrink:0;">
+            <i class="ti ti-send" aria-hidden="true"></i> Écrire dans GSheet achat
+          </button>
+          <div id="gsheet-write-status" style="font-size:12px; width:100%;"></div>
+        </div>
       </div>
 
       <div class="actions-bar">
@@ -968,6 +995,7 @@ let apiKey = "";
 let mouserKey = "";
 let farnellKey = "";
 let proxyUrl = "";
+let writerUrl = "";
 
 function switchTab(name) {
   const names = ['bom','codif','config'];
@@ -1109,6 +1137,7 @@ async function loadAll() {
   mouserKey = document.getElementById("setup-mouser-key").value.trim();
   farnellKey = document.getElementById("setup-farnell-key").value.trim();
   proxyUrl = document.getElementById("setup-proxy-url").value.trim();
+  writerUrl = document.getElementById("setup-writer-url")?.value.trim() || "https://script.google.com/macros/s/AKfycbxHOVSS4nDASlpYPFvjW8ZkNH2inWCG5VO9HoeTILx2R9f-aOi0Wf62JVWW7ZIfm-U_fQ/exec";
   const rulesUrl = document.getElementById("setup-rules-url").value.trim();
   if (rulesUrl) {
     setDot('rules','loading','Chargement règles…');
@@ -1528,6 +1557,10 @@ Génère ou vérifie l'IPN avec ces informations enrichies.`;
   renderBOMTable(rows,allResults);
   document.getElementById('bom-loading').style.display='none';
   document.getElementById('bom-result').style.display='block';
+  // Show GSheet write bar if writer configured
+  const fileInput = document.getElementById('bom-file-input');
+  const filename = fileInput?.files?.[0]?.name || '';
+  showGSheetBar(filename);
 }
 
 // ============================================================
@@ -1830,6 +1863,96 @@ function exportCSV() {
   XLSX.writeFile(wb, 'BOM_codifiee_' + date + '.xlsx');
 }
 
+function parseLuminovoFilename(filename) {
+  // Format: Luminovo-Sourcing_CLIENT_CARTE_ref__REF_DATE_TIME.xlsx
+  const match = filename.match(/Luminovo-Sourcing_(.+?)_ref__([^_]+)_(\d{4}-\d{2}-\d{2})/i);
+  if (!match) return null;
+  return {
+    fullName: match[1],        // CLIENT_CARTE
+    client: match[1].split('_')[0],
+    carte: match[1].split('_').slice(1).join('_'),
+    ref: match[2],             // U000021
+    date: match[3]
+  };
+}
+
+
+
+function showGSheetBar(filename) {
+  const bar = document.getElementById('gsheet-write-bar');
+  if (!bar || !writerUrl) return;
+  bar.style.display = 'block';
+  const parsed = filename ? parseLuminovoFilename(filename) : null;
+  const infoEl = document.getElementById('gsheet-file-info');
+  if (parsed && infoEl) {
+    infoEl.textContent = parsed.client + ' — ' + parsed.carte + ' — ' + parsed.date;
+  }
+}
+
+async function writeToGSheet() {
+  if (!bomData.length) { alert('Aucune donnée à écrire.'); return; }
+  const so = (document.getElementById('so-reference').value || '').trim();
+  const statusEl = document.getElementById('gsheet-write-status');
+
+  if (!writerUrl) {
+    statusEl.innerHTML = '<span style="color:var(--red)">URL Apps Script writer non configurée dans le Setup</span>';
+    return;
+  }
+
+  // Get ref from parsed filename
+  const fileInput = document.getElementById('bom-file-input');
+  const filename = fileInput?.files?.[0]?.name || '';
+  const parsed = parseLuminovoFilename(filename);
+  const ref = parsed?.ref || '';
+
+  if (!so && !ref) {
+    statusEl.innerHTML = '<span style="color:var(--red)">Saisissez le numéro SO pour identifier la GSheet achat</span>';
+    return;
+  }
+
+  statusEl.innerHTML = '<div class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle"></div> Recherche de la GSheet dans Drive…';
+
+  // Sync edited IPNs
+  document.querySelectorAll('.editable-ipn').forEach((inp,i) => {
+    if (bomData[i]) {
+      const key = Object.keys(bomData[i]).find(k=>k.toLowerCase().includes('ipn')||k.toLowerCase().includes('internal'))||'IPN';
+      bomData[i][key] = inp.value;
+    }
+  });
+
+  // Add/update Stock column
+  const headers0 = Object.keys(bomData[0]);
+  const stockColKey = headers0.find(k=>k.toLowerCase().includes('reçus')||k.toLowerCase().includes('recus')) || 'Stock';
+  bomData.forEach(row => {
+    const ipn = (row['Approved internal part number']||row['IPN']||'').trim().toUpperCase();
+    const mpn = (row['MPN']||'').trim().toUpperCase();
+    const si = getStockInfo(ipn, mpn, row['Manufacturer free']||'');
+    row[stockColKey] = si.qty !== null ? String(si.qty) : '';
+  });
+
+  const headers = Object.keys(bomData[0]);
+  const rows = bomData.map(r => headers.map(h => String(r[h]||'')));
+
+  try {
+    const resp = await fetch(writerUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ so, ref, headers, rows })
+    });
+    const result = await resp.json();
+    if (result.success) {
+      statusEl.innerHTML = '<span style="color:var(--green)"><i class="ti ti-check"></i> ' +
+        result.rows + ' lignes écrites dans "' + result.sheetName + '" — ' +
+        '<a href="' + result.sheetUrl + '" target="_blank" style="color:var(--green);font-weight:600">Ouvrir la GSheet</a></span>';
+    } else {
+      statusEl.innerHTML = '<span style="color:var(--red)">Introuvable : ' + result.error +
+        '<br><span style="font-size:11px">Termes recherchés : ' + (result.searched||[]).join(', ') + '</span></span>';
+    }
+  } catch(e) {
+    statusEl.innerHTML = '<span style="color:var(--red)">Erreur connexion : ' + e.message + '</span>';
+  }
+}
+
 function clearBOM() {
   csvBuffer='';
   const pasteEl = document.getElementById('csv-paste-input');
@@ -1838,7 +1961,8 @@ function clearBOM() {
   if (urlEl) urlEl.value='';
   document.getElementById('bom-url-status').innerHTML='';
   document.getElementById('bom-result').style.display='none';
-  // Reset upload zone
+  const bar = document.getElementById('gsheet-write-bar');
+  if (bar) bar.style.display='none';
   const zone = document.getElementById('upload-drop-zone');
   if (zone) {
     zone.className = 'upload-drop-zone';
