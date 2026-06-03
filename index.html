@@ -1998,6 +1998,25 @@ async function writeToGSheet() {
   }
 }
 
+function autoSelectClientFromFilename(filename) {
+  if (!filename) return;
+  const parsed = parseLuminovoFilename(filename);
+  if (!parsed || !parsed.client) return;
+  const sel = document.getElementById('client-select');
+  if (!sel) return;
+  const opt = Array.from(sel.options).find(o =>
+    o.value !== '__standard__' && (
+      o.value.toLowerCase() === parsed.client.toLowerCase() ||
+      parsed.client.toLowerCase().includes(o.value.toLowerCase()) ||
+      o.value.toLowerCase().includes(parsed.client.toLowerCase())
+    )
+  );
+  if (opt) {
+    sel.value = opt.value;
+    onClientChange();
+  }
+}
+
 function loadBOMSheet(sheetIdx, filename, zone, label) {
   if (!bomWorkbook) return;
   const ws = bomWorkbook.Sheets[bomWorkbook.SheetNames[sheetIdx]];
@@ -2013,6 +2032,8 @@ function loadBOMSheet(sheetIdx, filename, zone, label) {
     (bomWorkbook.SheetNames.length > 1 ? ' — onglet <strong>' + sheetName + '</strong>' : '') +
     ' — ' + rows.length + ' composant(s) détecté(s)';
   document.getElementById('bom-sheet-info').textContent = rows.length + ' composants';
+  // Auto-select client from filename
+  autoSelectClientFromFilename(fn);
 }
 
 function onBOMSheetChange() {
