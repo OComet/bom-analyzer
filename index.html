@@ -1978,23 +1978,18 @@ async function writeToGSheet() {
   const rows = bomData.map(r => headers.map(h => String(r[h]||'')));
 
   try {
-    // Route through proxy to avoid CORS issue with direct POST to Apps Script
-    const proxyWriteUrl = proxyUrl
-      ? proxyUrl + '?action=write'
-      : writerUrl;
-
-    const resp = await fetch(proxyWriteUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'write',
-        writerUrl: writerUrl,
-        so, ref,
-        client: parsed?.client||'',
-        carte: parsed?.carte||'',
-        headers, rows
-      })
+    // Apps Script blocks CORS preflight on POST
+    // Solution: encode data as base64 in a GET parameter
+    const payload = JSON.stringify({
+      so, ref,
+      client: parsed?.client||'',
+      carte: parsed?.carte||'',
+      headers, rows
     });
+    const encoded = btoa(unescape(encodeURIComponent(payload)));
+    const url = writerUrl + '?action=write&data=' + encodeURIComponent(encoded);
+
+    const resp = await fetch(url);
     const result = await resp.json();
     if (result.success) {
       statusEl.innerHTML = '<span style="color:var(--green)"><i class="ti ti-check"></i> ' +
