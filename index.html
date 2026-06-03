@@ -712,8 +712,8 @@ tr:hover td { background: var(--surface2); }
             <div style="font-size:11px; color:var(--green); opacity:0.8;">Le dossier Drive sera recherché automatiquement par SO + référence</div>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-shrink:0;">
-            <label style="font-size:12px; color:var(--green); white-space:nowrap; margin:0; font-weight:600;">N° SO</label>
-            <input type="text" id="so-reference" placeholder="ex: 2605-254"
+            <label style="font-size:12px; color:var(--green); white-space:nowrap; margin:0; font-weight:600;">N° SO <span style="font-weight:400;opacity:0.7">(optionnel)</span></label>
+            <input type="text" id="so-reference" placeholder="ex: 2605-254 (si ambigu)"
               style="width:130px; border-color:#97C459; background:white; padding:6px 10px; font-size:13px; border-radius:6px; border:1px solid #97C459;" />
           </div>
           <button class="btn" onclick="writeToGSheet()" style="background:var(--green); color:white; border-color:transparent; flex-shrink:0;">
@@ -1919,10 +1919,7 @@ async function writeToGSheet() {
   const parsed = parseLuminovoFilename(filename);
   const ref = parsed?.ref || '';
 
-  if (!so && !ref) {
-    statusEl.innerHTML = '<span style="color:var(--red)">Saisissez le numéro SO pour identifier la GSheet achat</span>';
-    return;
-  }
+  // SO is optional — search by client+carte first
 
   statusEl.innerHTML = '<div class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle"></div> Recherche de la GSheet dans Drive…';
 
@@ -1951,16 +1948,21 @@ async function writeToGSheet() {
     const resp = await fetch(writerUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ so, ref, headers, rows })
+      body: JSON.stringify({ so, ref, client: parsed?.client||'', carte: parsed?.carte||'', headers, rows })
     });
     const result = await resp.json();
     if (result.success) {
       statusEl.innerHTML = '<span style="color:var(--green)"><i class="ti ti-check"></i> ' +
-        result.rows + ' lignes écrites dans "' + result.sheetName + '" — ' +
-        '<a href="' + result.sheetUrl + '" target="_blank" style="color:var(--green);font-weight:600">Ouvrir la GSheet</a></span>';
+        result.rows + ' lignes écrites dans "' + result.sheetName + '"' +
+        (result.matchedBy ? ' <span style="font-size:11px;opacity:0.8">(trouvée par ' + result.matchedBy + ')</span>' : '') +
+        ' — <a href="' + result.sheetUrl + '" target="_blank" style="color:var(--green);font-weight:600">Ouvrir</a></span>';
     } else {
-      statusEl.innerHTML = '<span style="color:var(--red)">Introuvable : ' + result.error +
-        '<br><span style="font-size:11px">Termes recherchés : ' + (result.searched||[]).join(', ') + '</span></span>';
+      let msg = '<span style="color:var(--red)">Introuvable : ' + result.error + '</span>';
+      if (result.candidates && result.candidates.length) {
+        msg += '<br><span style="font-size:11px;color:var(--amber)">GSheets trouvées : ' + result.candidates.join(' | ') + '</span>';
+        msg += '<br><span style="font-size:11px;color:var(--text2)">Saisissez le N° SO pour discriminer</span>';
+      }
+      statusEl.innerHTML = msg;
     }
   } catch(e) {
     statusEl.innerHTML = '<span style="color:var(--red)">Erreur connexion : ' + e.message + '</span>';
