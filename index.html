@@ -1878,16 +1878,32 @@ function exportCSV() {
 }
 
 function parseLuminovoFilename(filename) {
-  // Format: Luminovo-Sourcing_CLIENT_CARTE_ref__REF_DATE_TIME.xlsx
-  const match = filename.match(/Luminovo-Sourcing_(.+?)_ref__([^_]+)_(\d{4}-\d{2}-\d{2})/i);
-  if (!match) return null;
-  return {
-    fullName: match[1],        // CLIENT_CARTE
-    client: match[1].split('_')[0],
-    carte: match[1].split('_').slice(1).join('_'),
-    ref: match[2],             // U000021
-    date: match[3]
-  };
+  // Format 1 (avec ref): Luminovo-Sourcing_CLIENT_CARTE_ref__REF_DATE_TIME.xlsx
+  const m1 = filename.match(/Luminovo-Sourcing_(.+?)_ref__([^_]+)_(\d{4}-\d{2}-\d{2})/i);
+  if (m1) {
+    return {
+      client: m1[1].split('_')[0],
+      carte:  m1[1].split('_').slice(1).join('_'),
+      ref:    m1[2],
+      date:   m1[3]
+    };
+  }
+  // Format 2 (sans ref): Luminovo-Sourcing_CLIENT_CARTE_vXX_DATE_TIME.xlsx
+  const m2 = filename.match(/Luminovo-Sourcing_([^_]+)_(.+?)_v\d+_(\d{4}-\d{2}-\d{2})/i);
+  if (m2) {
+    return {
+      client: m2[1],
+      carte:  m2[2],
+      ref:    '',
+      date:   m2[3]
+    };
+  }
+  // Format 3: tenter extraction générique CLIENT après Luminovo-Sourcing_
+  const m3 = filename.match(/Luminovo-Sourcing_([^_]+)/i);
+  if (m3) {
+    return { client: m3[1], carte: '', ref: '', date: '' };
+  }
+  return null;
 }
 
 
