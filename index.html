@@ -684,6 +684,16 @@ tr:hover td { background: var(--surface2); }
       </div>
 
 
+      <!-- Sheet selector (shown only for multi-sheet XLSX) -->
+      <div id="bom-sheet-selector" style="display:none; margin-bottom:10px;">
+        <div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:var(--radius); flex-wrap:wrap;">
+          <i class="ti ti-table" style="color:var(--text2); font-size:16px;" aria-hidden="true"></i>
+          <label style="font-size:12px; font-weight:600; margin:0; white-space:nowrap;">Onglet à analyser</label>
+          <select id="bom-sheet-select" onchange="onBOMSheetChange()" style="flex:1; min-width:160px;"></select>
+          <span id="bom-sheet-info" style="font-size:12px; color:var(--text2);"></span>
+        </div>
+      </div>
+
       <div class="client-bar">
         <span class="lbl"><i class="ti ti-building" aria-hidden="true" style="font-size:15px; vertical-align:-2px; margin-right:3px;"></i> Client</span>
         <select id="client-select" onchange="onClientChange()">
@@ -988,6 +998,7 @@ SUFFIXES CONDITIONNEMENT À SUPPRIMER: ${get('rule-suffixes')}${extraRules}`;
 
 let bomData = [];
 let csvBuffer = "";
+let bomWorkbook = null;
 let stockByIPN = {}, stockByMPN = {};
 let clientsList = [];
 let activeClient = { nom:'Standard', mpn_strict:false, notes:'' };
@@ -1048,20 +1059,9 @@ function parseCSV(text) {
   const raw = text.trim();
   const firstLine = raw.split(/\r?\n/)[0];
   const isTSV = firstLine.includes('\t');
+  const sep = isTSV ? '\t' : ',';
 
-  if (isTSV) {
-    // TSV: simple split, no quoting issues, each physical line = one row
-    const lines = raw.split(/\r?\n/);
-    const headers = lines[0].split('\t').map(h => h.trim());
-    return lines.slice(1).map(line => {
-      const cells = line.split('\t').map(c => c.trim());
-      const obj = {};
-      headers.forEach((h,j) => obj[h] = cells[j]||'');
-      return obj;
-    });
-  }
-
-  // CSV: handle quoted multiline fields
+  // Universal: handle quoted multiline fields for both TSV and CSV
   function parseLogicalRows(raw) {
     const rows = [];
     let cur = '', inQ = false;
@@ -1088,7 +1088,7 @@ function parseCSV(text) {
       if (ch === '"') {
         if (inQ && line[i+1] === '"') { cur += '"'; i++; }
         else inQ = !inQ;
-      } else if (ch === ',' && !inQ) {
+      } else if (ch === sep && !inQ) {
         result.push(cur); cur = '';
       } else cur += ch;
     }
@@ -1109,10 +1109,15 @@ function parseCSV(text) {
 
 function filterBOMRows(rows) {
   return rows.filter(r => {
-    const mpn = (r['MPN']||r['mpn']||'').trim();
+    const mpn   = (r['MPN']||r['mpn']||'').trim();
     const desig = (r['Designator']||r['designator']||r['Reference']||r['reference']||'').trim();
-    const ipn = (r['Approved internal part number']||r['IPN']||r['ipn']||'').trim();
-    return desig !== '' && (mpn !== '' || ipn !== '');
+    const ipn   = (r['Approved internal part number']||r['IPN']||r['ipn']||'').trim();
+    const qty   = (r['Aggregated qty']||r['aggregated qty']||r['Qty']||r['qty']||'').trim();
+    // Ligne valide : a un Designator OU un MPN OU un IPN — exclure les lignes complètement vides
+    const hasContent = desig !== '' || mpn !== '' || ipn !== '';
+    // Exclure lignes sans aucun identifiant composant (lignes PCB sans MPN ni désignateur)
+    const isPCBOnly = desig.toUpperCase() === 'PCB' && mpn === '' && ipn === '';
+    return hasContent && !isPCBOnly;
   });
 }
 
@@ -1318,17 +1323,25 @@ function handleFileUpload(input) {
     reader.onload = function(e) {
       try {
         const wb = XLSX.read(e.target.result, { type: 'array' });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        // Convert to TSV to preserve our parser
-        const tsv = XLSX.utils.sheet_to_csv(ws, { FS: '\t', RS: '\n' });
-        csvBuffer = tsv;
-        const rows = filterBOMRows(parseCSV(tsv));
-        zone.className = 'upload-drop-zone loaded';
-        label.innerHTML = `<i class="ti ti-check" aria-hidden="true"></i> ${file.name} — ${rows.length} composant(s) détecté(s)`;
-        document.getElementById('bom-url-status').innerHTML = '';
-      } catch(e) {
+        bomWorkbook = wb;
+
+        // Show sheet selector if multiple sheets
+        const sheetSel = document.getElementById('bom-sheet-selector');
+        const sheetSelect = document.getElementById('bom-sheet-select');
+        if (wb.SheetNames.length > 1) {
+          sheetSelect.innerHTML = wb.SheetNames.map((n,i) =>
+            `<option value="${i}">${n}</option>`
+          ).join('');
+          sheetSel.style.display = 'block';
+        } else {
+          sheetSel.style.display = 'none';
+        }
+
+        // Load first sheet by default
+        loadBOMSheet(0, file.name, zone, label);
+      } catch(err) {
         zone.className = 'upload-drop-zone';
-        label.innerHTML = `<span style="color:var(--red)">Erreur lecture : ${e.message}</span>`;
+        label.innerHTML = `<span style="color:var(--red)">Erreur lecture : ${err.message}</span>`;
       }
     };
     reader.readAsArrayBuffer(file);
@@ -1954,6 +1967,28 @@ async function writeToGSheet() {
   }
 }
 
+function loadBOMSheet(sheetIdx, filename, zone, label) {
+  if (!bomWorkbook) return;
+  const ws = bomWorkbook.Sheets[bomWorkbook.SheetNames[sheetIdx]];
+  const tsv = XLSX.utils.sheet_to_csv(ws, { FS: '\t', RS: '\n' });
+  csvBuffer = tsv;
+  const rows = filterBOMRows(parseCSV(tsv));
+  const sheetName = bomWorkbook.SheetNames[sheetIdx];
+  const zoneEl = zone || document.getElementById('upload-drop-zone');
+  const labelEl = label || document.getElementById('upload-label-text');
+  zoneEl.className = 'upload-drop-zone loaded';
+  const fn = filename || document.getElementById('bom-file-input')?.files?.[0]?.name || '';
+  labelEl.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i> ' + fn +
+    (bomWorkbook.SheetNames.length > 1 ? ' — onglet <strong>' + sheetName + '</strong>' : '') +
+    ' — ' + rows.length + ' composant(s) détecté(s)';
+  document.getElementById('bom-sheet-info').textContent = rows.length + ' composants';
+}
+
+function onBOMSheetChange() {
+  const idx = parseInt(document.getElementById('bom-sheet-select').value);
+  loadBOMSheet(idx);
+}
+
 function clearBOM() {
   csvBuffer='';
   const pasteEl = document.getElementById('csv-paste-input');
@@ -1970,6 +2005,8 @@ function clearBOM() {
     document.getElementById('upload-label-text').innerHTML = 'Glisser-déposer un fichier XLS, XLSX, CSV ou TSV<br><span style="font-size:11px; color:var(--text3)">ou cliquer pour parcourir</span>';
     document.getElementById('bom-file-input').value = '';
   }
+  document.getElementById('bom-sheet-selector').style.display = 'none';
+  bomWorkbook = null;
   bomData=[];
 }
 </script>
