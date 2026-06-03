@@ -631,7 +631,10 @@ async function addNewClient() {
   try {
     const params = new URLSearchParams({ action:'addClient', nom, mpn_strict, notes });
     const resp = await fetch(CLIENTS_URL_WRITE+'?'+params.toString());
-    const result = await resp.json();
+    const text = await resp.text();
+    let result;
+    try { result = JSON.parse(text); }
+    catch(e) { result = { success: false, error: 'Réponse invalide du serveur. Vérifiez que le Apps Script clients est bien déployé avec la fonction addClient.' }; }
     if (result.success) {
       clientsList.push({nom,mpn_strict:mpn_strict==='oui',notes});
       populateClientSelect();
