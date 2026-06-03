@@ -436,7 +436,7 @@ textarea { resize:vertical; font-family:var(--mono); font-size:12px; line-height
           <div class="col">
             <label>URL Google Sheet règles partagées</label>
             <div style="display:flex;gap:8px">
-              <input type="text" id="cfg-rules-url" value="https://script.google.com/macros/s/AKfycbw5DJKx46nfIqeg9NuJ_a0Oub4O_L6Mh-VTGmD2nJkbq_2WnIjajt9KSVjfVl12wwR72Q/exec" style="flex:1" />
+              <input type="text" id="cfg-rules-url" value="https://script.google.com/macros/s/AKfycbwWqEWTLh8EVPq9tnTIbqyoa9gdKlKimAs74iMVobZfI7WlGxWOSJqmlujBbCFcl5H-eg/exec" style="flex:1" />
               <button class="btn sm" onclick="loadRulesFromURL()"><i class="ti ti-refresh" aria-hidden="true"></i> Charger</button>
             </div>
             <div id="rules-url-status" style="font-size:12px;margin-top:4px;"></div>
@@ -1221,7 +1221,7 @@ RÉPONSE JSON tableau uniquement:
 
 // ===================== RENDER RESULTS =====================
 async function pushRuleToSheet(key, value) {
-  const url = 'https://script.google.com/macros/s/AKfycbw5DJKx46nfIqeg9NuJ_a0Oub4O_L6Mh-VTGmD2nJkbq_2WnIjajt9KSVjfVl12wwR72Q/exec';
+  const url = 'https://script.google.com/macros/s/AKfycbwWqEWTLh8EVPq9tnTIbqyoa9gdKlKimAs74iMVobZfI7WlGxWOSJqmlujBbCFcl5H-eg/exec';
   try {
     const resp = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key,value}) });
     return await resp.json();
