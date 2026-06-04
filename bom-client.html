@@ -629,12 +629,22 @@ async function addNewClient() {
   if (!nom) { statusEl.innerHTML='<span style="color:var(--red)">Nom obligatoire</span>'; return; }
   btn.disabled=true; btn.textContent='Envoi…';
   try {
-    const params = new URLSearchParams({ action:'addClient', nom, mpn_strict, notes });
-    const resp = await fetch(CLIENTS_URL_WRITE+'?'+params.toString());
-    const text = await resp.text();
+    // Route via proxy to avoid CORS/redirect issues
+    const px = document.getElementById('cfg-proxy-url').value.trim() || proxyUrl;
     let result;
-    try { result = JSON.parse(text); }
-    catch(e) { result = { success: false, error: 'Réponse invalide du serveur. Vérifiez que le Apps Script clients est bien déployé avec la fonction addClient.' }; }
+    if (px) {
+      // Send through proxy using GET with encoded params
+      const params = new URLSearchParams({
+        action: 'addClient',
+        clientsUrl: CLIENTS_URL_WRITE,
+        nom, mpn_strict, notes
+      });
+      const resp = await fetch(px + '?' + params.toString());
+      const text = await resp.text();
+      try { result = JSON.parse(text); } catch(e) { result = { success: false, error: 'Erreur proxy: ' + text.slice(0,100) }; }
+    } else {
+      result = { success: false, error: 'Proxy non configuré' };
+    }
     if (result.success) {
       clientsList.push({nom,mpn_strict:mpn_strict==='oui',notes});
       populateClientSelect();
