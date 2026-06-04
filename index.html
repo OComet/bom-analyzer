@@ -1987,23 +1987,39 @@ async function writeToGSheet() {
       carte: parsed?.carte||''
     };
 
-    // Use proxy POST to avoid URL length limits and CORS issues
+    // Send data in chunks via GET to avoid URL length limits and CORS preflight
     const px = proxyUrl;
     if (!px) { statusEl.innerHTML = '<span style="color:var(--red)">Proxy non configuré dans le Setup</span>'; return; }
 
-    const resp = await fetch(px, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'write',
-        writerUrl: writerUrl,
+    // Step 1: Send metadata + headers + first chunk
+    const CHUNK_SIZE = 10;
+    const sessionId = Date.now().toString(36);
+    let result;
+
+    for (let chunk = 0; chunk * CHUNK_SIZE < rows.length || chunk === 0; chunk++) {
+      const chunkRows = rows.slice(chunk * CHUNK_SIZE, (chunk + 1) * CHUNK_SIZE);
+      const isFirst = chunk === 0;
+      const isLast = (chunk + 1) * CHUNK_SIZE >= rows.length;
+      statusEl.innerHTML = '<div class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle"></div> Envoi chunk ' + (chunk+1) + '/' + Math.ceil(rows.length/CHUNK_SIZE) + '…';
+
+      const params = new URLSearchParams({
+        action: 'writeChunk',
+        sessionId,
+        chunk: chunk,
+        isFirst: isFirst ? '1' : '0',
+        isLast: isLast ? '1' : '0',
         so, ref,
         client: meta.client,
         carte: meta.carte,
-        headers, rows
-      })
-    });
-    const result = await resp.json();
+        headers: isFirst ? JSON.stringify(headers) : '[]',
+        rows: JSON.stringify(chunkRows)
+      });
+
+      const resp = await fetch(px + '?' + params.toString());
+      result = await resp.json();
+      if (!result.success && result.error && chunk === 0) break;
+      if (isLast) break;
+    }
     if (result.success) {
       statusEl.innerHTML = '<span style="color:var(--green)"><i class="ti ti-check"></i> ' +
         result.rows + ' lignes écrites dans "' + result.sheetName + '"' +
