@@ -2015,6 +2015,24 @@ async function writeToGSheet() {
 
     statusEl.innerHTML = '<div class="spinner" style="width:13px;height:13px;border-width:2px;display:inline-block;vertical-align:middle"></div> Écriture en cours…';
 
+    // Build warnings summary from rowMeta
+    const warningsSummary = { sensor:[], battery:[], 'not-sealed':[], 'msl4+':[], error:[], uncodified:[] };
+    if (rowMeta && rowMeta.length) {
+      rowMeta.forEach((meta, i) => {
+        const row = bomData[i] || {};
+        const ref2 = findCol(row, ['designator','reference','ref']) || '';
+        (meta.warnings||[]).forEach(w => { if (warningsSummary[w]) warningsSummary[w].push(ref2); });
+        if (meta.mpnWarn) warningsSummary.error.push(ref2);
+        if (meta.status === 'error') warningsSummary.error.push(ref2);
+      });
+      document.querySelectorAll('.editable-ipn').forEach((inp, i) => {
+        if (inp.value === '—' || inp.value === '') {
+          const row = bomData[i] || {};
+          warningsSummary.uncodified.push(findCol(row, ['designator','reference','ref']) || '');
+        }
+      });
+    }
+
     const resp = await fetch(px, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -2024,7 +2042,8 @@ async function writeToGSheet() {
         so, ref,
         client: meta.client,
         carte: meta.carte,
-        headers, rows
+        headers, rows,
+        warnings: warningsSummary
       })
     });
     const text = await resp.text();
