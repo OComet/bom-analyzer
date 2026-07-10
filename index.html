@@ -1418,9 +1418,11 @@ async function callClaude(prompt, sys) {
   const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method:"POST",
     headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
-    body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:1000, system:sys, messages:[{role:"user",content:prompt}] })
+    body: JSON.stringify({ model:"claude-sonnet-4-5", max_tokens:4096, system:sys, messages:[{role:"user",content:prompt}] })
   });
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
   const data = await resp.json();
+  if (data.error) throw new Error(data.error.message);
   return data.content.map(c=>c.text||'').join('');
 }
 
@@ -1516,7 +1518,7 @@ async function analyzeBOM() {
   bomData = rows;
   document.getElementById('bom-loading').style.display='flex';
   document.getElementById('bom-result').style.display='none';
-  const batchSize=10; let allResults=[];
+  const batchSize=5; let allResults=[];
   for (let i=0; i<rows.length; i+=batchSize) {
     document.getElementById('bom-loading-msg').textContent=`Analyse IA : ${Math.min(i+batchSize,rows.length)}/${rows.length} composants…`;
     const batch=rows.slice(i,i+batchSize).map((row,j)=>({
@@ -1564,8 +1566,19 @@ Génère ou vérifie l'IPN avec ces informations enrichies.`;
       }
 
       allResults=allResults.concat(batchResults);
+      // Small delay between batches to avoid rate limiting
+      if (i + batchSize < rows.length) await new Promise(r => setTimeout(r, 500));
     } catch(e) {
-      allResults=allResults.concat(batch.map((_,j)=>({idx:i+j,ipn:'—',status:'error',warnings:[],note:'Erreur analyse'})));
+      // Retry once on error
+      try {
+        await new Promise(r => setTimeout(r, 2000)); // wait 2s before retry
+        document.getElementById('bom-loading-msg').textContent=`Retry batch ${Math.floor(i/batchSize)+1}…`;
+        const raw2=await callClaude(`Analyse:\n${JSON.stringify(batch,null,2)}`,getBOM_SYS());
+        const retryResults = JSON.parse(raw2.replace(/```json|```/g,'').trim());
+        allResults=allResults.concat(retryResults);
+      } catch(e2) {
+        allResults=allResults.concat(batch.map((_,j)=>({idx:i+j,ipn:'—',status:'error',warnings:[],note:'Erreur analyse: '+e2.message})));
+      }
     }
   }
   renderBOMTable(rows,allResults);
