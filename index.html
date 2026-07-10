@@ -1569,16 +1569,9 @@ Génère ou vérifie l'IPN avec ces informations enrichies.`;
       // Small delay between batches to avoid rate limiting
       if (i + batchSize < rows.length) await new Promise(r => setTimeout(r, 500));
     } catch(e) {
-      // Retry once on error
-      try {
-        await new Promise(r => setTimeout(r, 2000)); // wait 2s before retry
-        document.getElementById('bom-loading-msg').textContent=`Retry batch ${Math.floor(i/batchSize)+1}…`;
-        const raw2=await callClaude(`Analyse:\n${JSON.stringify(batch,null,2)}`,getBOM_SYS());
-        const retryResults = JSON.parse(raw2.replace(/```json|```/g,'').trim());
-        allResults=allResults.concat(retryResults);
-      } catch(e2) {
-        allResults=allResults.concat(batch.map((_,j)=>({idx:i+j,ipn:'—',status:'error',warnings:[],note:'Erreur analyse: '+e2.message})));
-      }
+      console.error('Batch error:', e.message, e);
+      // Show exact error in note for debugging
+      allResults=allResults.concat(batch.map((_,j)=>({idx:i+j,ipn:'—',status:'error',warnings:[],note:'Erreur: '+e.message})));
     }
   }
   renderBOMTable(rows,allResults);
@@ -1876,6 +1869,15 @@ function exportCSV() {
       });
       if (mpnWarnRefs.length) extraRows.push(['🔒 MPN strict non conforme', mpnWarnRefs.join(', '), '', '', '', '', '']);
       if (uncodified.length) extraRows.push(['❓ IPN à vérifier manuellement', uncodified.join(', '), '', '', '', '', '']);
+      // Add errors
+      const errorRefs = [];
+      rowMeta.forEach((meta, i) => {
+        if (meta.status === 'error') {
+          const row = bomData[i] || {};
+          errorRefs.push(findCol(row, ['designator','reference','ref']) || '');
+        }
+      });
+      if (errorRefs.length) extraRows.push(['❌ Erreur analyse IA — vérification manuelle', errorRefs.join(', '), '', '', '', '', '']);
       extraRows.push(sep);
       extraRows.push(['--- FIN RAPPORT ---', '', '', '', '', '', '']);
 
