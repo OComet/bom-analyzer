@@ -1439,8 +1439,15 @@ ${getRulesPrompt()}
 
 TRAITEMENT:
 1. Si ipn déjà renseigné: CONSERVER, vérifier cohérence MPN/notes. Incohérence → status="warn"
-2. Si ipn vide: MPN peut avoir plusieurs refs séparées par ";", utiliser la première. Générer IPN selon règles.
-3. Détecter: sensor (capteurs), battery (piles/batteries), not-sealed (relais non étanche), msl4+ (MSL≥4)
+2. Si ipn vide ET MPN présent: MPN peut avoir plusieurs refs séparées par ";", utiliser la première. Générer IPN selon règles.
+3. Si ipn vide ET MPN absent: extraire les specs depuis description/notes/comments et construire l'IPN même partiel:
+   - "100nF 16V 10% X7R 0402" → C100N-0402-16V-10P-X7R (confidence=high)
+   - "100nF 16V 10%" sans boîtier → C100N-?-16V-10P-X7R (confidence=medium, note="Boîtier non spécifié")
+   - "10K 1% 0603" → R10K-0603 (confidence=high)
+   - "47uF 25V tantale B" → CT47U-B-25V-20P-? (confidence=medium, note="ESR non spécifié")
+   - Ne JAMAIS laisser IPN vide si les specs permettent une codification même partielle
+   - Seulement si vraiment insuffisant (ex: juste "résistance CMS") → "—" confidence=low
+4. Détecter: sensor (capteurs), battery (piles/batteries), not-sealed (relais non étanche), msl4+ (MSL≥4)
 
 RÉPONSE JSON tableau uniquement:
 [{
