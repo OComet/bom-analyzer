@@ -1,1037 +1,999 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BOM Client — Analyse & Codification</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proto Process — Appro V2</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
 <style>
 :root {
-  --bg:#F5F4F0;--surface:#FFFFFF;--surface2:#EFEFEB;--border:#E0DED8;--border2:#D0CEC8;
-  --text:#1A1916;--text2:#6B6960;--text3:#9A9890;
-  --blue:#185FA5;--blue-bg:#E6F1FB;--green:#3B6D11;--green-bg:#EAF3DE;
-  --amber:#854F0B;--amber-bg:#FAEEDA;--red:#A32D2D;--red-bg:#FCEBEB;
-  --pink:#993556;--pink-bg:#FBEAF0;--pink-border:#ED93B1;
-  --radius:8px;--radius-lg:12px;--mono:'DM Mono',monospace;--sans:'DM Sans',sans-serif;
+  --pp-orange: #F07B1F;
+  --pp-blue: #5BC4D8;
+  --ok-bg: #EAF3DE; --ok-t: #3B6D11; --ok-b: #97C459;
+  --wa-bg: #FAEEDA; --wa-t: #854F0B; --wa-b: #EF9F27;
+  --er-bg: #FCEBEB; --er-t: #A32D2D; --er-b: #F09595;
+
+  --page-bg: #0a0c12;
+  --surface-0: #12151e;
+  --surface-1: #161b27;
+  --surface-2: #1a2030;
+  --border: #262e42;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "SF Mono", "Cascadia Code", Consolas, monospace;
 }
-*{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--sans);font-size:14px;color:var(--text);background:var(--bg);min-height:100vh;}
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
-.logo{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;}
-.logo-icon{width:30px;height:30px;background:var(--pink);border-radius:6px;display:flex;align-items:center;justify-content:center;color:white;font-size:15px;}
-.header-link{font-size:12px;color:var(--text2);text-decoration:none;display:flex;align-items:center;gap:4px;}
-.header-link:hover{color:var(--text);}
-.main{max-width:1200px;margin:0 auto;padding:2rem;}
-.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:1.5rem;}
-.tab{padding:10px 20px;font-size:13px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--text2);border-bottom:2px solid transparent;font-family:var(--sans);}
-.tab.active{color:var(--text);border-bottom-color:var(--text);}
-.tab:hover:not(.active){color:var(--text);}
-.panel{display:none;}.panel.active{display:block;}
-label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;letter-spacing:0.3px;text-transform:uppercase;}
-input[type=text],input[type=number],textarea,select{width:100%;padding:8px 11px;font-size:13px;font-family:var(--sans);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none;transition:border-color 0.15s;}
-input[type=text]:focus,textarea:focus,select:focus{border-color:var(--text);box-shadow:0 0 0 3px rgba(26,25,22,0.06);}
-textarea{resize:vertical;font-family:var(--mono);font-size:12px;line-height:1.6;}
-.hint{font-size:11px;color:var(--text3);margin-top:5px;}
-.hint code{font-family:var(--mono);background:var(--surface2);padding:1px 5px;border-radius:4px;}
-.btn{padding:8px 16px;font-size:13px;font-weight:500;font-family:var(--sans);cursor:pointer;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);color:var(--text);display:inline-flex;align-items:center;gap:6px;transition:background 0.15s;}
-.btn:hover{background:var(--surface2);}
-.btn.primary{background:var(--text);color:white;border-color:transparent;}
-.btn.primary:hover{opacity:0.85;}
-.btn.pink{background:var(--pink);color:white;border-color:transparent;}
-.btn.pink:hover{opacity:0.85;}
-.btn.sm{padding:6px 12px;font-size:12px;}
-.btn:disabled{opacity:0.4;cursor:default;pointer-events:none;}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:12px;}
-.row2{display:flex;gap:12px;margin-bottom:12px;}
-.row2 .col{flex:1;}
-.actions-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
-.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:600;white-space:nowrap;}
-.b-ok{background:var(--green-bg);color:var(--green);}
-.b-warn{background:var(--amber-bg);color:var(--amber);}
-.b-err{background:var(--red-bg);color:var(--red);}
-.b-info{background:var(--blue-bg);color:var(--blue);}
-.b-pink{background:var(--pink-bg);color:var(--pink);border:1px solid var(--pink-border);}
-.upload-zone{border:1.5px dashed var(--border2);border-radius:var(--radius-lg);padding:24px;text-align:center;cursor:pointer;transition:all 0.15s;color:var(--text2);font-size:13px;line-height:1.7;}
-.upload-zone:hover,.upload-zone.dragover{border-color:var(--text);background:var(--surface2);}
-.upload-zone.loaded{border-color:#97C459;background:var(--green-bg);color:var(--green);}
-.upload-zone i{font-size:28px;display:block;margin-bottom:6px;}
-.conf-high{color:var(--green);font-size:11px;font-weight:600;}
-.conf-med{color:var(--amber);font-size:11px;font-weight:600;}
-.conf-low{color:var(--red);font-size:11px;font-weight:600;}
-.rule-suggestion{background:var(--blue-bg);border:1px solid #A8CBF0;border-radius:8px;padding:8px 12px;margin-top:4px;font-size:11px;color:var(--blue);display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;}
-.rule-suggestion-text{flex:1;font-family:var(--mono);line-height:1.5;}
-.rule-suggestion-actions{display:flex;gap:6px;flex-shrink:0;}
-.btn-rule-add{font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--blue);background:var(--blue);color:white;cursor:pointer;font-family:inherit;}
-.btn-rule-add:hover{opacity:0.85;}
-.btn-rule-skip{font-size:11px;padding:3px 10px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-family:inherit;}
-.rule-added-badge{font-size:10px;color:var(--green);background:var(--green-bg);padding:2px 7px;border-radius:10px;}
-.loading{display:flex;align-items:center;gap:10px;color:var(--text2);font-size:13px;padding:14px 0;}
-.spinner{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--text2);border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.mapping-table{width:100%;border-collapse:collapse;font-size:12px;}
-.mapping-table th{background:var(--surface2);padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);}
-.mapping-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
-.mapping-table tr:last-child td{border-bottom:none;}
-.col-detected{font-family:var(--mono);font-size:11px;color:var(--blue);}
-.result-table-wrap{overflow-x:auto;max-height:480px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-lg);margin-top:1rem;}
-.result-table{width:100%;border-collapse:collapse;font-size:12px;}
-.result-table th{background:var(--surface2);padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;position:sticky;top:0;border-bottom:1px solid var(--border);white-space:nowrap;z-index:1;}
-.result-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top;word-break:break-word;}
-.result-table tr:last-child td{border-bottom:none;}
-.result-table tr:hover td{background:var(--surface2);}
-.row-warn td{background:#FAEEDA10;}.row-err td{background:#FCEBEB10;}
-.editable-ipn{font-family:var(--mono);font-size:11px;width:100%;padding:3px 7px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--blue);}
-.editable-ipn:focus{outline:none;border-color:var(--blue);background:var(--blue-bg);}
-.mfr-free-select{font-size:11px;padding:3px 6px;border-radius:5px;border:1px solid var(--border);background:transparent;font-family:var(--sans);}
-.mfr-free-select.yes{color:var(--green);background:var(--green-bg);border-color:#97C459;}
-.mfr-free-select.no{color:var(--red);background:var(--red-bg);border-color:#F09595;}
-.counter-row{display:flex;gap:10px;margin:1rem 0;flex-wrap:wrap;}
-.counter{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 16px;}
-.counter-val{font-size:22px;font-weight:600;font-family:var(--mono);}
-.counter-lbl{font-size:11px;color:var(--text2);margin-top:2px;}
-.warn-box{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:12px;}
-.warn-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
-.warn-item:last-child{border-bottom:none;}
-.warn-item i{font-size:17px;color:var(--amber);flex-shrink:0;margin-top:1px;}
-.filter-bar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px;}
-.filter-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:500;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;font-family:var(--sans);white-space:nowrap;}
-.filter-btn.active{background:var(--text);color:white;border-color:transparent;}
-.filter-btn.active.f-warn{background:var(--amber);}
-.filter-btn.active.f-err{background:var(--red);}
-.filter-count{font-size:11px;padding:1px 6px;border-radius:10px;background:var(--surface2);color:var(--text2);}
-.filter-btn.active .filter-count{background:rgba(255,255,255,0.25);color:white;}
-.rules-section{margin-bottom:1.5rem;}
-.rules-section-title{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
-.rules-textarea{min-height:100px;}
-.save-indicator{font-size:11px;color:var(--green);display:none;}
-.save-indicator.visible{display:inline;}
-/* CHAT */
-.chat-fab{position:fixed;bottom:28px;right:28px;width:52px;height:52px;border-radius:50%;background:var(--pink);color:white;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 16px rgba(0,0,0,0.18);z-index:1000;transition:transform 0.15s;}
-.chat-fab:hover{transform:scale(1.08);}
-.chat-panel{position:fixed;bottom:90px;right:28px;width:380px;max-width:calc(100vw - 40px);height:520px;max-height:calc(100vh - 120px);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:0 8px 32px rgba(0,0,0,0.14);z-index:999;display:none;flex-direction:column;overflow:hidden;}
-.chat-panel.open{display:flex;}
-.chat-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);flex-shrink:0;font-size:13px;font-weight:600;}
-.chat-messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;}
-.chat-msg{display:flex;flex-direction:column;gap:3px;max-width:88%;}
-.chat-msg.user{align-self:flex-end;}.chat-msg.assistant{align-self:flex-start;}
-.chat-bubble{padding:9px 12px;border-radius:12px;font-size:13px;line-height:1.6;word-break:break-word;}
-.chat-msg.user .chat-bubble{background:var(--pink);color:white;border-bottom-right-radius:4px;}
-.chat-msg.assistant .chat-bubble{background:var(--surface2);color:var(--text);border-bottom-left-radius:4px;border:1px solid var(--border);}
-.chat-msg-time{font-size:10px;color:var(--text3);padding:0 4px;}
-.chat-msg.user .chat-msg-time{text-align:right;}
-.chat-typing{align-self:flex-start;padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;border-bottom-left-radius:4px;display:none;gap:4px;align-items:center;}
-.chat-typing.visible{display:flex;}
-.dot{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:bounce 1.2s infinite;}
-.dot:nth-child(2){animation-delay:0.2s;}.dot:nth-child(3){animation-delay:0.4s;}
-@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
-.chat-footer{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;flex-shrink:0;}
-.chat-input{flex:1;padding:8px 11px;font-size:13px;font-family:var(--sans);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);resize:none;max-height:100px;min-height:36px;line-height:1.5;outline:none;}
-.chat-input:focus{border-color:var(--pink);}
-.chat-send-btn{width:34px;height:34px;border-radius:var(--radius);background:var(--pink);color:white;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
-.chat-send-btn:hover{opacity:0.85;}
-.chat-send-btn:disabled{opacity:0.3;cursor:default;}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--page-bg); }
+body { font-family: var(--font-sans); font-size: 13px; color: var(--text-primary); padding: 24px; }
+.wrap { max-width: 1180px; margin: 0 auto; }
+
+.app { background: var(--surface-0); border-radius: 12px; border: 0.5px solid var(--border); overflow: hidden; }
+.hdr { background: #0f1117; padding: 0 20px; height: 52px; display: flex; align-items: center; justify-content: space-between; }
+.logo { display: flex; align-items: center; gap: 10px; }
+.lt { color: #fff; font-size: 13px; font-weight: 500; }
+.ls { color: #444; margin: 0 3px; }
+.lo { color: var(--pp-orange); font-size: 13px; font-weight: 500; }
+.hstats { display: flex; gap: 18px; }
+.hs { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #888; }
+.hs strong { font-size: 15px; font-weight: 500; }
+.hs.ok strong { color: #86c564; }
+.hs.wa strong { color: #eab676; }
+.hs.er strong { color: #f09595; }
+
+.tabs { background: #161b27; display: flex; border-bottom: 0.5px solid #2a3347; }
+.tab { padding: 11px 18px; font-size: 13px; color: #64748b; display: flex; align-items: center; gap: 6px; border-bottom: 2px solid transparent; cursor: pointer; user-select: none; }
+.tab:hover { color: #94a3b8; }
+.tab.on { color: var(--pp-orange); border-bottom-color: var(--pp-orange); }
+.bdg { display: inline-flex; align-items: center; justify-content: center; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px; font-size: 10px; font-weight: 500; }
+.bdg.er { background: var(--er-bg); color: var(--er-t); }
+.bdg.wa { background: var(--wa-bg); color: var(--wa-t); }
+
+.page { display: none; }
+.page.on { display: block; }
+
+.tb { padding: 11px 20px; display: flex; gap: 9px; align-items: center; background: var(--surface-1); border-bottom: 0.5px solid var(--border); flex-wrap: wrap; }
+.srch { flex: 1; min-width: 180px; display: flex; align-items: center; gap: 7px; background: var(--surface-2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 7px 11px; color: var(--text-muted); }
+.srch input { background: none; border: none; outline: none; color: var(--text-primary); font-size: 12px; font-family: var(--font-sans); flex: 1; }
+.srch input::placeholder { color: var(--text-muted); }
+.flt { display: flex; align-items: center; gap: 5px; background: var(--surface-2); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 7px 11px; font-size: 12px; color: var(--text-secondary); cursor: pointer; user-select: none; }
+.flt.on { background: #2a1f10; border-color: #7a4a10; color: var(--pp-orange); }
+.flt select { background: none; border: none; outline: none; color: inherit; font-size: 12px; font-family: var(--font-sans); cursor: pointer; }
+.flt select option { background: var(--surface-2); color: var(--text-primary); }
+
+.alrt { background: var(--er-bg); border: 0.5px solid var(--er-b); border-radius: var(--radius); padding: 8px 13px; display: flex; align-items: center; gap: 7px; margin: 11px 20px 4px; font-size: 12px; color: var(--er-t); }
+.cnt { font-size: 11px; font-weight: 500; letter-spacing: .07em; text-transform: uppercase; color: var(--text-muted); padding: 9px 20px 5px; }
+.stitle { font-size: 11px; font-weight: 500; letter-spacing: .07em; text-transform: uppercase; color: var(--text-muted); margin: 14px 20px 7px; display: flex; align-items: center; gap: 7px; }
+.stitle::after { content: ''; flex: 1; height: 0.5px; background: var(--border); }
+.body { padding: 0 20px 18px; }
+
+.card { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; margin-bottom: 8px; overflow: hidden; }
+.card.er { border-left: 3px solid var(--er-t); }
+.card.wa { border-left: 3px solid var(--wa-t); }
+.card.ok { border-left: 3px solid var(--ok-t); }
+.card.pp { border-left: 3px solid var(--pp-orange); }
+.ch { padding: 11px 15px; display: flex; align-items: center; gap: 11px; cursor: pointer; }
+.ch:hover { background: rgba(255,255,255,.02); }
+.fb { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; letter-spacing: .04em; white-space: nowrap; }
+.f-rs { background: #3a1a1a; color: #f87171; }
+.f-dk { background: #1a2e1a; color: #4ade80; }
+.f-fn { background: #1a3a5c; color: #60a5fa; }
+.f-mo { background: #3a2a00; color: #fbbf24; }
+.f-tm { background: #2a1a3a; color: #c084fc; }
+.f-sf { background: #2a1a00; color: var(--pp-orange); }
+.f-iv { background: #1f2a1a; color: #86c564; }
+.f-xx { background: var(--surface-1); color: var(--text-secondary); }
+.ci { flex: 1; min-width: 0; }
+.cso { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.cm { font-size: 11px; color: var(--text-secondary); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pw { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.pb { width: 60px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.pf { height: 100%; border-radius: 2px; }
+.pf.ok { background: var(--ok-t); }
+.pf.wa { background: var(--wa-t); }
+.pf.er { background: var(--er-t); }
+.pf.pp { background: var(--pp-orange); }
+.pp2 { font-size: 11px; color: var(--text-secondary); white-space: nowrap; }
+.chv { color: var(--text-muted); font-size: 13px; flex-shrink: 0; }
+.pill { font-size: 10px; font-weight: 500; padding: 2px 8px; border-radius: 10px; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px; }
+.p-ok { background: var(--ok-bg); color: var(--ok-t); border: 0.5px solid var(--ok-b); }
+.p-wa { background: var(--wa-bg); color: var(--wa-t); border: 0.5px solid var(--wa-b); }
+.p-er { background: var(--er-bg); color: var(--er-t); border: 0.5px solid var(--er-b); }
+.p-gy { background: var(--surface-1); color: var(--text-secondary); border: 0.5px solid var(--border); }
+
+.cbdy { border-top: 0.5px solid var(--border); display: none; }
+.card.open .cbdy { display: block; }
+.card.open .chv::before { content: "\ea62"; }
+.bls { padding: 8px 15px; background: var(--surface-1); border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.bld { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.bld.ok { background: var(--ok-t); }
+.bld.er { background: var(--er-t); }
+.bld.pp { background: var(--pp-orange); }
+.bll { font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .05em; }
+.bli { font-size: 11px; color: var(--text-muted); }
+.blt { font-size: 11px; color: var(--pp-blue); display: flex; align-items: center; gap: 4px; }
+.bls-r { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+.lt2 { width: 100%; border-collapse: collapse; }
+.lt2 th { padding: 6px 15px; font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); background: var(--surface-1); border-bottom: 0.5px solid var(--border); text-align: left; }
+.lt2 td { padding: 8px 15px; border-bottom: 0.5px solid var(--border); font-size: 12px; vertical-align: middle; }
+.lt2 tr:last-child td { border-bottom: none; }
+.ipn { font-family: var(--font-mono); font-size: 11px; }
+.mpn2 { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+.qn { font-family: var(--font-mono); font-size: 12px; text-align: center; }
+.ac { display: flex; gap: 5px; justify-content: flex-end; }
+.ab { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: var(--radius); font-size: 11px; border: 0.5px solid; cursor: pointer; background: transparent; font-family: var(--font-sans); }
+.ab-pb { border-color: var(--er-b); color: var(--er-t); }
+.ab-oc { border-color: var(--border); color: var(--text-secondary); }
+.cft { padding: 9px 15px; background: var(--surface-1); border-top: 0.5px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.cfm { font-size: 11px; color: var(--text-muted); }
+.cfb { display: flex; gap: 7px; }
+.btn-s { display: inline-flex; align-items: center; gap: 5px; padding: 6px 13px; background: transparent; color: var(--text-secondary); border: 0.5px solid var(--border); border-radius: var(--radius); font-size: 12px; cursor: pointer; font-family: var(--font-sans); }
+
+.empty { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 12px; }
+.empty i { font-size: 28px; display: block; margin-bottom: 8px; opacity: .5; }
+.loading { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 12px; }
+.errbox { margin: 11px 20px 4px; padding: 10px 13px; background: var(--er-bg); border: 0.5px solid var(--er-b); border-radius: var(--radius); color: var(--er-t); font-size: 12px; }
+
+.stub-note { margin: 14px 20px; padding: 10px 13px; background: #2a1f10; border: 0.5px solid #7a4a10; border-radius: var(--radius); color: var(--pp-orange); font-size: 12px; display: flex; align-items: center; gap: 8px; }
+
+.qcell { text-align: center; }
+.qatt { font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
+.qwrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+input[type="number"] { width: 64px; background: var(--surface-1); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 5px 6px; color: var(--text-primary); font-family: var(--font-mono); font-size: 12px; text-align: center; outline: none; -moz-appearance: textfield; }
+input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+input[type="number"]:focus { border-color: var(--pp-blue); }
+input[type="number"].qok { border-color: var(--ok-t); background: rgba(59,109,17,.08); }
+input[type="number"].qerr { border-color: var(--er-t); background: rgba(163,45,45,.08); }
+.etag { font-family: var(--font-mono); font-size: 10px; color: var(--er-t); font-weight: 600; }
+.marquage { font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--pp-orange); background: #2a1f10; padding: 1px 5px; border-radius: 3px; }
+.stkinfo { font-family: var(--font-mono); font-size: 10px; color: var(--wa-t); background: var(--wa-bg); padding: 1px 5px; border-radius: 3px; }
+.btn-p { display: inline-flex; align-items: center; gap: 5px; padding: 6px 13px; background: var(--pp-orange); color: #fff; border: none; border-radius: var(--radius); font-size: 12px; font-weight: 500; cursor: pointer; font-family: var(--font-sans); }
+.btn-p:disabled { opacity: .5; cursor: not-allowed; }
+
+.ov { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; pointer-events: none; transition: opacity .2s; }
+.ov.open { opacity: 1; pointer-events: all; }
+.modal { background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 12px; padding: 22px; max-width: 460px; width: 90%; transform: scale(.96); transition: transform .2s; }
+.ov.open .modal { transform: scale(1); }
+.modal h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--er-t); display: flex; align-items: center; gap: 7px; }
+.modal p { font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; line-height: 1.6; }
+.mecarts { background: var(--surface-1); border-radius: var(--radius); padding: 10px; margin-bottom: 14px; max-height: 200px; overflow-y: auto; }
+.ml { font-family: var(--font-mono); font-size: 11px; padding: 4px 0; border-bottom: 0.5px solid var(--border); display: flex; justify-content: space-between; gap: 8px; }
+.ml:last-child { border-bottom: none; }
+.mbtns { display: flex; gap: 8px; justify-content: flex-end; }
+
+#toast { position: fixed; bottom: 20px; right: 20px; background: var(--surface-2); border: 0.5px solid var(--border); border-radius: 8px; padding: 10px 16px; font-size: 13px; opacity: 0; transform: translateY(8px); transition: all .25s; pointer-events: none; z-index: 999; max-width: 340px; }
+#toast.show { opacity: 1; transform: translateY(0); }
+#toast.tok { border-color: var(--ok-b); color: var(--ok-t); }
+#toast.terr { border-color: var(--er-b); color: var(--er-t); }
+#toast.twarn { border-color: var(--wa-b); color: var(--wa-t); }
 </style>
 </head>
 <body>
-<header>
-  <div class="logo">
-    <div class="logo-icon"><i class="ti ti-users" aria-hidden="true"></i></div>
-    BOM Client — Analyse & Codification
+<div class="wrap">
+  <div class="app">
+    <div class="hdr">
+      <div class="logo">
+        <img src="picto-pp.png" alt="Proto Process" width="26" height="26" style="object-fit:contain" onerror="this.style.display='none'">
+        <span class="lt">PROTO PROCESS</span><span class="ls">/</span><span class="lo">Appro V2</span>
+      </div>
+      <div class="hstats">
+        <div class="hs er"><strong id="stat-alertes">—</strong> alertes</div>
+        <div class="hs wa"><strong id="stat-encours">—</strong> en cours</div>
+        <div class="hs ok"><strong id="stat-expedies">—</strong> expédiés</div>
+      </div>
+    </div>
+    <div class="tabs">
+      <div class="tab" data-tab="reception"><i class="ti ti-package" aria-hidden="true"></i> Réception <span class="bdg er" id="rec-badge"></span></div>
+      <div class="tab on" data-tab="suivi"><i class="ti ti-timeline" aria-hidden="true"></i> Suivi commandes <span class="bdg er" id="tab-badge-suivi"></span></div>
+      <div class="tab" data-tab="qualite"><i class="ti ti-shield-check" aria-hidden="true"></i> Qualité</div>
+    </div>
+
+    <!-- ============== ONGLET SUIVI COMMANDES (fonctionnel) ============== -->
+    <div class="page on" id="page-suivi">
+      <div class="tb">
+        <div class="srch"><i class="ti ti-search" style="font-size:14px" aria-hidden="true"></i><input id="suivi-search" type="text" placeholder="Rechercher SO, fournisseur, IPN, MPN…"></div>
+        <div class="flt" id="suivi-flt-alertes"><i class="ti ti-alert-triangle" style="font-size:13px" aria-hidden="true"></i> Alertes d'abord</div>
+        <div class="flt"><i class="ti ti-building-store" style="font-size:13px" aria-hidden="true"></i>
+          <select id="suivi-flt-fournisseur"><option value="">Fournisseur</option></select>
+        </div>
+        <div class="flt" id="suivi-refresh"><i class="ti ti-refresh" style="font-size:13px" aria-hidden="true"></i> Actualiser</div>
+      </div>
+      <div id="suivi-alert-banner"></div>
+      <div class="body" id="suivi-body">
+        <div class="loading"><i class="ti ti-loader-2" aria-hidden="true"></i> Chargement…</div>
+      </div>
+    </div>
+
+    <!-- ============== ONGLET RÉCEPTION (fonctionnel) ============== -->
+    <div class="page" id="page-reception">
+      <div class="tb">
+        <div class="srch"><i class="ti ti-search" style="font-size:14px" aria-hidden="true"></i><input id="rec-search" type="text" placeholder="Rechercher SO, fournisseur, IPN, MPN…"></div>
+        <div class="flt" id="rec-flt-alertes"><i class="ti ti-bell" style="font-size:13px" aria-hidden="true"></i> Alertes seules</div>
+        <div class="flt"><i class="ti ti-building-store" style="font-size:13px" aria-hidden="true"></i>
+          <select id="rec-flt-fournisseur"><option value="">Fournisseur</option></select>
+        </div>
+        <div class="flt" id="rec-refresh"><i class="ti ti-refresh" style="font-size:13px" aria-hidden="true"></i> Actualiser</div>
+      </div>
+      <div id="rec-alert-banner"></div>
+      <div class="cnt" id="rec-count"></div>
+      <div class="body" id="rec-body">
+        <div class="loading"><i class="ti ti-loader-2" aria-hidden="true"></i> Chargement…</div>
+      </div>
+    </div>
+
+    <!-- ============== ONGLET QUALITÉ (fonctionnel) ============== -->
+    <div class="page" id="page-qualite">
+      <div class="tb">
+        <div class="srch"><i class="ti ti-search" style="font-size:14px" aria-hidden="true"></i><input id="qual-search" type="text" placeholder="Rechercher SO, fournisseur, référence…"></div>
+        <div class="flt on" id="qual-flt-non-cloturees"><i class="ti ti-clock" style="font-size:13px" aria-hidden="true"></i> Non clôturées</div>
+        <div class="flt"><i class="ti ti-building-store" style="font-size:13px" aria-hidden="true"></i>
+          <select id="qual-flt-fournisseur"><option value="">Fournisseur</option></select>
+        </div>
+        <div class="flt"><i class="ti ti-tag" style="font-size:13px" aria-hidden="true"></i>
+          <select id="qual-flt-codenc"><option value="">Code NC</option></select>
+        </div>
+        <div class="flt" id="qual-refresh"><i class="ti ti-refresh" style="font-size:13px" aria-hidden="true"></i> Actualiser</div>
+        <div class="flt" id="qual-nouvelle" style="color:var(--pp-orange);border-color:#7a4a10"><i class="ti ti-plus" style="font-size:13px" aria-hidden="true"></i> Déclarer un problème</div>
+        <div class="flt" id="qual-reset" style="color:var(--er-t);border-color:var(--er-b)"><i class="ti ti-refresh-alert" style="font-size:13px" aria-hidden="true"></i> Réinitialiser les stats</div>
+      </div>
+      <div class="body" id="qual-body" style="padding-top:14px">
+        <div class="loading"><i class="ti ti-loader-2" aria-hidden="true"></i> Chargement…</div>
+      </div>
+    </div>
+
   </div>
-  <div style="display:flex;gap:8px;align-items:center;">
-    <a href="index.html" class="header-link"><i class="ti ti-arrow-left" aria-hidden="true"></i> BOM Analyzer</a>
-    <button onclick="document.getElementById('help-overlay').style.display='flex'" style="background:none;border:1px solid var(--border);border-radius:var(--radius);padding:5px 12px;cursor:pointer;font-size:12px;color:var(--text2);font-family:var(--sans);display:inline-flex;align-items:center;gap:5px;"><i class="ti ti-help" aria-hidden="true"></i> Guide</button>
-  </div>
-</header>
+  <div style="text-align:center;margin-top:14px;font-size:11px;color:var(--text-muted)" id="footer-note">Données live via webhooks n8n</div>
+</div>
 
-<div class="main">
-  <div class="tabs">
-    <button class="tab active" onclick="switchTab('analyse')">Analyse BOM Client</button>
-    <button class="tab" onclick="switchTab('rules')">Règles de codification</button>
-  </div>
 
-  <!-- ANALYSE TAB -->
-  <div class="panel active" id="tab-analyse">
-    <div class="card">
-      <div style="font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px;"><i class="ti ti-upload" style="color:var(--text2);font-size:16px;" aria-hidden="true"></i> 1 — Charger la BOM client</div>
-      <label for="client-file-input" style="text-transform:none;font-size:12px;font-weight:600;letter-spacing:0;cursor:pointer">
-        <div class="upload-zone" id="upload-zone">
-          <i class="ti ti-file-spreadsheet" aria-hidden="true"></i>
-          <span id="upload-label">Glisser-déposer un fichier XLS, XLSX, CSV ou TSV<br><small style="color:var(--text3)">ou cliquer pour parcourir</small></span>
-        </div>
-      </label>
-      <input type="file" id="client-file-input" accept=".xls,.xlsx,.csv,.tsv" style="display:none" onchange="handleUpload(this)" />
-      <div class="row2" style="margin-top:12px;margin-bottom:0">
-        <div class="col">
-          <label>Client</label>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <select id="client-select-analysis" onchange="onClientSelect()" style="flex:1">
-              <option value="__standard__">Standard (IPN autorisé)</option>
-            </select>
-            <button class="btn sm" onclick="showNewClientForm()" title="Ajouter un nouveau client" style="flex-shrink:0;white-space:nowrap"><i class="ti ti-plus" aria-hidden="true"></i> Nouveau</button>
-          </div>
-        </div>
-        <div class="col">
-          <label>Feuille Excel (si XLSX multi-onglets)</label>
-          <select id="sheet-select" onchange="onSheetChange()"><option value="0">Feuille 1</option></select>
-        </div>
-        <div class="col" style="max-width:200px">
-          <label>Ligne de début (en-têtes)</label>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <input type="number" id="start-row" value="1" min="1" max="50" style="width:70px;padding:7px 10px;font-size:13px;font-family:var(--sans);border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);outline:none;" onchange="onStartRowChange()" />
-            <span style="font-size:12px;color:var(--text2)">sur <span id="total-rows-hint">—</span> lignes</span>
-          </div>
-          <p class="hint">Ligne des en-têtes de colonnes</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="card" id="mapping-card" style="display:none">
-      <div style="font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
-        <i class="ti ti-columns" style="color:var(--text2);font-size:16px;" aria-hidden="true"></i> 2 — Mapping des colonnes
-        <span class="badge b-info" id="mapping-confidence-badge"></span>
-        <button class="btn sm" style="margin-left:auto" onclick="remapColumns()"><i class="ti ti-refresh" aria-hidden="true"></i> Redétecter</button>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-        <span style="font-size:12px;color:var(--text2)">Mapping client :</span>
-        <button class="btn sm" onclick="saveMappingForClient()"><i class="ti ti-device-floppy" aria-hidden="true"></i> Sauvegarder pour ce client</button>
-        <span id="mapping-save-status" style="font-size:11px;color:var(--green);display:none"><i class="ti ti-check" aria-hidden="true"></i> Sauvegardé</span>
-        <span id="mapping-loaded-badge" style="display:none" class="badge b-info"><i class="ti ti-history" aria-hidden="true"></i> Mapping client chargé</span>
-      </div>
-      <p class="hint" style="margin-bottom:12px">L'IA a détecté les colonnes ci-dessous. Corrigez si nécessaire. Utilisez "+" pour concaténer plusieurs colonnes.</p>
-      <div style="overflow-x:auto">
-        <table class="mapping-table">
-          <thead><tr><th style="width:28px"></th><th>Champ requis</th><th>Colonne(s) détectée(s)</th><th>Modifier / Concaténer</th><th>Aperçu</th></tr></thead>
-          <tbody id="mapping-tbody"></tbody>
-        </table>
-      </div>
-      <div id="mapping-loading" class="loading" style="display:none"><div class="spinner"></div> Détection des colonnes en cours…</div>
-    </div>
-
-    <div id="step3-bar" style="display:none">
-      <div class="actions-bar">
-        <button class="btn pink" onclick="analyseClientBOM()"><i class="ti ti-cpu" aria-hidden="true"></i> Analyser & Codifier (IA)</button>
-        <button class="btn" onclick="exportClientXLS()" id="btn-export" style="display:none"><i class="ti ti-file-download" aria-hidden="true"></i> Exporter XLS enrichi</button>
-        <button class="btn" onclick="resetAll()"><i class="ti ti-trash" aria-hidden="true"></i> Réinitialiser</button>
-      </div>
-      <div id="analysis-loading" class="loading" style="display:none"><div class="spinner"></div><span id="analysis-msg">Analyse en cours…</span></div>
-    </div>
-
-    <div id="results-section" style="display:none">
-      <div id="result-counters" class="counter-row"></div>
-      <div id="result-warnings"></div>
-      <div class="filter-bar">
-        <button class="filter-btn active f-all" onclick="setResultFilter('all',this)"><i class="ti ti-list" aria-hidden="true"></i> Tous <span class="filter-count" id="rfc-all">0</span></button>
-        <button class="filter-btn f-err" onclick="setResultFilter('error',this)" style="display:none"><i class="ti ti-x" aria-hidden="true"></i> Erreurs <span class="filter-count" id="rfc-err">0</span></button>
-        <button class="filter-btn f-warn" onclick="setResultFilter('warn',this)" style="display:none"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Warnings <span class="filter-count" id="rfc-warn">0</span></button>
-        <button class="filter-btn" onclick="setResultFilter('sensor',this)" style="display:none"><i class="ti ti-radar" aria-hidden="true"></i> Capteurs <span class="filter-count" id="rfc-sensor">0</span></button>
-        <button class="filter-btn" onclick="setResultFilter('battery',this)" style="display:none"><i class="ti ti-battery" aria-hidden="true"></i> Batteries <span class="filter-count" id="rfc-battery">0</span></button>
-        <button class="filter-btn" onclick="setResultFilter('not-sealed',this)" style="display:none"><i class="ti ti-droplet-off" aria-hidden="true"></i> Non étanches <span class="filter-count" id="rfc-sealed">0</span></button>
-        <button class="filter-btn" onclick="setResultFilter('msl4+',this)" style="display:none"><i class="ti ti-moisture" aria-hidden="true"></i> MSL≥4 <span class="filter-count" id="rfc-msl">0</span></button>
-      </div>
-      <div class="result-table-wrap">
-        <table class="result-table">
-          <thead id="result-thead"><tr></tr></thead>
-          <tbody id="result-tbody"></tbody>
-        </table>
-      </div>
-      <p style="font-size:11px;color:var(--text3);margin-top:8px">IPN et Manufacturer free éditables. Exportez en XLS pour import dans Luminovo.</p>
-    </div>
-  </div>
-
-  <!-- RULES TAB -->
-  <div class="panel" id="tab-rules">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:8px;">
-      <div>
-        <h2 style="font-size:18px;font-weight:600;margin-bottom:4px">Règles de codification IPN</h2>
-        <p style="font-size:13px;color:var(--text2)">Ces règles sont utilisées par l'IA dans tous les outils. Partagées via Google Sheet.</p>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <span class="save-indicator" id="save-indicator"><i class="ti ti-check" aria-hidden="true"></i> Sauvegardé</span>
-        <button class="btn primary" onclick="saveRules()"><i class="ti ti-device-floppy" aria-hidden="true"></i> Sauvegarder</button>
-        <button class="btn" onclick="resetRules()"><i class="ti ti-refresh" aria-hidden="true"></i> Réinitialiser</button>
-      </div>
-    </div>
-
-    <div class="rules-section">
-      <div class="rules-section-title"><span>Condensateur céramique / film</span><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">C(val)-(boitier)-(V)-(tolP)-(diélec)</span></div>
-      <div class="card" style="margin-bottom:0"><textarea id="rule-capacitor" class="rules-textarea" rows="5"></textarea></div>
-    </div>
-    <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title"><span>Condensateur tantale</span><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">CT(val)-(boitier)-(V)-(tolP)-(ESR)</span></div>
-      <div class="card" style="margin-bottom:0"><textarea id="rule-tantalum" class="rules-textarea" rows="3"></textarea></div>
-    </div>
-    <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title"><span>Résistances</span><span style="font-family:var(--mono);font-size:11px;color:var(--text3)">R(val)-(boitier)[-(PPM)][-(W)]</span></div>
-      <div class="card" style="margin-bottom:0"><textarea id="rule-resistor" class="rules-textarea" rows="7"></textarea></div>
-    </div>
-    <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title"><span>Autres composants</span></div>
-      <div class="card" style="margin-bottom:0"><textarea id="rule-other" class="rules-textarea" rows="3"></textarea></div>
-    </div>
-    <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title"><span>Suffixes conditionnement à supprimer</span></div>
-      <div class="card" style="margin-bottom:0"><input type="text" id="rule-suffixes" /></div>
-    </div>
-    <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title"><span>Composants sensibles</span></div>
-      <div class="card" style="margin-bottom:0">
-        <div class="row2">
-          <div class="col"><label>Capteurs</label><input type="text" id="rule-sensors" /></div>
-          <div class="col"><label>Énergie</label><input type="text" id="rule-batteries" /></div>
-        </div>
-        <div class="row2" style="margin-bottom:0">
-          <div class="col"><label>Non étanches</label><input type="text" id="rule-sealed" /></div>
-          <div class="col"><label>Niveau MSL minimum</label>
-            <select id="rule-msl"><option value="4">MSL ≥ 4</option><option value="3">MSL ≥ 3</option><option value="2">MSL ≥ 2</option></select>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="extra-rules-container"></div>
-
-    <div class="rules-section" style="margin-top:1.5rem">
-      <div class="rules-section-title"><span>Configuration API & Sources</span></div>
-      <div class="card" style="margin-bottom:0">
-        <div class="row2">
-          <div class="col"><label>Clé API Anthropic</label><input type="text" id="cfg-api-key" placeholder="sk-ant-api03-…" autocomplete="off" /></div>
-          <div class="col"><label>URL Proxy fournisseurs</label><input type="text" id="cfg-proxy-url" value="https://writerjs.olivier-comet.workers.dev" /></div>
-        </div>
-        <div class="row2">
-          <div class="col">
-            <label>URL Google Sheet clients</label>
-            <div style="display:flex;gap:8px;">
-              <input type="text" id="cfg-clients-url" value="https://script.google.com/macros/s/AKfycbxa04R-ZDzXx0OWsz3kISwFcpnT2hgk4-8uMxdI4wPBcjQ8N52xHzu_sjMfpLkrQesg/exec" style="flex:1" />
-              <button class="btn sm" onclick="loadClientsFromURL()"><i class="ti ti-refresh" aria-hidden="true"></i> Charger</button>
-            </div>
-            <div id="clients-load-status" style="font-size:12px;margin-top:6px;"></div>
-          </div>
-          <div class="col">
-            <label>URL Google Sheet règles partagées</label>
-            <div style="display:flex;gap:8px;">
-              <input type="text" id="cfg-rules-url" value="https://script.google.com/macros/s/AKfycbwWqEWTLh8EVPq9tnTIbqyoa9gdKlKimAs74iMVobZfI7WlGxWOSJqmlujBbCFcl5H-eg/exec" style="flex:1" />
-              <button class="btn sm" onclick="loadRulesFromURL()"><i class="ti ti-refresh" aria-hidden="true"></i> Charger</button>
-            </div>
-            <div id="rules-url-status" style="font-size:12px;margin-top:6px;"></div>
-          </div>
-        </div>
-        <p class="hint">Sauvegardez après toute modification.</p>
-      </div>
+<div class="ov" id="ov-ecart">
+  <div class="modal">
+    <h3><i class="ti ti-alert-triangle" aria-hidden="true"></i> Écart détecté</h3>
+    <p>Ces quantités ne correspondent pas à l'attendu. Un email sera envoyé à prod.methodes@proto-process.fr et l'écart sera enregistré dans le master.</p>
+    <div class="mecarts" id="ecart-liste"></div>
+    <div class="mbtns">
+      <button class="btn-s" onclick="fermerModalEcart()">Annuler</button>
+      <button class="btn-p" style="background:var(--er-t)" onclick="confirmerEcart()"><i class="ti ti-send" aria-hidden="true"></i> Confirmer et signaler</button>
     </div>
   </div>
 </div>
 
-<!-- NEW CLIENT MODAL -->
-<div id="new-client-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:3000;align-items:center;justify-content:center;">
-  <div style="background:var(--surface);border-radius:var(--radius-lg);padding:1.5rem;width:420px;max-width:calc(100vw - 40px);box-shadow:0 16px 48px rgba(0,0,0,0.2);position:relative;">
-    <button onclick="hideNewClientForm()" style="position:absolute;top:12px;right:12px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button>
-    <h3 style="font-size:15px;font-weight:600;margin-bottom:4px">Nouveau client</h3>
-    <p style="font-size:12px;color:var(--text2);margin-bottom:1rem">Ajouté dans le Google Sheet clients et disponible immédiatement.</p>
-    <div style="margin-bottom:12px"><label>Nom du client</label><input type="text" id="new-client-nom" placeholder="ex: Airbus, Thales, Client X..." /></div>
-    <div style="margin-bottom:12px">
-      <label>MPN strict</label>
-      <div style="display:flex;gap:12px;margin-top:4px">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;text-transform:none;letter-spacing:0;font-weight:400;color:var(--text)"><input type="radio" name="new-client-mpn" value="non" checked /> Standard (IPN autorisé)</label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;text-transform:none;letter-spacing:0;font-weight:400;color:var(--text)"><input type="radio" name="new-client-mpn" value="oui" /> MPN strict 🔒</label>
-      </div>
-      <p class="hint" style="margin-top:6px">Exception ligne par ligne via la colonne <strong>Manufacturer free</strong>.</p>
+<div class="ov" id="ov-declarer">
+  <div class="modal" style="max-width:420px">
+    <h3 style="color:var(--pp-orange)"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Déclarer un problème</h3>
+    <p>Les champs auto-remplis viennent du contexte — complétez les impacts.</p>
+    <div style="background:var(--surface-1);border-radius:var(--radius);padding:9px 12px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">SO</div><div style="font-size:11px;font-weight:500" id="decl-so">—</div></div>
+      <div><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Fournisseur</div><div style="font-size:11px;font-weight:500" id="decl-fournisseur">—</div></div>
+      <div><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">N° commande</div><div style="font-size:11px;font-weight:500" id="decl-commande">—</div></div>
+      <div><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Référence</div><div style="font-size:11px;font-weight:500" id="decl-ref">—</div></div>
     </div>
-    <div style="margin-bottom:16px"><label>Notes (optionnel)</label><input type="text" id="new-client-notes" placeholder="ex: MPN figé contractuellement..." /></div>
-    <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end">
-      <div id="new-client-status" style="font-size:12px;flex:1"></div>
-      <button class="btn" onclick="hideNewClientForm()">Annuler</button>
-      <button class="btn pink" id="btn-add-client" onclick="addNewClient()"><i class="ti ti-plus" aria-hidden="true"></i> Ajouter</button>
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">Code NC</div>
+      <select id="decl-codenc" style="width:100%;padding:6px 9px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--surface-1);color:var(--text-primary);font-size:12px;font-family:var(--font-sans)">
+        <option>Retard de livraison</option><option>PCB</option><option>Erreur réf.</option><option>Quantité NC</option>
+        <option>Emballage MSL NC</option><option>NC Qualité</option><option>Stock fourn NC</option>
+      </select>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">Impact production</div>
+      <select id="decl-impactprod" style="width:100%;padding:6px 9px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--surface-1);color:var(--text-primary);font-size:12px;font-family:var(--font-sans)">
+        <option>pas d'impact</option><option>Prod décalée / stoppée</option><option>Montage Reprise</option>
+        <option>Retard expé</option><option>Montage non conforme IPC</option><option>PCB HS</option>
+      </select>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">Impact client</div>
+      <select id="decl-impactclient" style="width:100%;padding:6px 9px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--surface-1);color:var(--text-primary);font-size:12px;font-family:var(--font-sans)">
+        <option>pas d'impact</option><option>Retard livraison</option><option>Réclamation client</option>
+        <option>Non conforme IPC</option><option>Carte HS</option>
+      </select>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">Problème</div>
+      <textarea id="decl-probleme" style="width:100%;padding:6px 9px;border:0.5px solid var(--border);border-radius:var(--radius);background:var(--surface-1);color:var(--text-primary);font-size:12px;font-family:var(--font-sans);resize:none;height:56px"></textarea>
+    </div>
+    <div class="mbtns">
+      <button class="btn-s" onclick="fermerModalDeclarer()">Annuler</button>
+      <button class="btn-p" onclick="soumettreDeclaration()"><i class="ti ti-send" aria-hidden="true"></i> Envoyer dans F22</button>
     </div>
   </div>
 </div>
 
-<!-- CHAT -->
-<button class="chat-fab" onclick="toggleClientChat()" title="Assistant IA">
-  <i class="ti ti-message-circle" id="chat-fab-icon-c" aria-hidden="true"></i>
-</button>
-<div class="chat-panel" id="chat-panel-c">
-  <div class="chat-header">
-    <div style="display:flex;align-items:center;gap:8px;"><i class="ti ti-sparkles" style="color:var(--pink)" aria-hidden="true"></i> Assistant BOM Client <span id="chat-ctx-c" style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;background:var(--pink-bg);color:var(--pink);border:1px solid var(--pink-border)">Aucune BOM</span></div>
-    <button onclick="toggleClientChat()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:16px"><i class="ti ti-x" aria-hidden="true"></i></button>
-  </div>
-  <div class="chat-messages" id="chat-msgs-c">
-    <div class="chat-msg assistant"><div class="chat-bubble">Bonjour ! Assistant BOM Client. Chargez une BOM pour commencer.</div><div class="chat-msg-time">Maintenant</div></div>
-  </div>
-  <div class="chat-typing" id="chat-typing-c"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-  <div class="chat-footer">
-    <textarea class="chat-input" id="chat-input-c" placeholder="Question sur la BOM client…" rows="1"
-      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();event.stopPropagation();sendClientChat();return false;}"
-      oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,100)+'px'"></textarea>
-    <button class="chat-send-btn" id="chat-send-c" onclick="sendClientChat()"><i class="ti ti-send" aria-hidden="true"></i></button>
-  </div>
-</div>
-
-<!-- HELP MODAL -->
-<div id="help-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:2000;align-items:center;justify-content:center;">
-  <div style="background:var(--surface);border-radius:var(--radius-lg);padding:2rem;max-width:700px;width:calc(100vw - 40px);max-height:80vh;overflow-y:auto;position:relative;box-shadow:0 16px 48px rgba(0,0,0,0.2);">
-    <button onclick="document.getElementById('help-overlay').style.display='none'" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:var(--text2)"><i class="ti ti-x"></i></button>
-    <h2 style="font-size:18px;font-weight:600;margin-bottom:4px">BOM Client — Guide rapide</h2>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:1.5rem">Analyse et codification des BOM reçues des clients, avant import dans Luminovo</p>
-    <div style="font-weight:600;font-size:13px;margin-bottom:10px">Workflow</div>
-    <div style="font-size:12px;color:var(--text2);line-height:2;margin-bottom:1rem">
-      <span style="background:var(--pink-bg);color:var(--pink);padding:2px 8px;border-radius:4px;font-weight:500">1</span> Upload BOM client &nbsp;→&nbsp;
-      <span style="background:var(--pink-bg);color:var(--pink);padding:2px 8px;border-radius:4px;font-weight:500">2</span> Vérifier le mapping &nbsp;→&nbsp;
-      <span style="background:var(--pink-bg);color:var(--pink);padding:2px 8px;border-radius:4px;font-weight:500">3</span> Sélectionner le client &nbsp;→&nbsp;
-      <span style="background:var(--pink-bg);color:var(--pink);padding:2px 8px;border-radius:4px;font-weight:500">4</span> Analyser & Codifier &nbsp;→&nbsp;
-      <span style="background:var(--pink-bg);color:var(--pink);padding:2px 8px;border-radius:4px;font-weight:500">5</span> Exporter XLS pour Luminovo
-    </div>
-  </div>
-</div>
+<div id="toast"></div>
 
 <script>
-// ===================== CONSTANTS =====================
-const CLIENTS_URL_WRITE = "https://script.google.com/macros/s/AKfycbxa04R-ZDzXx0OWsz3kISwFcpnT2hgk4-8uMxdI4wPBcjQ8N52xHzu_sjMfpLkrQesg/exec";
-const RULES_URL_WRITE   = "https://script.google.com/macros/s/AKfycbwWqEWTLh8EVPq9tnTIbqyoa9gdKlKimAs74iMVobZfI7WlGxWOSJqmlujBbCFcl5H-eg/exec";
+const WEBHOOK_SUIVI = 'https://protoprocess.app.n8n.cloud/webhook/v2-get-suivi';
 
-// ===================== STATE =====================
-let rawData = [];
-let headers = [];
-let workbook = null;
-let activeSheetIdx = 0;
-let columnMapping = {};
-let analysisResults = [];
-let resultMeta = [];
-let clientsList = [];
-let activeClientAnalysis = { nom:'Standard', mpn_strict:false, notes:'' };
-let currentResultFilter = 'all';
-let apiKey = '';
-let proxyUrl = '';
-let chatHistoryC = [];
-let chatOpenC = false;
-
-const REQUIRED_FIELDS = [
-  { key:'designator',   label:'Désignateur / Référence',              required:true  },
-  { key:'mpn',          label:'MPN (référence fabricant)',             required:false },
-  { key:'description',  label:'Description / Valeur',                 required:false },
-  { key:'notes',        label:'Notes / Specs techniques',             required:false },
-  { key:'manufacturer', label:'Fabricant(s)',                         required:false },
-  { key:'qty',          label:'Quantité',                             required:false },
-  { key:'mfr_free',     label:'Equivalent autorisé (Mfr free)',       required:false },
-  { key:'ipn',          label:'IPN existant (si déjà codifié)',       required:false },
-  { key:'dist_code',    label:'Code distributeur (DigiKey/Mouser/Farnell)', required:false },
-];
-
-const DEFAULT_RULES = {
-  capacitor:`Format: C(valeur)-(boitier)-(tensionV)-(tolP)-(diélectrique)\n- Valeur: 10U=10µF, 1N5=1.5nF, 10P=10pF, 100N=100nF\n- Tension: 16V, 6V3. Si >=1000V écrire en kV: 1KV, 1KV5\n- Tolérance: P remplace % — 10P=10%, 5P=5%, 20P=20%\nExemples: C10U-0603-16V-10P-X5R | C1N5-0603-50V-20P-X7R | C100P-0805-1KV-5P-C0G`,
-  tantalum:`Format: CT(valeur)-(boitier A/B/C/D/E)-(tensionV)-(tolP)-(ESR)\nExemples: CT10U-A-20V-20P-5R | CT100U-B-6V3-10P-0R4`,
-  resistor:`Format: R(valeur)-(boitier)[-(PPM si coeff <100PPM)][-(W si puissance non standard)]\n- Valeur 0 ohm: TOUJOURS 0R → R0R-0603\n- Tolérance >=1%: non codifiée. PPM toujours en entier (25PPM pas 25P)\n- Puissance std: 0201=50mW,0402=62mW,0603=100mW,0805=125mW,1206=250mW,2512=1W\nExemples: R10K-0603 | R0R-0603 | R40K2-0603-0W33 | R30K-0603-10PPM`,
-  other:`Utiliser le MPN sans suffixes de conditionnement.\nExemples: LM317MBSTT3G | ISL43L210IHZ`,
-  suffixes:'#PBF, #TRPBF, TR, -T, /TR, REEL, TAPE, CT',
-  sensors:'pressure, humidity, temperature, sensor, transducer, capteur, pression, humidité',
-  batteries:'battery, pile, accumulator, lithium, LiPo, CR2032',
-  sealed:'relay, relais, not sealed, non étanche',
-  msl:'4'
+const FOURNISSEUR_BADGE = {
+  'digikey': 'f-dk', 'farnell': 'f-fn', 'mouser': 'f-mo',
+  'rs components': 'f-rs', 'tme': 'f-tm',
+  'safe-pcb': 'f-sf', 'ellipse': 'f-sf', 'inventory': 'f-iv'
 };
+function badgeClass(fournisseur) {
+  const k = (fournisseur || '').toLowerCase().trim();
+  return FOURNISSEUR_BADGE[k] || 'f-xx';
+}
 
-// ===================== INIT =====================
-window.addEventListener('load', () => {
-  loadConfig();
-  loadRules();
-  initUploadZone();
-  loadClientsFromURL(true);
-  loadRulesFromURL(true);
+function fmtDate(v) {
+  if (!v) return '';
+  const s = String(v);
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  return s;
+}
+
+let SUIVI_DATA = null;
+
+async function chargerSuivi() {
+  const body = document.getElementById('suivi-body');
+  const banner = document.getElementById('suivi-alert-banner');
+  body.innerHTML = '<div class="loading"><i class="ti ti-loader-2" aria-hidden="true"></i> Chargement…</div>';
+  banner.innerHTML = '';
+  try {
+    const res = await fetch(WEBHOOK_SUIVI);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    SUIVI_DATA = data;
+    peuplerFiltreFournisseur(data.commandes || []);
+    renderSuivi();
+  } catch (err) {
+    body.innerHTML = `<div class="errbox"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Impossible de charger les données (${err.message}). Vérifie que le workflow n8n est actif.</div>`;
+  }
+}
+
+function peuplerFiltreFournisseur(commandes) {
+  const sel = document.getElementById('suivi-flt-fournisseur');
+  const existants = new Set(Array.from(sel.options).map(o => o.value).filter(Boolean));
+  const fournisseurs = Array.from(new Set(commandes.map(c => c.fournisseur).filter(Boolean))).sort();
+  fournisseurs.forEach(f => {
+    if (!existants.has(f)) {
+      const opt = document.createElement('option');
+      opt.value = f; opt.textContent = f;
+      sel.appendChild(opt);
+    }
+  });
+}
+
+function ligneStatutPill(statut) {
+  const s = (statut || '').trim();
+  if (s === 'Expédié' || s === 'Reçu') return `<span class="pill p-ok"><i class="ti ti-check" style="font-size:10px" aria-hidden="true"></i> ${s}</span>`;
+  if (s === 'Backorder') return `<span class="pill p-wa"><i class="ti ti-clock" style="font-size:10px" aria-hidden="true"></i> Backorder</span>`;
+  if (s === 'Retard') return `<span class="pill p-er"><i class="ti ti-clock-exclamation" style="font-size:10px" aria-hidden="true"></i> Retard</span>`;
+  return `<span class="pill p-gy">${s || 'Commandé'}</span>`;
+}
+
+function calculerProgression(cmd) {
+  let total = 0, avance = 0;
+  (cmd.bls || []).forEach(bl => (bl.lignes || []).forEach(l => {
+    total++;
+    if (l.statut_ligne === 'Expédié' || l.statut_ligne === 'Reçu') avance++;
+  }));
+  return { total, avance };
+}
+
+const WEBHOOK_AJOUTER_FOURNISSEUR = 'https://protoprocess.app.n8n.cloud/webhook/v2-ajouter-fournisseur';
+
+async function validerFournisseur(domaine, fournisseurPropose, btn) {
+  if (!domaine) { toast("Domaine expéditeur inconnu — impossible de valider.", 'terr'); return; }
+  const nom = window.prompt(`Confirmer le nom du fournisseur pour le domaine "${domaine}" :`, fournisseurPropose || '');
+  if (!nom) return;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader-2" aria-hidden="true"></i>';
+  try {
+    const res = await fetch(WEBHOOK_AJOUTER_FOURNISSEUR, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ domaine, fournisseur: nom })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    toast(data.ajoute ? `✓ ${nom} ajouté pour ${domaine}` : `${domaine} était déjà connu`, 'tok');
+    chargerSuivi();
+  } catch (err) {
+    toast('Erreur : ' + err.message, 'terr');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i> Valider fournisseur';
+  }
+}
+
+function renderCarteCommande(cmd) {
+  const badge = badgeClass(cmd.fournisseur);
+  const { total, avance } = calculerProgression(cmd);
+  const pct = total > 0 ? Math.round((avance / total) * 100) : 0;
+
+  let cardClass = 'ok', pillHtml = `<span class="pill p-ok"><i class="ti ti-check" style="font-size:10px" aria-hidden="true"></i> ${cmd.statut_global || 'En cours'}</span>`, pfClass = 'ok';
+  if (cmd.en_retard) {
+    cardClass = 'er'; pfClass = 'er';
+    pillHtml = `<span class="pill p-er"><i class="ti ti-clock-exclamation" style="font-size:10px" aria-hidden="true"></i> Retard J+${cmd.jours_retard}</span>`;
+  } else if (cmd.statut_global === 'Backorder') {
+    cardClass = 'wa'; pfClass = 'wa';
+    pillHtml = `<span class="pill p-wa"><i class="ti ti-clock" style="font-size:10px" aria-hidden="true"></i> Backorder</span>`;
+  } else if (cmd.statut_global === 'Expédié') {
+    cardClass = 'ok'; pfClass = 'ok';
+  } else {
+    cardClass = 'pp'; pfClass = 'pp';
+    pillHtml = `<span class="pill p-gy">${cmd.statut_global || 'Commandé'}</span>`;
+  }
+
+  const metaBits = [cmd.client, cmd.ref_carte, cmd.date_commande ? ('Commandé le ' + fmtDate(cmd.date_commande)) : null].filter(Boolean).join(' · ');
+
+  const blsHtml = (cmd.bls || []).map(bl => {
+    const blOk = bl.statut_bl === 'Expédié' || bl.statut_bl === 'Reçu';
+    const blDot = blOk ? 'ok' : (cmd.en_retard ? 'er' : 'pp');
+    const infoParts = [];
+    if (bl.date_expedition) infoParts.push('Expédié le ' + fmtDate(bl.date_expedition));
+    infoParts.push((bl.lignes || []).length + ' ligne' + ((bl.lignes || []).length > 1 ? 's' : ''));
+    const trackingHtml = bl.n_tracking ? `<span class="blt"><i class="ti ti-truck" style="font-size:12px" aria-hidden="true"></i> ${bl.n_tracking}</span>` : '';
+
+    const lignesHtml = (bl.lignes || []).map(l => `
+      <tr>
+        <td><div class="ipn">${l.ipn || l.mpn || ''}</div><div class="mpn2">${l.mpn || ''}</div></td>
+        <td class="qn">${l.qte_commandee || ''}</td>
+        <td class="qn" style="${l.qte_recue ? '' : 'color:var(--text-muted)'}">${l.qte_recue || '—'}</td>
+        <td style="font-size:11px;color:var(--text-secondary)">${fmtDate(l.date_ar)}</td>
+        <td>${ligneStatutPill(l.statut_ligne)}</td>
+        <td><div class="ac">
+          <button class="ab ab-pb" onclick='ouvrirPopupDeclaration({so: ${JSON.stringify(cmd.so)}, fournisseur: ${JSON.stringify(cmd.fournisseur)}, num_commande: ${JSON.stringify(cmd.num_commande_fournisseur || "")}, reference: ${JSON.stringify(l.ipn || l.mpn || "")}, probleme: ${JSON.stringify((l.ipn || l.mpn || "") + " — problème signalé depuis Suivi")}, retard: ${cmd.en_retard ? "true" : "false"}})' title="Déclarer un problème"><i class="ti ti-alert-triangle" style="font-size:11px" aria-hidden="true"></i> Pb</button>
+        </div></td>
+      </tr>`).join('');
+
+    return `
+      <div class="bls">
+        <span class="bld ${blDot}"></span><span class="bll">${bl.n_bl ? ('BL ' + bl.n_bl) : 'Sans BL'}</span>
+        <span class="bli">${infoParts.join(' · ')}</span>
+        <div class="bls-r">${trackingHtml}<span class="pill ${blOk ? 'p-ok' : 'p-gy'}">${bl.statut_bl || 'Commandé'}</span></div>
+      </div>
+      <table class="lt2">
+        <thead><tr><th>IPN / MPN</th><th style="text-align:center">Commandé</th><th style="text-align:center">Reçu</th><th>Date AR</th><th>Statut</th><th style="text-align:right">Actions</th></tr></thead>
+        <tbody>${lignesHtml || '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:14px">Aucune ligne détaillée</td></tr>'}</tbody>
+      </table>`;
+  }).join('');
+
+  return `
+    <div class="card ${cardClass}">
+      <div class="ch" onclick="this.closest('.card').classList.toggle('open')">
+        <span class="fb ${badge}">${(cmd.fournisseur || 'INCONNU').toUpperCase()}</span>
+        <div class="ci">
+          <div class="cso">${cmd.so || '(SO inconnu)'} ${pillHtml}${cmd.fournisseur_a_valider ? ' <span class="pill p-wa"><i class="ti ti-help-circle" style="font-size:10px" aria-hidden="true"></i> Fournisseur à valider</span>' : ''}</div>
+          <div class="cm">${metaBits || '—'}</div>
+        </div>
+        <div class="pw"><div class="pb"><div class="pf ${pfClass}" style="width:${pct}%"></div></div><span class="pp2">${avance}/${total || '—'}</span></div>
+        <i class="ti ti-chevron-down chv" aria-hidden="true"></i>
+      </div>
+      <div class="cbdy">
+        ${blsHtml || '<div style="padding:14px 15px;color:var(--text-muted);font-size:12px">Aucun bon de livraison enregistré pour l&#39;instant.</div>'}
+        <div class="cft">
+          <span class="cfm">${cmd.num_commande_fournisseur ? ('N° commande ' + cmd.num_commande_fournisseur) : 'N° commande inconnu'}${cmd.date_reference ? (' · Prévu le ' + fmtDate(cmd.date_reference)) : ''}</span>
+          ${cmd.fournisseur_a_valider ? `<button class="btn-p" style="background:var(--wa-t)" onclick='validerFournisseur(${JSON.stringify(cmd.domaine_expediteur)}, ${JSON.stringify(cmd.fournisseur)}, this)'><i class="ti ti-check" aria-hidden="true"></i> Valider fournisseur</button>` : ''}
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderSuivi() {
+  if (!SUIVI_DATA) return;
+  const body = document.getElementById('suivi-body');
+  const banner = document.getElementById('suivi-alert-banner');
+  const searchTerm = document.getElementById('suivi-search').value.trim().toLowerCase();
+  const fournisseurFilter = document.getElementById('suivi-flt-fournisseur').value;
+  const alertesDabord = document.getElementById('suivi-flt-alertes').classList.contains('on');
+
+  let commandes = (SUIVI_DATA.commandes || []).filter(c => c.so !== '_placeholder_');
+
+  if (searchTerm) {
+    commandes = commandes.filter(c => {
+      const haystack = [c.so, c.fournisseur, c.ref_carte, c.client].join(' ').toLowerCase();
+      const inLignes = (c.bls || []).some(bl => (bl.lignes || []).some(l =>
+        (l.ipn || '').toLowerCase().includes(searchTerm) || (l.mpn || '').toLowerCase().includes(searchTerm)
+      ));
+      return haystack.includes(searchTerm) || inLignes;
+    });
+  }
+  if (fournisseurFilter) commandes = commandes.filter(c => c.fournisseur === fournisseurFilter);
+
+  const retards = commandes.filter(c => c.en_retard);
+  const backorders = commandes.filter(c => !c.en_retard && c.statut_global === 'Backorder');
+  const enCours = commandes.filter(c => !c.en_retard && c.statut_global !== 'Backorder');
+
+  document.getElementById('stat-alertes').textContent = retards.length;
+  document.getElementById('stat-encours').textContent = backorders.length + enCours.length;
+  document.getElementById('stat-expedies').textContent = commandes.filter(c => c.statut_global === 'Expédié').length;
+  document.getElementById('tab-badge-suivi').textContent = retards.length || '';
+  document.getElementById('tab-badge-suivi').style.display = retards.length ? 'inline-flex' : 'none';
+
+  banner.innerHTML = retards.length
+    ? `<div class="alrt"><i class="ti ti-alert-triangle" style="font-size:14px" aria-hidden="true"></i> ${retards.length} commande${retards.length > 1 ? 's' : ''} en retard — date promise dépassée sans expédition confirmée</div>`
+    : '';
+
+  if (!commandes.length) {
+    body.innerHTML = '<div class="empty"><i class="ti ti-inbox" aria-hidden="true"></i>Aucune commande ne correspond à ces critères.</div>';
+    return;
+  }
+
+  let html = '';
+  if (alertesDabord) {
+    if (retards.length) html += `<div class="stitle"><i class="ti ti-alert-triangle" style="color:var(--er-t);font-size:13px" aria-hidden="true"></i> Retards — ${retards.length}</div><div class="body" style="padding:0 0 4px">` + retards.map(renderCarteCommande).join('') + '</div>';
+    if (backorders.length) html += `<div class="stitle"><i class="ti ti-clock" style="color:var(--wa-t);font-size:13px" aria-hidden="true"></i> Backorders — ${backorders.length}</div><div class="body" style="padding:0 0 4px">` + backorders.map(renderCarteCommande).join('') + '</div>';
+    if (enCours.length) html += `<div class="stitle"><i class="ti ti-refresh" style="color:var(--text-muted);font-size:13px" aria-hidden="true"></i> En cours — ${enCours.length}</div><div class="body" style="padding:0 0 4px">` + enCours.map(renderCarteCommande).join('') + '</div>';
+  } else {
+    html = '<div class="body" style="padding-top:14px">' + commandes.map(renderCarteCommande).join('') + '</div>';
+  }
+  body.innerHTML = html;
+}
+
+// ============== ONGLET RÉCEPTION ==============
+const WEBHOOK_RECEPTION = 'https://protoprocess.app.n8n.cloud/webhook/v2-get-reception';
+const WEBHOOK_VALIDER = 'https://protoprocess.app.n8n.cloud/webhook/v2-valider-reception';
+
+let RECEPTION_DATA = [];
+const RECEPTION_ETAT = {};
+let ECART_EN_ATTENTE = null;
+
+function cardKeyReception(c) {
+  return (c.so + '_' + c.fournisseur).replace(/[^a-z0-9]/gi, '_');
+}
+
+function parseDatePrevuReception(str) {
+  if (!str || str === '—') return null;
+  const s = str.toString().trim();
+  let m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return new Date(parseInt(m[3]), parseInt(m[2]) - 1, parseInt(m[1]));
+  m = s.match(/(\d{1,2})\/(\d{1,2})(?!\/)/);
+  if (m) return new Date(new Date().getFullYear(), parseInt(m[2]) - 1, parseInt(m[1]));
+  return null;
+}
+
+function statutReception(c) {
+  const dateRef = parseDatePrevuReception(c.datePrevu);
+  const aujourdhui = new Date(); aujourdhui.setHours(0, 0, 0, 0);
+  const enRetard = !!(dateRef && aujourdhui > dateRef);
+  const joursRetard = enRetard ? Math.floor((aujourdhui - dateRef) / 86400000) : null;
+  return { enRetard, joursRetard };
+}
+
+async function chargerReception() {
+  const body = document.getElementById('rec-body');
+  body.innerHTML = '<div class="loading"><i class="ti ti-loader-2" aria-hidden="true"></i> Chargement… (peut prendre 20-30s, une GSheet par affaire)</div>';
+  try {
+    const res = await fetch(WEBHOOK_RECEPTION);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    RECEPTION_DATA = data.colis || [];
+    peuplerFiltreFournisseurReception(RECEPTION_DATA);
+    renderReception();
+  } catch (err) {
+    body.innerHTML = `<div class="errbox"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Impossible de charger les données (${err.message}).</div>`;
+  }
+}
+
+function peuplerFiltreFournisseurReception(colis) {
+  const sel = document.getElementById('rec-flt-fournisseur');
+  const existants = new Set(Array.from(sel.options).map(o => o.value).filter(Boolean));
+  const fournisseurs = Array.from(new Set(colis.map(c => c.fournisseur).filter(Boolean))).sort();
+  fournisseurs.forEach(f => {
+    if (!existants.has(f)) {
+      const opt = document.createElement('option');
+      opt.value = f; opt.textContent = f;
+      sel.appendChild(opt);
+    }
+  });
+}
+
+function getRecuActuel(cardId, idx, ligne) {
+  const key = cardId + '_' + idx;
+  if (RECEPTION_ETAT[key] !== undefined) return RECEPTION_ETAT[key];
+  return ligne.recuAffiche != null ? ligne.recuAffiche : 0;
+}
+
+function renderLigneReception(c, cardId, idx) {
+  const l = c.lignes[idx];
+  const recu = getRecuActuel(cardId, idx, l);
+  const ok = recu >= l.attendu;
+  const touche = RECEPTION_ETAT[cardId + '_' + idx] !== undefined;
+  const rowClass = touche ? (ok ? '' : 'style="background:rgba(163,45,45,.04)"') : '';
+
+  let infoHtml = '<span style="font-size:11px;color:var(--text-secondary)">';
+  if (l.marquage) infoHtml += `<span class="marquage">${l.marquage}</span> `;
+  infoHtml += (l.infoLabel || l.mpn || l.ipn || '—');
+  if (l.stkPP && l.stkPP > 0) infoHtml += ` <span class="stkinfo" title="Stock disponible">📦 ${l.stkPP}</span>`;
+  infoHtml += '</span>';
+
+  const mpnEnc = encodeURIComponent(l.mpn || l.ipn || '');
+  const dsUrl = 'https://www.google.com/search?q=' + mpnEnc + '+datasheet+filetype:pdf';
+
+  return `
+    <tr id="rl-${cardId}-${idx}" ${rowClass}>
+      <td><div class="ipn">${l.ipn || l.mpn}</div><div class="mpn2">${l.ipn && l.mpn && l.mpn !== l.ipn ? l.mpn : ''} ${l.fournisseurRef || ''}</div></td>
+      <td>${infoHtml}</td>
+      <td class="qcell"><span class="qatt">${l.attendu}</span></td>
+      <td class="qcell"><div class="qwrap">
+        <input type="number" class="${touche ? (ok ? 'qok' : 'qerr') : ''}" value="${recu}" id="qi-${cardId}-${idx}"
+          onchange="chgQtyReception('${cardId}', ${idx}, this.value, ${l.attendu})">
+        ${touche && !ok ? `<span class="etag">Δ ${recu - l.attendu}</span>` : ''}
+      </div></td>
+      <td class="qcell">${touche ? (ok ? '<span style="color:var(--ok-t)">✓</span>' : '<span style="color:var(--er-t)">✗</span>') : '<span style="color:var(--text-muted);font-size:11px">—</span>'}</td>
+      <td><div class="ac">
+        <button class="ab ab-pb" onclick='ouvrirPopupDeclaration({so: ${JSON.stringify(c.so)}, fournisseur: ${JSON.stringify(c.fournisseur)}, num_commande: "", reference: ${JSON.stringify(l.ipn || l.mpn || "")}, probleme: ${JSON.stringify((l.ipn || l.mpn || "") + " — problème signalé depuis Réception")}})' title="Déclarer un problème"><i class="ti ti-alert-triangle" style="font-size:11px" aria-hidden="true"></i> Pb</button>
+        <button class="ab ab-oc" onclick="window.open('${dsUrl}','_blank')" title="Datasheet"><i class="ti ti-file-text" style="font-size:11px" aria-hidden="true"></i> DS</button>
+        <button class="ab ab-oc" onclick="window.open('https://octopart.com/search?q=${mpnEnc}','_blank')" title="Octopart"><i class="ti ti-search" style="font-size:11px" aria-hidden="true"></i> Octopart</button>
+      </div></td>
+    </tr>`;
+}
+
+function renderCarteReception(c) {
+  const cardId = cardKeyReception(c);
+  const { enRetard, joursRetard } = statutReception(c);
+  const badge = badgeClass(c.fournisseur);
+  const total = c.lignes.length;
+  let recues = 0;
+  c.lignes.forEach((l, idx) => { if (getRecuActuel(cardId, idx, l) >= l.attendu) recues++; });
+  const pct = total > 0 ? Math.round((recues / total) * 100) : 0;
+
+  let cardClass = 'wa', pfClass = 'wa', pillHtml = `<span class="pill p-wa"><i class="ti ti-clock" style="font-size:10px" aria-hidden="true"></i> En attente</span>`;
+  if (c.isInventory) {
+    cardClass = 'pp'; pfClass = 'pp';
+    pillHtml = `<span class="pill p-gy">Stock à sortir</span>`;
+  } else if (enRetard) {
+    cardClass = 'er'; pfClass = 'er';
+    pillHtml = `<span class="pill p-er"><i class="ti ti-clock-exclamation" style="font-size:10px" aria-hidden="true"></i> Retard J+${joursRetard}</span>`;
+  } else if (pct === 100) {
+    cardClass = 'ok'; pfClass = 'ok';
+    pillHtml = `<span class="pill p-ok"><i class="ti ti-check" style="font-size:10px" aria-hidden="true"></i> Prêt à valider</span>`;
+  }
+
+  const metaBits = [c.client, c.carte, c.datePrevu && c.datePrevu !== '—' ? ('Prévu le ' + c.datePrevu) : null].filter(Boolean).join(' · ');
+  const lignesHtml = c.lignes.map((l, idx) => renderLigneReception(c, cardId, idx)).join('');
+  const lienAppro = c.urlAppro ? `<a href="${c.urlAppro}" target="_blank" style="color:var(--pp-blue);text-decoration:none;font-size:11px;margin-left:8px"><i class="ti ti-external-link" style="font-size:10px" aria-hidden="true"></i> GSheet</a>` : '';
+
+  return `
+    <div class="card ${cardClass}" id="card-${cardId}">
+      <div class="ch" onclick="this.closest('.card').classList.toggle('open')">
+        <span class="fb ${badge}">${(c.fournisseur || 'INCONNU').toUpperCase()}</span>
+        <div class="ci">
+          <div class="cso">${c.so} ${pillHtml}</div>
+          <div class="cm">${metaBits || '—'}</div>
+        </div>
+        <div class="pw"><div class="pb"><div class="pf ${pfClass}" style="width:${pct}%"></div></div><span class="pp2">${recues}/${total}</span></div>
+        <i class="ti ti-chevron-down chv" aria-hidden="true"></i>
+      </div>
+      <div class="cbdy">
+        ${c.lignesCompletes > 0 ? `<div style="padding:6px 15px;font-size:11px;color:var(--text-muted);background:rgba(59,109,17,.04);border-bottom:0.5px solid var(--border)">✓ ${c.lignesCompletes} ligne${c.lignesCompletes > 1 ? 's' : ''} déjà complète${c.lignesCompletes > 1 ? 's' : ''} (masquée${c.lignesCompletes > 1 ? 's' : ''})</div>` : ''}
+        <table class="lt2">
+          <thead><tr><th>IPN</th><th>Info contrôle</th><th style="text-align:center">Attendu</th><th style="text-align:center">Reçu</th><th style="text-align:center">Statut</th><th style="text-align:right">Ressources</th></tr></thead>
+          <tbody>${lignesHtml}</tbody>
+        </table>
+        <div class="cft">
+          <span class="cfm">${c.statut || ''}${lienAppro}</span>
+          <button class="btn-p" id="vbtn-${cardId}" onclick="validerReceptionClick('${cardId}')"><i class="ti ti-check" aria-hidden="true"></i> Valider la réception</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function chgQtyReception(cardId, idx, val, attendu) {
+  const v = parseInt(val) || 0;
+  RECEPTION_ETAT[cardId + '_' + idx] = v;
+  const ok = v >= attendu;
+  const row = document.getElementById('rl-' + cardId + '-' + idx);
+  const inp = document.getElementById('qi-' + cardId + '-' + idx);
+  if (inp) inp.className = ok ? 'qok' : 'qerr';
+  if (row) row.style.background = ok ? '' : 'rgba(163,45,45,.04)';
+}
+
+function renderReception() {
+  const body = document.getElementById('rec-body');
+  const banner = document.getElementById('rec-alert-banner');
+  const cnt = document.getElementById('rec-count');
+  const searchTerm = document.getElementById('rec-search').value.trim().toLowerCase();
+  const fournisseurFilter = document.getElementById('rec-flt-fournisseur').value;
+  const alertesSeules = document.getElementById('rec-flt-alertes').classList.contains('on');
+
+  let colis = RECEPTION_DATA.slice();
+
+  if (searchTerm) {
+    colis = colis.filter(c => {
+      const haystack = [c.so, c.fournisseur, c.client, c.carte].join(' ').toLowerCase();
+      const inLignes = (c.lignes || []).some(l => (l.ipn || '').toLowerCase().includes(searchTerm) || (l.mpn || '').toLowerCase().includes(searchTerm));
+      return haystack.includes(searchTerm) || inLignes;
+    });
+  }
+  if (fournisseurFilter) colis = colis.filter(c => c.fournisseur === fournisseurFilter);
+
+  const retards = colis.filter(c => !c.isInventory && statutReception(c).enRetard);
+  if (alertesSeules) colis = colis.filter(c => c.isInventory || statutReception(c).enRetard);
+
+  document.getElementById('stat-alertes').textContent = retards.length;
+  const recBadge = document.getElementById('rec-badge');
+  recBadge.textContent = retards.length || '';
+  recBadge.style.display = retards.length ? 'inline-flex' : 'none';
+
+  banner.innerHTML = retards.length
+    ? `<div class="alrt"><i class="ti ti-alert-triangle" style="font-size:14px" aria-hidden="true"></i> ${retards.length} colis en retard — J+7 dépassé sans réception confirmée</div>`
+    : '';
+
+  cnt.textContent = colis.length + ' colis en cours de réception';
+
+  if (!colis.length) {
+    body.innerHTML = '<div class="empty"><i class="ti ti-inbox" aria-hidden="true"></i>Aucun colis ne correspond à ces critères.</div>';
+    return;
+  }
+  body.innerHTML = colis.map(renderCarteReception).join('');
+}
+
+function validerReceptionClick(cardId) {
+  const c = RECEPTION_DATA.find(x => cardKeyReception(x) === cardId);
+  if (!c) return;
+  const lignes = c.lignes.map((l, idx) => ({ ipn: l.ipn, mpn: l.mpn, fournisseur: l.fournisseur, attendu: l.attendu, recu: getRecuActuel(cardId, idx, l) }));
+  const ecarts = lignes.filter(l => l.recu < l.attendu);
+
+  if (ecarts.length > 0) {
+    ECART_EN_ATTENTE = { cardId, c, lignes, ecarts };
+    document.getElementById('ecart-liste').innerHTML = ecarts.map(e =>
+      `<div class="ml"><span>${e.ipn || e.mpn}</span><span>Attendu: ${e.attendu} · Reçu: <strong style="color:var(--er-t)">${e.recu}</strong></span></div>`
+    ).join('');
+    document.getElementById('ov-ecart').classList.add('open');
+  } else {
+    finaliserReception(cardId, c, lignes, []);
+  }
+}
+
+function fermerModalEcart() {
+  document.getElementById('ov-ecart').classList.remove('open');
+  ECART_EN_ATTENTE = null;
+}
+
+function confirmerEcart() {
+  if (!ECART_EN_ATTENTE) return;
+  const { cardId, c, lignes, ecarts } = ECART_EN_ATTENTE;
+  fermerModalEcart();
+  finaliserReception(cardId, c, lignes, ecarts);
+}
+
+async function finaliserReception(cardId, c, lignes, ecarts) {
+  const btn = document.getElementById('vbtn-' + cardId);
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2" aria-hidden="true"></i> Enregistrement…'; }
+  try {
+    const res = await fetch(WEBHOOK_VALIDER, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ so: c.so, client: c.client, carte: c.carte, lignes, ecarts })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    RECEPTION_DATA = RECEPTION_DATA.filter(x => cardKeyReception(x) !== cardId);
+    renderReception();
+    toast(ecarts.length > 0 ? `⚠ Réception validée avec ${ecarts.length} écart(s)` : `✓ ${c.so} — ${c.fournisseur} réceptionné`, ecarts.length > 0 ? 'twarn' : 'tok');
+  } catch (err) {
+    toast('Erreur : ' + err.message, 'terr');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-check" aria-hidden="true"></i> Valider la réception'; }
+  }
+}
+
+function toast(msg, cls) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + cls;
+  setTimeout(() => { t.className = ''; }, 3500);
+}
+
+document.getElementById('rec-search').addEventListener('input', renderReception);
+document.getElementById('rec-flt-fournisseur').addEventListener('change', renderReception);
+document.getElementById('rec-flt-alertes').addEventListener('click', function () { this.classList.toggle('on'); renderReception(); });
+document.getElementById('rec-refresh').addEventListener('click', chargerReception);
+
+chargerReception();
+
+document.getElementById('suivi-search').addEventListener('input', renderSuivi);
+document.getElementById('suivi-flt-fournisseur').addEventListener('change', renderSuivi);
+document.getElementById('suivi-flt-alertes').addEventListener('click', function () {
+  this.classList.toggle('on');
+  renderSuivi();
+});
+document.getElementById('suivi-refresh').addEventListener('click', chargerSuivi);
+
+// ============== ONGLET QUALITÉ ==============
+const WEBHOOK_QUALITE = 'https://protoprocess.app.n8n.cloud/webhook/v2-get-qualite';
+const WEBHOOK_DECLARER_PB = 'https://protoprocess.app.n8n.cloud/webhook/v2-declarer-pb';
+const WEBHOOK_CLOTURER = 'https://protoprocess.app.n8n.cloud/webhook/v2-cloturer-reclamation';
+
+let QUALITE_DATA = { reclamations: [], stats: {} };
+let DECLARATION_CONTEXTE = null;
+
+async function chargerQualite() {
+  const body = document.getElementById('qual-body');
+  body.innerHTML = '<div class="loading"><i class="ti ti-loader-2" aria-hidden="true"></i> Chargement…</div>';
+  try {
+    const res = await fetch(WEBHOOK_QUALITE);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    QUALITE_DATA = await res.json();
+    peuplerFiltresQualite(QUALITE_DATA.reclamations || []);
+    renderQualite();
+  } catch (err) {
+    body.innerHTML = `<div class="errbox"><i class="ti ti-alert-triangle" aria-hidden="true"></i> Impossible de charger les données (${err.message}).</div>`;
+  }
+}
+
+function peuplerFiltresQualite(reclamations) {
+  const selF = document.getElementById('qual-flt-fournisseur');
+  const selC = document.getElementById('qual-flt-codenc');
+  const existF = new Set(Array.from(selF.options).map(o => o.value).filter(Boolean));
+  const existC = new Set(Array.from(selC.options).map(o => o.value).filter(Boolean));
+  Array.from(new Set(reclamations.map(r => r.fournisseur).filter(Boolean))).sort().forEach(f => {
+    if (!existF.has(f)) { const o = document.createElement('option'); o.value = f; o.textContent = f; selF.appendChild(o); }
+  });
+  Array.from(new Set(reclamations.map(r => r.code_nc).filter(Boolean))).sort().forEach(c => {
+    if (!existC.has(c)) { const o = document.createElement('option'); o.value = c; o.textContent = c; selC.appendChild(o); }
+  });
+}
+
+function renderQualite() {
+  const body = document.getElementById('qual-body');
+  const stats = QUALITE_DATA.stats || {};
+  const searchTerm = document.getElementById('qual-search').value.trim().toLowerCase();
+  const nonClotureesSeules = document.getElementById('qual-flt-non-cloturees').classList.contains('on');
+  const fournisseurFilter = document.getElementById('qual-flt-fournisseur').value;
+  const codeNcFilter = document.getElementById('qual-flt-codenc').value;
+
+  let reclamations = (QUALITE_DATA.reclamations || []).slice();
+  if (searchTerm) {
+    reclamations = reclamations.filter(r => [r.so, r.detail, r.fournisseur, r.num_commande, r.probleme].join(' ').toLowerCase().includes(searchTerm));
+  }
+  if (nonClotureesSeules) reclamations = reclamations.filter(r => !r.cloturee);
+  if (fournisseurFilter) reclamations = reclamations.filter(r => r.fournisseur === fournisseurFilter);
+  if (codeNcFilter) reclamations = reclamations.filter(r => r.code_nc === codeNcFilter);
+
+  let html = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
+    <div style="background:var(--surface-1);border-radius:var(--radius);padding:12px 15px"><div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">Non clôturées</div><div style="font-size:20px;font-weight:500;color:var(--er-t)">${stats.non_cloturees ?? '—'}</div></div>
+    <div style="background:var(--surface-1);border-radius:var(--radius);padding:12px 15px"><div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">Ce mois</div><div style="font-size:20px;font-weight:500;color:var(--wa-t)">${stats.ce_mois ?? '—'}</div></div>
+    <div style="background:var(--surface-1);border-radius:var(--radius);padding:12px 15px"><div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">Clôturées</div><div style="font-size:20px;font-weight:500;color:var(--ok-t)">${stats.cloturees ?? '—'}</div></div>
+    <div style="background:var(--surface-1);border-radius:var(--radius);padding:12px 15px"><div style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">Fournisseur à risque</div><div style="font-size:14px;font-weight:500;padding-top:4px">${stats.fournisseur_risque || '—'}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px">${stats.fournisseur_risque_count ? stats.fournisseur_risque_count + ' réclamation(s)' : ''}</div></div>
+  </div>`;
+
+  if (!reclamations.length) {
+    html += '<div class="empty"><i class="ti ti-inbox" aria-hidden="true"></i>Aucune réclamation ne correspond à ces critères.</div>';
+    body.innerHTML = html;
+    return;
+  }
+
+  html += `<table class="rtbl"><thead><tr><th>Date</th><th>SO</th><th>Fournisseur</th><th>N° commande</th><th>Problème</th><th>Code NC</th><th>Impact prod.</th><th>Statut</th><th></th></tr></thead><tbody>`;
+  reclamations.forEach(r => {
+    const badge = badgeClass(r.fournisseur);
+    html += `<tr>
+      <td class="mu">${r.date}</td>
+      <td><span class="ref">${r.so}</span>${r.detail ? '<div class="mu" style="margin-top:2px">' + r.detail + '</div>' : ''}</td>
+      <td><span class="fb ${badge}">${(r.fournisseur || '').toUpperCase()}</span></td>
+      <td class="mu">${r.num_commande || ''}</td>
+      <td style="font-size:11px;max-width:220px">${r.probleme || ''}</td>
+      <td><span class="pill ${r.code_nc === 'Retard de livraison' ? 'p-er' : 'p-wa'}">${r.code_nc || ''}</span></td>
+      <td><span class="pill p-gy">${r.impact_prod || ''}</span></td>
+      <td><span class="pill ${r.cloturee ? 'p-ok' : 'p-er'}">${r.cloturee ? 'Clôturée' : 'Ouverte'}</span></td>
+      <td><div class="ac">
+        <a class="rbt ed" style="text-decoration:none" href="https://docs.google.com/spreadsheets/d/16VNvdUbq4z5jaiC_ACPQ_25CSN6P5BPHK9PIYYZbKs0/edit" target="_blank"><i class="ti ti-edit" style="font-size:11px" aria-hidden="true"></i> Éditer</a>
+        ${!r.cloturee ? `<button class="rbt cl" onclick="cloturerReclamation(${r.row_number}, this)"><i class="ti ti-check" style="font-size:11px" aria-hidden="true"></i> Clôturer</button>` : ''}
+      </div></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  body.innerHTML = html;
+}
+
+async function cloturerReclamation(rowNumber, btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader-2" aria-hidden="true"></i>';
+  try {
+    const res = await fetch(WEBHOOK_CLOTURER, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ row_number: rowNumber })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const r = QUALITE_DATA.reclamations.find(x => x.row_number === rowNumber);
+    if (r) r.cloturee = true;
+    QUALITE_DATA.stats.non_cloturees = (QUALITE_DATA.stats.non_cloturees || 1) - 1;
+    QUALITE_DATA.stats.cloturees = (QUALITE_DATA.stats.cloturees || 0) + 1;
+    renderQualite();
+    toast('✓ Réclamation clôturée', 'tok');
+  } catch (err) {
+    toast('Erreur : ' + err.message, 'terr');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-check" style="font-size:11px" aria-hidden="true"></i> Clôturer';
+  }
+}
+
+function ouvrirPopupDeclaration(ctx) {
+  DECLARATION_CONTEXTE = ctx || {};
+  document.getElementById('decl-so').textContent = ctx.so || '—';
+  document.getElementById('decl-fournisseur').textContent = ctx.fournisseur || '—';
+  document.getElementById('decl-commande').textContent = ctx.num_commande || '—';
+  document.getElementById('decl-ref').textContent = ctx.reference || '—';
+  document.getElementById('decl-probleme').value = ctx.probleme || '';
+  document.getElementById('decl-codenc').value = ctx.retard ? 'Retard de livraison' : 'PCB';
+  document.getElementById('decl-impactprod').value = "pas d'impact";
+  document.getElementById('decl-impactclient').value = "pas d'impact";
+  document.getElementById('ov-declarer').classList.add('open');
+}
+
+function fermerModalDeclarer() {
+  document.getElementById('ov-declarer').classList.remove('open');
+  DECLARATION_CONTEXTE = null;
+}
+
+async function soumettreDeclaration() {
+  const ctx = DECLARATION_CONTEXTE || {};
+  const payload = {
+    so: ctx.so || '',
+    num_commande: ctx.num_commande || '',
+    fournisseur: ctx.fournisseur || '',
+    probleme: document.getElementById('decl-probleme').value,
+    code_nc: document.getElementById('decl-codenc').value,
+    impact_prod: document.getElementById('decl-impactprod').value,
+    impact_client: document.getElementById('decl-impactclient').value
+  };
+  fermerModalDeclarer();
+  try {
+    const res = await fetch(WEBHOOK_DECLARER_PB, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    toast('✓ Réclamation envoyée dans F22', 'tok');
+    if (document.getElementById('page-qualite').classList.contains('on')) chargerQualite();
+  } catch (err) {
+    toast('Erreur : ' + err.message, 'terr');
+  }
+}
+
+const WEBHOOK_NOUVELLE_ANNEE = 'https://protoprocess.app.n8n.cloud/webhook/v2-nouvelle-annee-qualite';
+
+async function reinitialiserStats() {
+  const confirmation = window.confirm(
+    "Ça va créer un nouvel onglet pour l'année suivante dans F22 (copie de l'onglet actif, en-têtes et formats conservés, lignes vidées) et archiver l'année en cours.\n\nCette action ne peut pas être annulée facilement. Continuer ?"
+  );
+  if (!confirmation) return;
+
+  const btn = document.getElementById('qual-reset');
+  btn.style.pointerEvents = 'none';
+  btn.innerHTML = '<i class="ti ti-loader-2" aria-hidden="true"></i> En cours…';
+  try {
+    const res = await fetch(WEBHOOK_NOUVELLE_ANNEE, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.success) {
+      toast(`✓ Nouvel onglet créé : ${data.nouvel_onglet}`, 'tok');
+      chargerQualite();
+    } else {
+      toast(data.raison || "L'onglet existe déjà", 'twarn');
+    }
+  } catch (err) {
+    toast('Erreur : ' + err.message, 'terr');
+  } finally {
+    btn.style.pointerEvents = '';
+    btn.innerHTML = '<i class="ti ti-refresh-alert" style="font-size:13px" aria-hidden="true"></i> Réinitialiser les stats';
+  }
+}
+
+document.getElementById('qual-search').addEventListener('input', renderQualite);
+document.getElementById('qual-flt-fournisseur').addEventListener('change', renderQualite);
+document.getElementById('qual-flt-codenc').addEventListener('change', renderQualite);
+document.getElementById('qual-flt-non-cloturees').addEventListener('click', function () { this.classList.toggle('on'); renderQualite(); });
+document.getElementById('qual-refresh').addEventListener('click', chargerQualite);
+document.getElementById('qual-nouvelle').addEventListener('click', () => ouvrirPopupDeclaration({}));
+document.getElementById('qual-reset').addEventListener('click', reinitialiserStats);
+
+chargerQualite();
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+    tab.classList.add('on');
+    document.getElementById('page-' + tab.dataset.tab).classList.add('on');
+  });
 });
 
-// ===================== TABS =====================
-function switchTab(name) {
-  ['analyse','rules'].forEach((n,i) => {
-    document.querySelectorAll('.tab')[i].classList.toggle('active', n===name);
-    document.querySelectorAll('.panel')[i].classList.toggle('active', n===name);
-  });
-}
-
-// ===================== CONFIG =====================
-function loadConfig() {
-  try {
-    apiKey = localStorage.getItem('bom_api_key') || '';
-    proxyUrl = localStorage.getItem('bom_proxy_url') || document.getElementById('cfg-proxy-url').value;
-    document.getElementById('cfg-api-key').value = apiKey;
-    const savedClientsUrl = localStorage.getItem('bom_clients_url');
-    const savedRulesUrl = localStorage.getItem('bom_rules_url');
-    if (savedClientsUrl) document.getElementById('cfg-clients-url').value = savedClientsUrl;
-    if (savedRulesUrl) document.getElementById('cfg-rules-url').value = savedRulesUrl;
-  } catch(e) {}
-}
-
-function saveRules() {
-  const rules = {};
-  ['capacitor','tantalum','resistor','other','suffixes','sensors','batteries','sealed','msl'].forEach(k => {
-    const el = document.getElementById('rule-'+k);
-    if (el) rules[k] = el.value;
-  });
-  try {
-    localStorage.setItem('bom_coding_rules', JSON.stringify(rules));
-    const ak = document.getElementById('cfg-api-key').value.trim();
-    const pu = document.getElementById('cfg-proxy-url').value.trim();
-    const cu = document.getElementById('cfg-clients-url').value.trim();
-    const ru = document.getElementById('cfg-rules-url').value.trim();
-    localStorage.setItem('bom_api_key', ak);
-    localStorage.setItem('bom_proxy_url', pu);
-    localStorage.setItem('bom_clients_url', cu);
-    localStorage.setItem('bom_rules_url', ru);
-    apiKey = ak; proxyUrl = pu;
-    const ind = document.getElementById('save-indicator');
-    ind.classList.add('visible');
-    setTimeout(() => ind.classList.remove('visible'), 2000);
-  } catch(e) { alert('Erreur: ' + e.message); }
-}
-
-function loadRules() {
-  try {
-    const saved = localStorage.getItem('bom_coding_rules');
-    const rules = saved ? JSON.parse(saved) : DEFAULT_RULES;
-    ['capacitor','tantalum','resistor','other','suffixes','sensors','batteries','sealed','msl'].forEach(k => {
-      const el = document.getElementById('rule-'+k);
-      if (el) el.value = rules[k] || DEFAULT_RULES[k] || '';
-    });
-    renderExtraRules(rules);
-  } catch(e) {
-    Object.entries(DEFAULT_RULES).forEach(([k,v]) => { const el = document.getElementById('rule-'+k); if(el) el.value = v; });
-  }
-}
-
-function resetRules() {
-  if (!confirm('Réinitialiser toutes les règles ?')) return;
-  Object.entries(DEFAULT_RULES).forEach(([k,v]) => { const el = document.getElementById('rule-'+k); if(el) el.value = v; });
-}
-
-function getRulesPrompt() {
-  const get = id => { const el = document.getElementById(id); return el ? el.value : ''; };
-  let extra = '';
-  try {
-    const saved = localStorage.getItem('bom_coding_rules');
-    if (saved) {
-      const rules = JSON.parse(saved);
-      const known = ['capacitor','tantalum','resistor','other','suffixes','sensors','batteries','sealed','msl'];
-      const extraKeys = Object.keys(rules).filter(k => !known.includes(k));
-      if (extraKeys.length) extra = '\n\n' + extraKeys.map(k => 'RÈGLE SUPPLÉMENTAIRE — ' + k.toUpperCase() + ':\n' + rules[k]).join('\n\n');
-    }
-  } catch(e) {}
-  return 'RÈGLES DE CODIFICATION IPN:\n\nCONDENSATEUR:\n' + get('rule-capacitor') +
-    '\n\nTANTALE:\n' + get('rule-tantalum') +
-    '\n\nRÉSISTANCE:\n' + get('rule-resistor') +
-    '\n\nAUTRES:\n' + get('rule-other') +
-    '\n\nSUFFIXES À SUPPRIMER: ' + get('rule-suffixes') + extra;
-}
-
-function renderExtraRules(rules) {
-  const known = ['capacitor','tantalum','resistor','other','suffixes','sensors','batteries','sealed','msl'];
-  const extraKeys = Object.keys(rules).filter(k => !known.includes(k.toLowerCase()));
-  const container = document.getElementById('extra-rules-container');
-  if (!container) return;
-  if (!extraKeys.length) { container.innerHTML=''; return; }
-  container.innerHTML = '<div class="rules-section" style="margin-top:1.5rem"><div class="rules-section-title"><span>Règles supplémentaires (depuis Google Sheet)</span></div>' +
-    extraKeys.map(k => '<div class="card" style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-bottom:6px">'+k+'</div><div style="font-family:var(--mono);font-size:12px;white-space:pre-wrap;color:var(--text2);line-height:1.6">'+rules[k]+'</div></div>').join('') +
-    '</div>';
-}
-
-// ===================== CLIENTS =====================
-async function loadClientsFromURL(silent) {
-  const url = document.getElementById('cfg-clients-url').value.trim();
-  const statusEl = document.getElementById('clients-load-status');
-  if (!url) { if(!silent) statusEl.innerHTML='<span style="color:var(--red)">URL manquante</span>'; return; }
-  if (!silent) statusEl.innerHTML='Chargement…';
-  try {
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const text = await resp.text();
-    const lines = text.trim().split(/\r?\n/);
-    const sep = lines[0].includes('\t') ? '\t' : ',';
-    const hdrs = lines[0].split(sep).map(h=>h.replace(/"/g,'').trim());
-    clientsList = lines.slice(1).map(line => {
-      const cells = line.split(sep).map(c=>c.replace(/"/g,'').trim());
-      const obj = {};
-      hdrs.forEach((h,i) => obj[h]=cells[i]||'');
-      return { nom:obj['Nom']||obj['nom']||obj['name']||'', mpn_strict:(obj['MPN_strict']||obj['mpn_strict']||'').toLowerCase()==='oui', notes:obj['Notes']||obj['notes']||'' };
-    }).filter(c=>c.nom);
-    localStorage.setItem('bom_clients_url', url);
-    localStorage.setItem('bom_clients_list', JSON.stringify(clientsList));
-    populateClientSelect();
-    if (!silent) statusEl.innerHTML='<span style="color:var(--green)"><i class="ti ti-check"></i> '+clientsList.length+' client(s)</span>';
-  } catch(e) {
-    if (!silent) statusEl.innerHTML='<span style="color:var(--red)">Erreur: '+e.message+'</span>';
-  }
-}
-
-async function loadRulesFromURL(silent) {
-  const url = document.getElementById('cfg-rules-url').value.trim();
-  const statusEl = document.getElementById('rules-url-status');
-  if (!url) return;
-  try {
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const text = await resp.text();
-    const lines = text.trim().split(/\r?\n/);
-    const sep = lines[0].includes('\t') ? '\t' : ',';
-    const hdrs = lines[0].split(sep).map(h=>h.replace(/"/g,'').trim());
-    const rulesObj = {};
-    lines.slice(1).forEach(line => {
-      const cells = line.split(sep).map(c=>c.replace(/"/g,'').trim());
-      const obj = {};
-      hdrs.forEach((h,i) => obj[h]=cells[i]||'');
-      const k = (obj['Clé']||obj['cle']||obj['key']||obj['Cle']||'').trim();
-      const v = (obj['Valeur']||obj['valeur']||obj['value']||'').trim().replace(/\\n/g,'\n');
-      if (k) rulesObj[k] = v;
-    });
-    if (!Object.keys(rulesObj).length) return;
-    localStorage.setItem('bom_coding_rules', JSON.stringify(rulesObj));
-    localStorage.setItem('bom_rules_url', url);
-    loadRules();
-    if (!silent) statusEl.innerHTML='<span style="color:var(--green)"><i class="ti ti-check"></i> '+Object.keys(rulesObj).length+' règles</span>';
-  } catch(e) {
-    if (!silent) statusEl.innerHTML='<span style="color:var(--red)">Erreur: '+e.message+'</span>';
-  }
-}
-
-function populateClientSelect() {
-  const sel = document.getElementById('client-select-analysis');
-  sel.innerHTML = '<option value="__standard__">Standard (IPN autorisé)</option>';
-  const sorted = [...clientsList].filter(c=>c.nom.toLowerCase()!=='standard').sort((a,b)=>a.nom.localeCompare(b.nom,'fr',{sensitivity:'base'}));
-  sorted.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c.nom;
-    opt.textContent = c.nom + (c.mpn_strict ? ' 🔒' : '');
-    sel.appendChild(opt);
-  });
-}
-
-function onClientSelect() {
-  const val = document.getElementById('client-select-analysis').value;
-  activeClientAnalysis = val==='__standard__' ? {nom:'Standard',mpn_strict:false,notes:''} : (clientsList.find(c=>c.nom===val)||{nom:'Standard',mpn_strict:false,notes:''});
-  if (rawData.length > 0) { if (!loadMappingForClient()) document.getElementById('mapping-loaded-badge').style.display='none'; renderMappingTable(); }
-}
-
-// ===================== NEW CLIENT =====================
-function showNewClientForm() {
-  document.getElementById('new-client-overlay').style.display='flex';
-  document.getElementById('new-client-nom').focus();
-  document.getElementById('new-client-status').innerHTML='';
-  document.getElementById('new-client-nom').value='';
-  document.getElementById('new-client-notes').value='';
-  document.querySelector('input[name="new-client-mpn"][value="non"]').checked=true;
-}
-function hideNewClientForm() { document.getElementById('new-client-overlay').style.display='none'; }
-
-async function addNewClient() {
-  const nom = document.getElementById('new-client-nom').value.trim();
-  const mpn_strict = document.querySelector('input[name="new-client-mpn"]:checked')?.value||'non';
-  const notes = document.getElementById('new-client-notes').value.trim();
-  const statusEl = document.getElementById('new-client-status');
-  const btn = document.getElementById('btn-add-client');
-  if (!nom) { statusEl.innerHTML='<span style="color:var(--red)">Nom obligatoire</span>'; return; }
-  btn.disabled=true; btn.textContent='Envoi…';
-  try {
-    // Route via proxy to avoid CORS/redirect issues
-    const px = document.getElementById('cfg-proxy-url').value.trim() || proxyUrl;
-    let result;
-    if (px) {
-      // Send through proxy using GET with encoded params
-      const params = new URLSearchParams({
-        action: 'addClient',
-        clientsUrl: CLIENTS_URL_WRITE,
-        nom, mpn_strict, notes
-      });
-      const resp = await fetch(px + '?' + params.toString());
-      const text = await resp.text();
-      try { result = JSON.parse(text); } catch(e) { result = { success: false, error: 'Erreur proxy: ' + text.slice(0,100) }; }
-    } else {
-      result = { success: false, error: 'Proxy non configuré' };
-    }
-    if (result.success) {
-      clientsList.push({nom,mpn_strict:mpn_strict==='oui',notes});
-      populateClientSelect();
-      document.getElementById('client-select-analysis').value=nom;
-      onClientSelect();
-      statusEl.innerHTML='<span style="color:var(--green)">✓ '+result.message+'</span>';
-      setTimeout(()=>hideNewClientForm(),1200);
-    } else if (result.existing) {
-      statusEl.innerHTML='<span style="color:var(--amber)">⚠ Client déjà existant</span>';
-    } else {
-      statusEl.innerHTML='<span style="color:var(--red)">Erreur: '+result.error+'</span>';
-    }
-  } catch(e) { statusEl.innerHTML='<span style="color:var(--red)">Erreur: '+e.message+'</span>'; }
-  btn.disabled=false; btn.innerHTML='<i class="ti ti-plus"></i> Ajouter';
-}
-
-// ===================== UPLOAD =====================
-function initUploadZone() {
-  const zone = document.getElementById('upload-zone');
-  if (!zone) return;
-  zone.addEventListener('dragover', e=>{e.preventDefault();zone.classList.add('dragover');});
-  zone.addEventListener('dragleave', ()=>zone.classList.remove('dragover'));
-  zone.addEventListener('drop', e=>{
-    e.preventDefault();zone.classList.remove('dragover');
-    const file=e.dataTransfer.files[0];
-    if(file){const inp=document.getElementById('client-file-input');const dt=new DataTransfer();dt.items.add(file);inp.files=dt.files;handleUpload(inp);}
-  });
-  zone.addEventListener('click', ()=>document.getElementById('client-file-input').click());
-}
-
-async function handleUpload(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const ext = file.name.split('.').pop().toLowerCase();
-  const zone = document.getElementById('upload-zone');
-  const lbl = document.getElementById('upload-label');
-  workbook = null;
-  if (ext==='xlsx'||ext==='xls') {
-    if (typeof XLSX==='undefined') { lbl.innerHTML='<span style="color:var(--red)">XLSX non chargé</span>'; return; }
-    const buf = await file.arrayBuffer();
-    workbook = XLSX.read(buf, {type:'array'});
-    const sel = document.getElementById('sheet-select');
-    sel.innerHTML = workbook.SheetNames.map((n,i)=>'<option value="'+i+'">'+n+'</option>').join('');
-    activeSheetIdx = 0;
-    parseSheet();
-  } else {
-    const text = await file.text();
-    parseRawText(text);
-  }
-  zone.className='upload-zone loaded';
-  lbl.innerHTML='<i class="ti ti-check" aria-hidden="true"></i> '+file.name+' chargé';
-  document.getElementById('mapping-card').style.display='block';
-  document.getElementById('step3-bar').style.display='block';
-  await detectColumns();
-}
-
-function getStartRow() { return Math.max(1,parseInt(document.getElementById('start-row')?.value||'1')); }
-
-function parseSheet() {
-  if (!workbook) return;
-  const ws = workbook.Sheets[workbook.SheetNames[activeSheetIdx]];
-  const data = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-  const startRow = getStartRow();
-  document.getElementById('total-rows-hint').textContent = data.length;
-  if (data.length<startRow) { rawData=[]; headers=[]; return; }
-  headers = data[startRow-1].map(h=>String(h||'').trim());
-  rawData = data.slice(startRow).map(row=>{const obj={};headers.forEach((h,i)=>obj[h]=String(row[i]||'').trim());return obj;}).filter(r=>Object.values(r).some(v=>v));
-}
-
-function parseRawText(text) {
-  const startRow = getStartRow();
-  const lines = text.trim().split(/\r?\n/);
-  document.getElementById('total-rows-hint').textContent = lines.length;
-  const sep = lines[startRow-1]?.includes('\t')?'\t':',';
-  const headerLine = lines[startRow-1]||lines[0];
-  headers = headerLine.split(sep).map(h=>h.replace(/"/g,'').trim());
-  rawData = lines.slice(startRow).map(line=>{const cells=line.split(sep).map(c=>c.replace(/"/g,'').trim());const obj={};headers.forEach((h,i)=>obj[h]=cells[i]||'');return obj;}).filter(r=>Object.values(r).some(v=>v));
-  const inp=document.getElementById('start-row'); if(inp) inp._rawText=text;
-}
-
-function onSheetChange() { activeSheetIdx=parseInt(document.getElementById('sheet-select').value); parseSheet(); detectColumns(); }
-function onStartRowChange() { if(workbook){parseSheet();detectColumns();}else if(rawData.length){const t=document.getElementById('start-row')._rawText||'';if(t)parseRawText(t);} }
-
-// ===================== COLUMN DETECTION =====================
-function getVal(row, field) {
-  const col = columnMapping[field];
-  if (!col) return '';
-  if (Array.isArray(col)) return col.map(c=>String(row[c]||'').trim()).filter(Boolean).join(' | ');
-  return String(row[col]||'').trim();
-}
-
-async function detectColumns() {
-  const loadEl = document.getElementById('mapping-loading');
-  loadEl.style.display='flex';
-  document.getElementById('mapping-tbody').innerHTML='';
-  if (!rawData.length) { loadEl.style.display='none'; return; }
-  const key = document.getElementById('cfg-api-key').value.trim()||apiKey;
-  if (!key) { columnMapping=autoDetectColumns(headers); }
-  else {
-    const sample = rawData.slice(0,3).map(r=>{const o={};headers.forEach(h=>o[h]=r[h]||'');return o;});
-    const prompt = 'Colonnes disponibles: '+JSON.stringify(headers)+'\nExemples: '+JSON.stringify(sample,null,2)+'\nMappe chaque champ. RÉPONSE JSON uniquement:\n{"mapping":{"designator":"col","mpn":"col","description":"col","notes":"col","manufacturer":"col","qty":"col","mfr_free":"col","ipn":"col","dist_code":"col"},"confidence":"high|medium|low"}';
-    try {
-      const resp = await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:400,messages:[{role:"user",content:prompt}]})});
-      const data = await resp.json();
-      const text = data.content.map(c=>c.text||'').join('');
-      const result = JSON.parse(text.replace(/```json|```/g,'').trim());
-      columnMapping = result.mapping||autoDetectColumns(headers);
-      const conf = result.confidence||'medium';
-      const badge = document.getElementById('mapping-confidence-badge');
-      badge.className='badge '+(conf==='high'?'b-ok':conf==='medium'?'b-info':'b-warn');
-      badge.textContent=conf==='high'?'Détection fiable':conf==='medium'?'Probable':'Vérifier';
-    } catch(e) { columnMapping=autoDetectColumns(headers); }
-  }
-  if (!loadMappingForClient()) document.getElementById('mapping-loaded-badge').style.display='none';
-  renderMappingTable();
-  loadEl.style.display='none';
-}
-
-function autoDetectColumns(hdrs) {
-  const patterns = {
-    designator:['designator','reference','ref','repere','position','refdes'],
-    mpn:['mpn','manufacturer part','part number','ref fabricant','mfr part'],
-    description:['description','desc','value','valeur','component'],
-    notes:['notes','note','comment','specs'],
-    manufacturer:['manufacturer','fabricant','mfr','brand'],
-    qty:['qty','quantity','quantité','qté','nb'],
-    mfr_free:['manufacturer free','mfr free','equiv','equivalent','free','autorisé'],
-    ipn:['ipn','internal part','code interne','approved internal'],
-    dist_code:['digikey','mouser','farnell','distributor','order code','supplier part']
-  };
-  const map={};
-  Object.entries(patterns).forEach(([field,keywords])=>{
-    const found=hdrs.find(h=>keywords.some(k=>h.toLowerCase().includes(k)));
-    map[field]=found||null;
-  });
-  return map;
-}
-
-function remapColumns() { detectColumns(); }
-
-function renderMappingTable() {
-  const tbody=document.getElementById('mapping-tbody');
-  tbody.innerHTML='';
-  REQUIRED_FIELDS.forEach(field=>{
-    const detected=columnMapping[field.key];
-    const isArray=Array.isArray(detected);
-    const cols=isArray?detected:(detected?[detected]:[]);
-    const previewVal=cols.length&&rawData[0]?cols.map(c=>String(rawData[0][c]||'')).filter(Boolean).join(' | ').slice(0,50):'—';
-    const statusIcon=cols.length?'✅':(field.required?'❌':'⚪');
-    const selectors=cols.length?cols.map((c,i)=>'<div style="display:flex;gap:4px;align-items:center;margin-bottom:4px"><select onchange="updateMappingCol(\''+field.key+'\','+i+',this.value)" style="font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);font-family:var(--sans);flex:1"><option value="">— Supprimer —</option>'+headers.map(h=>'<option value="'+h+'"'+(h===c?' selected':'')+'>'+h+'</option>').join('')+'</select>'+(i>0?'<button onclick="removeMappingCol(\''+field.key+'\','+i+')" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:14px;padding:0 2px">×</button>':'')+'</div>').join(''):'<select onchange="updateMappingCol(\''+field.key+'\',0,this.value)" style="font-size:11px;padding:3px 6px;border-radius:4px;border:1px solid var(--border);font-family:var(--sans);width:100%"><option value="">— Non mappé —</option>'+headers.map(h=>'<option value="'+h+'">'+h+'</option>').join('')+'</select>';
-    const tr=document.createElement('tr');
-    tr.innerHTML='<td style="text-align:center">'+statusIcon+'</td><td style="font-weight:500;font-size:12px">'+field.label+(field.required?'<span style="color:var(--red)">*</span>':'')+'</td><td style="font-family:var(--mono);font-size:10px;color:var(--blue)">'+(isArray?cols.join(' + '):(detected||'—'))+'</td><td style="min-width:200px">'+selectors+'<button onclick="addMappingCol(\''+field.key+'\')" style="font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;padding:2px 0;display:flex;align-items:center;gap:3px;font-family:var(--sans)"><i class="ti ti-plus" aria-hidden="true"></i> Ajouter colonne</button></td><td style="font-size:11px;color:var(--text3);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+previewVal+'</td>';
-    tbody.appendChild(tr);
-  });
-}
-
-function updateMappingCol(field,idx,value){let cols=Array.isArray(columnMapping[field])?[...columnMapping[field]]:(columnMapping[field]?[columnMapping[field]]:[]);if(!value){cols.splice(idx,1);}else{cols[idx]=value;}columnMapping[field]=cols.length===0?null:cols.length===1?cols[0]:cols;renderMappingTable();}
-function addMappingCol(field){let cols=Array.isArray(columnMapping[field])?[...columnMapping[field]]:(columnMapping[field]?[columnMapping[field]]:[]);cols.push(headers[0]||'');columnMapping[field]=cols;renderMappingTable();}
-function removeMappingCol(field,idx){let cols=Array.isArray(columnMapping[field])?[...columnMapping[field]]:(columnMapping[field]?[columnMapping[field]]:[]);cols.splice(idx,1);columnMapping[field]=cols.length===0?null:cols.length===1?cols[0]:cols;renderMappingTable();}
-function updateMapping(field,value){columnMapping[field]=value||null;renderMappingTable();}
-
-// ===================== MAPPING PERSISTENCE =====================
-function getMappingStorageKey(){return 'bom_mapping_'+(activeClientAnalysis.nom||'Standard').replace(/[^a-zA-Z0-9]/g,'_');}
-function saveMappingForClient(){try{localStorage.setItem(getMappingStorageKey(),JSON.stringify(columnMapping));const s=document.getElementById('mapping-save-status');s.style.display='inline';setTimeout(()=>s.style.display='none',2000);}catch(e){alert('Erreur: '+e.message);}}
-function loadMappingForClient(){try{const saved=localStorage.getItem(getMappingStorageKey());if(saved){const m=JSON.parse(saved);const cols=Object.values(m).filter(Boolean).flat();const matches=cols.filter(c=>headers.includes(c)).length;if(matches/Math.max(cols.length,1)>=0.5){columnMapping=m;document.getElementById('mapping-loaded-badge').style.display='inline-flex';return true;}}document.getElementById('mapping-loaded-badge').style.display='none';}catch(e){}return false;}
-
-// ===================== ANALYSIS =====================
-async function pushRuleToSheet(key,value){try{const r=await fetch(RULES_URL_WRITE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key,value})});return await r.json();}catch(e){return{success:false,error:e.message};}}
-function renderRuleSuggestion(res,rowIdx){if(!res.rule_key||!res.rule_value)return'';const div=document.createElement('div');div.className='rule-suggestion';div.id='rule-sug-cli-'+rowIdx;div.dataset.key=res.rule_key;div.dataset.val=res.rule_value;div.innerHTML='<span style="font-size:14px">&#x1F4A1;</span><span class="rule-suggestion-text"><strong>'+res.rule_key+'</strong> — '+res.rule_value.slice(0,100)+(res.rule_value.length>100?'…':'')+'</span><div class="rule-suggestion-actions"><button class="btn-rule-add" onclick="acceptRuleCliById(this)">Ajouter au sheet</button><button class="btn-rule-skip" onclick="skipRuleCli('+rowIdx+')">Ignorer</button></div>';return div.outerHTML;}
-async function acceptRuleCliById(btn){const sug=btn.closest('.rule-suggestion');if(!sug)return;btn.disabled=true;btn.textContent='Envoi…';const r=await pushRuleToSheet(sug.dataset.key,sug.dataset.val);sug.innerHTML=r.success?'<span class="rule-added-badge">✓ Règle ajoutée</span>':r.existing?'<span class="rule-added-badge" style="background:var(--amber-bg);color:var(--amber)">⚠ Clé déjà existante</span>':'<span style="color:var(--red);font-size:11px">Erreur: '+r.error+'</span>';}
-function skipRuleCli(idx){const s=document.getElementById('rule-sug-cli-'+idx);if(s)s.style.display='none';}
-
-async function analyseClientBOM() {
-  if (!rawData.length) { alert("Chargez une BOM d'abord."); return; }
-  const key = document.getElementById('cfg-api-key').value.trim()||apiKey;
-  if (!key) { alert("Clé API Anthropic requise dans Règles & Config."); return; }
-  document.getElementById('analysis-loading').style.display='flex';
-  document.getElementById('results-section').style.display='none';
-  document.getElementById('btn-export').style.display='none';
-  const defaultMfrFree = activeClientAnalysis.mpn_strict?'No':'Yes';
-  const px = document.getElementById('cfg-proxy-url').value.trim()||proxyUrl;
-  analysisResults=[];
-  const batchSize=8;
-
-  for (let i=0;i<rawData.length;i+=batchSize) {
-    document.getElementById('analysis-msg').textContent='Analyse IA: '+Math.min(i+batchSize,rawData.length)+'/'+rawData.length+'…';
-    const batch=rawData.slice(i,i+batchSize).map((row,j)=>({idx:i+j,designator:getVal(row,'designator'),mpn:getVal(row,'mpn'),description:getVal(row,'description'),notes:getVal(row,'notes'),manufacturer:getVal(row,'manufacturer'),qty:getVal(row,'qty'),mfr_free:getVal(row,'mfr_free')||defaultMfrFree,ipn_existing:getVal(row,'ipn'),dist_code:getVal(row,'dist_code')}));
-
-    // Pre-resolve distributor codes
-    for (const item of batch) {
-      if (!item.mpn && item.dist_code && px) {
-        try { const r=await fetch(px+'?code='+encodeURIComponent(item.dist_code));const d=await r.json();if(d&&!d.error&&d.mpn){item.mpn=d.mpn;item.description=item.description||d.description||'';item._enriched_source=d.source;} } catch(e) {}
-      }
-    }
-
-    const sys = 'Tu es un ingénieur hardware expert.\n\n'+getRulesPrompt()+'\n\nTRAITEMENT:\n1. Si ipn_existing renseigné: CONSERVER, vérifier cohérence\n2. Si mpn absent: générer IPN depuis description/notes\n3. MPN peut contenir plusieurs refs séparées par ";": utiliser la première\n4. Vérifier cohérence MPN/description\n5. Détecter: sensor, battery, not-sealed, msl4+\n\nRÉPONSE JSON tableau uniquement:\n[{"idx":0,"ipn":"...","mfr_free":"Yes|No","status":"ok|warn|error","confidence":"high|medium|low","warnings":["sensor|battery|not-sealed|msl4+"],"note":"remarque","rule_key":"clé si convention spéciale","rule_value":"règle si rule_key"}]';
-
-    try {
-      const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1500,system:sys,messages:[{role:"user",content:'Analyse:\n'+JSON.stringify(batch,null,2)}]})});
-      const d=await r.json();
-      const text=d.content.map(c=>c.text||'').join('');
-      const parsed=JSON.parse(text.replace(/```json|```/g,'').trim());
-      parsed.forEach(res=>{const orig=batch.find(b=>b.idx===res.idx);if(orig?._enriched_source)res.note=(res.note?res.note+' | ':'')+'MPN résolu via '+orig._enriched_source;});
-
-      // Enrich low confidence
-      const toEnrich=parsed.filter(r=>r.confidence==='low');
-      for (const res of toEnrich) {
-        const orig=batch.find(b=>b.idx===res.idx);
-        if(!orig||!orig.mpn||!px) continue;
-        try {
-          const er=await fetch(px+'?mpn='+encodeURIComponent(orig.mpn)+'&source=mouser');
-          const ed=await er.json();
-          if(ed&&!ed.error){
-            const r2=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:300,system:sys,messages:[{role:"user",content:'MPN: '+orig.mpn+'\nDonnées '+ed.source+': '+ed.description+'\nFabricant: '+ed.manufacturer+'\nSpecs: '+ed.specs+'\nGénère IPN. JSON: {"ipn":"...","confidence":"...","note":"..."}'}]})});
-            const d2=await r2.json();const e2=JSON.parse(d2.content.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim());
-            res.ipn=e2.ipn||res.ipn;res.confidence=e2.confidence||'medium';res.note=(res.note?res.note+' | ':'')+'Enrichi via '+ed.source;
-          }
-        } catch(e) {}
-      }
-      analysisResults=analysisResults.concat(parsed);
-    } catch(e) { analysisResults=analysisResults.concat(batch.map((_,j)=>({idx:i+j,ipn:'—',mfr_free:defaultMfrFree,status:'error',confidence:'low',warnings:[],note:'Erreur analyse'}))); }
-  }
-
-  renderResults();
-  document.getElementById('analysis-loading').style.display='none';
-  document.getElementById('results-section').style.display='block';
-  document.getElementById('btn-export').style.display='inline-flex';
-}
-
-// ===================== RENDER RESULTS =====================
-function renderResults() {
-  resultMeta=[];
-  const thead=document.getElementById('result-thead').querySelector('tr');
-  const tbody=document.getElementById('result-tbody');
-  thead.innerHTML=''; tbody.innerHTML='';
-  ['Qty','Désignateur','MPN','Description / Notes','IPN (éditable)','Mfr Free','Alertes'].forEach(h=>{const th=document.createElement('th');th.textContent=h;thead.appendChild(th);});
-  let cntOk=0,cntWarn=0,cntErr=0;
-  const warnSummary={sensor:[],battery:[],'not-sealed':[],'msl4+':[]};
-  const icons={sensor:'ti-radar',battery:'ti-battery','not-sealed':'ti-droplet-off','msl4+':'ti-moisture'};
-  const labels={sensor:'Capteur',battery:'Batterie','not-sealed':'Non étanche','msl4+':'MSL≥4'};
-  const wlabels={sensor:'Capteurs',battery:'Piles / batteries','not-sealed':'Non étanches','msl4+':'MSL ≥ 4'};
-
-  analysisResults.forEach((res,i)=>{
-    const row=rawData[res.idx]??rawData[i]??{};
-    const qty=getVal(row,'qty'); const desig=getVal(row,'designator'); const mpn=getVal(row,'mpn');
-    const desc=getVal(row,'description'); const notes=getVal(row,'notes');
-    const ipn=res.ipn||'—'; const mfrFree=res.mfr_free||(activeClientAnalysis.mpn_strict?'No':'Yes');
-    const status=res.status||'ok'; const warns=res.warnings||[];
-    if(status==='ok'&&!warns.length)cntOk++; else if(status==='error')cntErr++; else cntWarn++;
-    warns.forEach(w=>{if(warnSummary[w])warnSummary[w].push(desig||mpn);});
-    const warnBadges=warns.map(w=>'<span class="badge b-warn" style="margin-bottom:2px"><i class="ti '+icons[w]+'" aria-hidden="true"></i> '+labels[w]+'</span>').join(' ');
-    const statusBadge=status==='ok'&&!warns.length?'<span class="badge b-ok"><i class="ti ti-check" aria-hidden="true"></i></span>':status==='error'?'<span class="badge b-err"><i class="ti ti-x" aria-hidden="true"></i></span>':'';
-    const mfrClass=mfrFree.toLowerCase()==='yes'?'yes':'no';
-    const rowClass=status==='error'?'row-err':warns.length?'row-warn':'';
-    const confBadge='<span class="'+(res.confidence==='high'?'conf-high':res.confidence==='medium'?'conf-med':'conf-low')+'">'+(res.confidence==='high'?'🟢':res.confidence==='medium'?'🟡':'🔴')+' '+(res.confidence||'?')+'</span>';
-    const tr=document.createElement('tr'); tr.className=rowClass;
-    tr.innerHTML='<td style="font-size:11px;color:var(--text3)">'+qty+'</td><td style="font-size:11px;font-weight:500">'+desig+'</td><td style="font-size:11px;font-family:var(--mono)">'+mpn+'</td><td style="font-size:11px">'+desc+(notes&&notes!==desc?'<br><span style="color:var(--text3)">'+notes.slice(0,60)+'</span>':'')+(res.note?'<br><span style="color:var(--amber);font-size:10px">'+res.note+'</span>':'')+'</td><td><input class="editable-ipn" value="'+ipn+'" data-idx="'+i+'" />'+confBadge+renderRuleSuggestion(res,i)+'</td><td><select class="mfr-free-select '+mfrClass+'" data-idx="'+i+'" onchange="updateMfrFree(this)"><option value="Yes"'+(mfrFree.toLowerCase()==='yes'?' selected':'')+'>Yes — IPN autorisé</option><option value="No"'+(mfrFree.toLowerCase()==='no'?' selected':'')+'>No — MPN strict</option></select></td><td style="vertical-align:top">'+statusBadge+warnBadges+'</td>';
-    tbody.appendChild(tr);
-    resultMeta.push({status,warnings:warns,mpnWarn:false});
-  });
-
-  document.getElementById('result-counters').innerHTML='<div class="counter"><div class="counter-val">'+rawData.length+'</div><div class="counter-lbl">Composants</div></div><div class="counter"><div class="counter-val" style="color:var(--green)">'+cntOk+'</div><div class="counter-lbl">OK</div></div><div class="counter"><div class="counter-val" style="color:var(--amber)">'+cntWarn+'</div><div class="counter-lbl">Warnings</div></div><div class="counter"><div class="counter-val" style="color:var(--red)">'+cntErr+'</div><div class="counter-lbl">Erreurs</div></div>';
-
-  const warnItems=Object.entries(warnSummary).filter(([,v])=>v.length);
-  document.getElementById('result-warnings').innerHTML=warnItems.length?'<div class="warn-box"><div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Composants sensibles détectés</div>'+warnItems.map(([k,v])=>'<div class="warn-item"><i class="ti '+icons[k]+'" aria-hidden="true"></i><div><strong>'+wlabels[k]+'</strong><br><span style="font-size:12px;color:var(--text2)">'+v.join(', ')+'</span></div></div>').join('')+'</div>':'';
-
-  const counts={all:rawData.length,error:cntErr,warn:cntWarn,sensor:warnSummary.sensor.length,battery:warnSummary.battery.length,'not-sealed':warnSummary['not-sealed'].length,'msl4+':warnSummary['msl4+'].length};
-  const fcMap={all:'rfc-all',error:'rfc-err',warn:'rfc-warn',sensor:'rfc-sensor',battery:'rfc-battery','not-sealed':'rfc-sealed','msl4+':'rfc-msl'};
-  Object.entries(counts).forEach(([k,v])=>{const el=document.getElementById(fcMap[k]);if(el)el.textContent=v;});
-  ['error','warn','sensor','battery','not-sealed','msl4+'].forEach(k=>{const btn=document.querySelector('.filter-btn[onclick*="\''+k+'\'"]');if(btn)btn.style.display=counts[k]>0?'':'none';});
-}
-
-function updateMfrFree(sel){sel.className='mfr-free-select '+(sel.value==='Yes'?'yes':'no');}
-
-function setResultFilter(filter,btn) {
-  currentResultFilter=filter;
-  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('#result-tbody tr').forEach((tr,i)=>{
-    const meta=resultMeta[i];if(!meta){tr.style.display='';return;}
-    let show=false;
-    if(filter==='all')show=true;
-    else if(filter==='error')show=meta.status==='error';
-    else if(filter==='warn')show=meta.status==='warn'||meta.warnings?.length>0;
-    else show=meta.warnings?.includes(filter);
-    tr.style.display=show?'':'none';
-  });
-}
-
-// ===================== EXPORT XLS =====================
-function exportClientXLS() {
-  if (!rawData.length||!analysisResults.length) { alert("Rien à exporter."); return; }
-  if (typeof XLSX==='undefined') { alert("XLSX non chargé."); return; }
-  document.querySelectorAll('.editable-ipn').forEach((inp,i)=>{if(rawData[i]){const key=Object.keys(rawData[i]).find(k=>k.toLowerCase().includes('ipn')||k.toLowerCase().includes('internal'))||'IPN';rawData[i][key]=inp.value;}});
-  document.querySelectorAll('.mfr-free-select').forEach((sel,i)=>{if(rawData[i])rawData[i]['Manufacturer free']=sel.value;});
-
-  const ipnColExisting=columnMapping['ipn']||null;
-  const mfrFreeColExisting=columnMapping['mfr_free']||null;
-  const outHeaders=[...headers];
-  if(!outHeaders.includes('Approved internal part number'))outHeaders.push('Approved internal part number');
-  if(!outHeaders.includes('Manufacturer free'))outHeaders.push('Manufacturer free');
-
-  const outRows=rawData.map((row,i)=>{
-    const res=analysisResults[i];
-    const newRow={...row};
-    const ipnVal=document.querySelectorAll('.editable-ipn')[i]?.value||(res?.ipn||'');
-    if(ipnColExisting)newRow[ipnColExisting]=ipnVal; else newRow['Approved internal part number']=ipnVal;
-    const mfrVal=document.querySelectorAll('.mfr-free-select')[i]?.value||(res?.mfr_free||(activeClientAnalysis.mpn_strict?'No':'Yes'));
-    if(mfrFreeColExisting)newRow[mfrFreeColExisting]=mfrVal; else newRow['Manufacturer free']=mfrVal;
-    return newRow;
-  });
-
-  const wb=XLSX.utils.book_new();
-  const wsData=[outHeaders,...outRows.map(r=>outHeaders.map(h=>r[h]||''))];
-  const ws=XLSX.utils.aoa_to_sheet(wsData);
-  XLSX.utils.book_append_sheet(wb,ws,'BOM Codifiée');
-
-  // Warnings sheet
-  if(resultMeta.some(m=>m.warnings?.length||m.status==='error')){
-    const warnData=[['Type','Désignateurs']];
-    const wt={sensor:'Capteurs',battery:'Piles/Batteries','not-sealed':'Non étanches','msl4+':'MSL≥4'};
-    const wc={sensor:[],battery:[],'not-sealed':[],'msl4+':[]};
-    resultMeta.forEach((m,i)=>{const r=rawData[i]||{};const ref=getVal(r,'designator')||getVal(r,'mpn')||'';m.warnings?.forEach(w=>{if(wc[w])wc[w].push(ref);});});
-    Object.entries(wc).forEach(([k,v])=>{if(v.length)warnData.push([wt[k]||k,v.join(', ')]);});
-    warnData.push([]);
-    warnData.push(['Client',activeClientAnalysis.nom]);
-    warnData.push(['Date',new Date().toLocaleString('fr-FR')]);
-    const wsWarn=XLSX.utils.aoa_to_sheet(warnData);
-    XLSX.utils.book_append_sheet(wb,wsWarn,'Warnings');
-  }
-
-  XLSX.writeFile(wb,'BOM_client_codifiee_'+new Date().toISOString().slice(0,10)+'.xlsx');
-}
-
-// ===================== RESET =====================
-function resetAll() {
-  rawData=[];headers=[];workbook=null;analysisResults=[];resultMeta=[];
-  document.getElementById('upload-zone').className='upload-zone';
-  document.getElementById('upload-label').innerHTML='Glisser-déposer un fichier XLS, XLSX, CSV ou TSV<br><small style="color:var(--text3)">ou cliquer pour parcourir</small>';
-  document.getElementById('client-file-input').value='';
-  document.getElementById('mapping-card').style.display='none';
-  document.getElementById('step3-bar').style.display='none';
-  document.getElementById('results-section').style.display='none';
-  document.getElementById('btn-export').style.display='none';
-}
-
-// ===================== CHAT =====================
-function toggleClientChat() {
-  chatOpenC=!chatOpenC;
-  document.getElementById('chat-panel-c').classList.toggle('open',chatOpenC);
-  document.getElementById('chat-fab-icon-c').className=chatOpenC?'ti ti-x':'ti ti-message-circle';
-  if(chatOpenC){document.getElementById('chat-ctx-c').textContent=rawData.length?rawData.length+' composants':'Aucune BOM';document.getElementById('chat-input-c').focus();}
-}
-
-function addClientMsg(role,text) {
-  const div=document.createElement('div'); div.className='chat-msg '+role;
-  const now=new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-  const bubble=text.replace(/\n/g,'<br>').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
-  div.innerHTML='<div class="chat-bubble">'+bubble+'</div><div class="chat-msg-time">'+now+'</div>';
-  const msgs=document.getElementById('chat-msgs-c');
-  msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight;
-}
-
-async function sendClientChat() {
-  const input=document.getElementById('chat-input-c');
-  const text=input.value.trim();
-  if(!text)return;
-  const key=document.getElementById('cfg-api-key').value.trim()||apiKey;
-  if(!key){addClientMsg('assistant','⚠️ Clé API non configurée dans Règles & Config.');return;}
-  input.value=''; input.style.height='auto';
-  document.getElementById('chat-send-c').disabled=true;
-  addClientMsg('user',text);
-  chatHistoryC.push({role:'user',content:text});
-  document.getElementById('chat-typing-c').classList.add('visible');
-  document.getElementById('chat-msgs-c').scrollTop=99999;
-  const ctx=rawData.length?rawData.slice(0,20).map(r=>(getVal(r,'designator')+'|'+getVal(r,'mpn')+'|'+getVal(r,'description')).slice(0,80)).join('\n'):'Aucune BOM';
-  const sys="Tu es un assistant expert en electronique et BOM client.\n\n"+getRulesPrompt()+"\n\nCONTEXTE BOM:\n"+ctx+"\n\nClient: "+activeClientAnalysis.nom+" (MPN strict: "+(activeClientAnalysis.mpn_strict?'oui':'non')+")\n\nReponds en francais, de maniere concise et technique.";
-  try {
-    const resp=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:1024,system:sys,tools:[{type:"web_search_20250305",name:"web_search"}],messages:chatHistoryC})});
-    const data=await resp.json();
-    document.getElementById('chat-typing-c').classList.remove('visible');
-    if(data.error){addClientMsg('assistant','⚠️ Erreur: '+data.error.message);chatHistoryC.pop();}
-    else{const fullText=data.content.map(b=>b.type==='text'?b.text:'').join('');addClientMsg('assistant',fullText||'(Pas de réponse)');chatHistoryC.push({role:'assistant',content:data.content});}
-  } catch(e){document.getElementById('chat-typing-c').classList.remove('visible');addClientMsg('assistant','⚠️ Erreur: '+e.message);chatHistoryC.pop();}
-  document.getElementById('chat-send-c').disabled=false;
-  input.focus();
-}
+chargerSuivi();
 </script>
 </body>
 </html>
